@@ -452,7 +452,7 @@
                             <input type="number" class="form-control" id="project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label for="project-weight" class="form-label">占总成绩比例 (0-1)</label>
+                            <label class="form-label">占总成绩比例 (0-100%)</label>
                             <input type="number" class="form-control" id="project-weight" min="0" max="1" step="0.01" required>
                         </div>
                     </form>
@@ -485,7 +485,7 @@
                             <input type="number" class="form-control" id="edit-project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-1)</label>
+                            <label class="form-label">占总成绩比例 (0-100%)</label>
                             <input type="number" class="form-control" id="edit-project-weight" min="0" max="1" step="0.01" required>
                         </div>
                     </form>
@@ -863,7 +863,7 @@
         function saveProject() {
             const name = document.getElementById('project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('project-full-mark').value);
-            const weight = parseFloat(document.getElementById('project-weight').value);
+            const weight = parseFloat(document.getElementById('project-weight').value) / 100;
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
                 alert("请填写所有字段");
@@ -906,7 +906,7 @@
             document.getElementById('edit-project-id').value = project.id;
             document.getElementById('edit-project-name').value = project.name;
             document.getElementById('edit-project-full-mark').value = project.fullMark;
-            document.getElementById('edit-project-weight').value = project.weight;
+            document.getElementById('edit-project-weight').value = (project.weight * 100).toFixed(1);
             
             const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
             modal.show();
@@ -917,7 +917,7 @@
             const id = document.getElementById('edit-project-id').value;
             const name = document.getElementById('edit-project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('edit-project-full-mark').value);
-            const weight = parseFloat(document.getElementById('edit-project-weight').value);
+            const weight = parseFloat(document.getElementById('edit-project-weight').value) / 100;
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
                 alert("请填写所有字段");
@@ -929,10 +929,10 @@
                 return;
             }
             
-            if (weight <= 0 || weight > 1) {
-                alert("占比必须在0到1之间");
-                return;
-            }
+            if (weight < 0 || weight > 1) {
+    alert("占比必须在0到100%之间");
+    return;
+}
             
             db.collection('projects').doc(id).update({
                 name,
@@ -1260,7 +1260,21 @@
             try {
                 const { PDFDocument, rgb } = PDFLib;
                 const pdfDoc = await PDFDocument.create();
-                const page = pdfDoc.addPage([600, 800]);
+                let page = pdfDoc.addPage([600, 800]);
+let y = 750;
+
+studentAverages.forEach((item, index) => {
+    if (y < 50) {
+        page = pdfDoc.addPage([600, 800]); // 新页赋值
+        y = 750;
+    }
+
+    // 绘制内容
+    page.drawText(...);
+
+    y -= rowHeight;
+});
+
                 
                 // 添加标题
                 page.drawText(`${selectedClass || '全校'}成绩报告`, {
