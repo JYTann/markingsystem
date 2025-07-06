@@ -863,7 +863,7 @@
         function saveProject() {
             const name = document.getElementById('project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('project-full-mark').value);
-            const weight = parseFloat(document.getElementById('project-weight').value);
+            let weight = parseFloat(document.getElementById('project-weight').value);
 
             // 将百分比转换为小数
             weight = weight / 100;
