@@ -560,19 +560,22 @@
     });
 });
 
-        // 在 DOM 加载完成后初始化 Tab
-document.addEventListener('DOMContentLoaded', function() {
-    // 初始化 Tab 切换
-    const tabTriggers = [].slice.call(document.querySelectorAll('[data-bs-toggle="tab"]'));
-    tabTriggers.forEach(function(triggerEl) {
-        triggerEl.addEventListener('click', function(event) {
-            event.preventDefault();
-            const target = document.querySelector(this.getAttribute('data-bs-target'));
-            if (target) {
-                bootstrap.Tab.getOrCreateInstance(this).show();
-            }
+        // DOM加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化UI事件
+            initUIEvents();
+            
+            // 检查登录状态
+            auth.onAuthStateChanged(user => {
+                if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
+                    currentUser = user;
+                    showMainSystem();
+                    loadAllData();
+                } else {
+                    showLoginPage();
+                }
+            });
         });
-    });
 
         // 初始化UI事件
         function initUIEvents() {
@@ -641,30 +644,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('main-system').style.display = 'block';
         }
-
-    // 添加这段代码检查 Tab 功能
-function testTabSystem() {
-    const tabs = ['#dashboard-tab', '#students-tab', '#projects-tab', '#scores-tab', '#reports-tab'];
-    
-    tabs.forEach(tabId => {
-        const tabElement = document.querySelector(tabId);
-        if (!tabElement) {
-            console.error(`未找到 Tab 内容元素: ${tabId}`);
-        } else {
-            console.log(`Tab 内容元素存在: ${tabId}`);
-        }
-    });
-    
-    // 尝试以编程方式切换 Tab
-    const firstTab = document.querySelector('[data-bs-target="#students-tab"]');
-    if (firstTab) {
-        bootstrap.Tab.getOrCreateInstance(firstTab).show();
-        console.log('已尝试切换至学生管理 Tab');
-    }
-}
-
-// 在页面加载完成后测试
-window.addEventListener('load', testTabSystem);
 
         // 加载所有数据
         function loadAllData() {
