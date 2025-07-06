@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批改分数系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --danger-color: #ea4335;
+            --warning-color: #fbbc05;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--primary-color) !important;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-success {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        
+        .tab-content {
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(66, 133, 244, 0.25);
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="login-page" class="container">
+        <div class="login-container">
+            <h2 class="login-title">批改分数系统</h2>
+            <form id="login-form">
+                <div class="mb-3">
+                    <label for="login-email" class="form-label">邮箱</label>
+                    <input type="email" class="form-control" id="login-email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="login-password" class="form-label">密码</label>
+                    <input type="password" class="form-control" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主系统页面 (默认隐藏) -->
+    <div id="main-system" style="display: none;">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">批改分数系统</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
+                        </li>
+                    </ul>
+                    <button id="logout-btn" class="btn btn-outline-light">退出登录</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <div class="tab-content">
+                <!-- 仪表盘 -->
+                <div class="tab-pane fade show active" id="dashboard-tab">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-users me-2"></i>学生统计
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title" id="student-count">0</h5>
+                                    <p class="card-text">已注册学生总数</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-tasks me-2"></i>评分项目
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title" id="project-count">0</h5>
+                                    <p class="card-text">已创建评分项目</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-line me-2"></i>分数记录
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title" id="score-count">0</h5>
+                                    <p class="card-text">已录入分数记录</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学生管理 -->
+                <div class="tab-pane fade" id="students-tab">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-user-graduate me-2"></i>学生管理</span>
+                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                <i class="fas fa-plus me-1"></i>添加学生
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="import-excel" class="form-label">从Excel导入学生</label>
+                                <input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls">
+                                <small class="text-muted">请上传从Google Form生成的Excel文件</small>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>学号</th>
+                                            <th>姓名</th>
+                                            <th>班级</th>
+                                            <th>学习组</th>
+                                            <th>工作组</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-table-body">
+                                        <!-- 学生数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 评分项目 -->
+                <div class="tab-pane fade" id="projects-tab">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-tasks me-2"></i>评分项目管理</span>
+                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                                <i class="fas fa-plus me-1"></i>添加项目
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>项目名称</th>
+                                            <th>满分</th>
+                                            <th>占比</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="projects-table-body">
+                                        <!-- 项目数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分数录入 -->
+                <div class="tab-pane fade" id="scores-tab">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-edit me-2"></i>分数录入
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="score-student-select" class="form-label">选择学生</label>
+                                    <select class="form-select" id="score-student-select">
+                                        <option value="">-- 选择学生 --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="score-project-select" class="form-label">选择项目</label>
+                                    <select class="form-select" id="score-project-select">
+                                        <option value="">-- 选择项目 --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="score-input" class="form-label">分数</label>
+                                    <input type="number" class="form-control" id="score-input" min="0" step="0.1">
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button id="save-score-btn" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>保存分数
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>学生</th>
+                                            <th>项目</th>
+                                            <th>分数</th>
+                                            <th>满分</th>
+                                            <th>占比</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scores-table-body">
+                                        <!-- 分数数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成绩报告 -->
+                <div class="tab-pane fade" id="reports-tab">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf me-2"></i>成绩报告生成
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="report-class-select" class="form-label">选择班级</label>
+                                    <select class="form-select" id="report-class-select">
+                                        <option value="">-- 所有班级 --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button id="generate-report-btn" class="btn btn-primary">
+                                        <i class="fas fa-download me-1"></i>生成并下载报告
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="report-preview" class="text-center">
+                                <p class="text-muted">报告预览将显示在这里</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加学生模态框 -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加学生</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-student-form">
+                        <div class="mb-3">
+                            <label for="student-name" class="form-label">姓名</label>
+                            <input type="text" class="form-control" id="student-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="student-class" class="form-label">班级</label>
+                            <input type="text" class="form-control" id="student-class" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="student-id" class="form-label">学号</label>
+                            <input type="text" class="form-control" id="student-id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="study-group" class="form-label">学习组</label>
+                            <input type="text" class="form-control" id="study-group">
+                        </div>
+                        <div class="mb-3">
+                            <label for="work-group" class="form-label">工作组</label>
+                            <input type="text" class="form-control" id="work-group">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-student-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑学生模态框 -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑学生信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-student-form">
+                        <input type="hidden" id="edit-student-id">
+                        <div class="mb-3">
+                            <label for="edit-student-name" class="form-label">姓名</label>
+                            <input type="text" class="form-control" id="edit-student-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-student-class" class="form-label">班级</label>
+                            <input type="text" class="form-control" id="edit-student-class" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-student-id" class="form-label">学号</label>
+                            <input type="text" class="form-control" id="edit-student-id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-study-group" class="form-label">学习组</label>
+                            <input type="text" class="form-control" id="edit-study-group">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-work-group" class="form-label">工作组</label>
+                            <input type="text" class="form-control" id="edit-work-group">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="update-student-btn">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加项目模态框 -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加评分项目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-project-form">
+                        <div class="mb-3">
+                            <label for="project-name" class="form-label">项目名称</label>
+                            <input type="text" class="form-control" id="project-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-full-mark" class="form-label">满分</label>
+                            <input type="number" class="form-control" id="project-full-mark" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-weight" class="form-label">占总成绩比例 (0-1)</label>
+                            <input type="number" class="form-control" id="project-weight" min="0" max="1" step="0.01" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-project-btn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑项目模态框 -->
+    <div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑评分项目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-project-form">
+                        <input type="hidden" id="edit-project-id">
+                        <div class="mb-3">
+                            <label for="edit-project-name" class="form-label">项目名称</label>
+                            <input type="text" class="form-control" id="edit-project-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-full-mark" class="form-label">满分</label>
+                            <input type="number" class="form-control" id="edit-project-full-mark" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-1)</label>
+                            <input type="number" class="form-control" id="edit-project-weight" min="0" max="1" step="0.01" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="update-project-btn">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认删除</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="delete-message">您确定要删除此项吗？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的JS库 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // 全局变量
+        let currentUser = null;
+        let students = [];
+        let projects = [];
+        let scores = [];
+        let classes = [];
+        let deleteType = '';
+        let deleteId = '';
+
+        // DOM加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化UI事件
+            initUIEvents();
+            
+            // 检查登录状态
+            auth.onAuthStateChanged(user => {
+                if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
+                    currentUser = user;
+                    showMainSystem();
+                    loadAllData();
+                } else {
+                    showLoginPage();
+                }
+            });
+        });
+
+        // 初始化UI事件
+        function initUIEvents() {
+            // 登录表单提交
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                if (email !== "tanjunyuanfoonyew@gmail.com") {
+                    alert("只有授权账户可以登录系统");
+                    return;
+                }
+                
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        alert("登录成功");
+                    })
+                    .catch(error => {
+                        alert("登录失败: " + error.message);
+                    });
+            });
+
+            // 退出登录
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                auth.signOut().then(() => {
+                    alert("已退出登录");
+                    showLoginPage();
+                });
+            });
+
+            // 保存学生
+            document.getElementById('save-student-btn').addEventListener('click', saveStudent);
+            
+            // 更新学生
+            document.getElementById('update-student-btn').addEventListener('click', updateStudent);
+            
+            // 保存项目
+            document.getElementById('save-project-btn').addEventListener('click', saveProject);
+            
+            // 更新项目
+            document.getElementById('update-project-btn').addEventListener('click', updateProject);
+            
+            // 保存分数
+            document.getElementById('save-score-btn').addEventListener('click', saveScore);
+            
+            // 生成报告
+            document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+            
+            // 确认删除
+            document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
+            
+            // Excel导入
+            document.getElementById('import-excel').addEventListener('change', importExcel);
+        }
+
+        // 显示登录页面
+        function showLoginPage() {
+            document.getElementById('login-page').style.display = 'block';
+            document.getElementById('main-system').style.display = 'none';
+            document.getElementById('login-form').reset();
+        }
+
+        // 显示主系统
+        function showMainSystem() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-system').style.display = 'block';
+        }
+
+        // 加载所有数据
+        function loadAllData() {
+            loadStudents();
+            loadProjects();
+            loadScores();
+            updateDashboard();
+        }
+
+        // 加载学生数据
+        function loadStudents() {
+            db.collection('students').orderBy('studentId').get()
+                .then(querySnapshot => {
+                    students = [];
+                    const studentSelect = document.getElementById('score-student-select');
+                    studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
+                    
+                    querySnapshot.forEach(doc => {
+                        const student = { id: doc.id, ...doc.data() };
+                        students.push(student);
+                        
+                        // 添加到学生表格
+                        addStudentToTable(student);
+                        
+                        // 添加到学生选择下拉框
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${student.name} (${student.studentId})`;
+                        studentSelect.appendChild(option);
+                    });
+                    
+                    // 更新班级选择下拉框
+                    updateClassSelect();
+                })
+                .catch(error => {
+                    console.error("加载学生数据失败: ", error);
+                    alert("加载学生数据失败");
+                });
+        }
+
+        // 添加学生到表格
+        function addStudentToTable(student) {
+            const tbody = document.getElementById('students-table-body');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${student.studentId}</td>
+                <td>${student.name}</td>
+                <td>${student.class}</td>
+                <td>${student.studyGroup || '-'}</td>
+                <td>${student.workGroup || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 添加编辑和删除事件
+            row.querySelector('.edit-student').addEventListener('click', () => editStudent(student.id));
+            row.querySelector('.delete-student').addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
+        }
+
+        // 保存学生
+        function saveStudent() {
+            const name = document.getElementById('student-name').value.trim();
+            const studentClass = document.getElementById('student-class').value.trim();
+            const studentId = document.getElementById('student-id').value.trim();
+            const studyGroup = document.getElementById('study-group').value.trim();
+            const workGroup = document.getElementById('work-group').value.trim();
+            
+            if (!name || !studentClass || !studentId) {
+                alert("请填写必填字段");
+                return;
+            }
+            
+            db.collection('students').add({
+                name,
+                class: studentClass,
+                studentId,
+                studyGroup: studyGroup || null,
+                workGroup: workGroup || null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("学生添加成功");
+                document.getElementById('addStudentModal').querySelector('.btn-close').click();
+                document.getElementById('add-student-form').reset();
+                loadStudents();
+            })
+            .catch(error => {
+                console.error("添加学生失败: ", error);
+                alert("添加学生失败");
+            });
+        }
+
+        // 编辑学生
+        function editStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            document.getElementById('edit-student-id').value = student.id;
+            document.getElementById('edit-student-name').value = student.name;
+            document.getElementById('edit-student-class').value = student.class;
+            document.getElementById('edit-student-id').value = student.studentId;
+            document.getElementById('edit-study-group').value = student.studyGroup || '';
+            document.getElementById('edit-work-group').value = student.workGroup || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+            modal.show();
+        }
+
+        // 更新学生
+        function updateStudent() {
+            const id = document.getElementById('edit-student-id').value;
+            const name = document.getElementById('edit-student-name').value.trim();
+            const studentClass = document.getElementById('edit-student-class').value.trim();
+            const studentId = document.getElementById('edit-student-id').value.trim();
+            const studyGroup = document.getElementById('edit-study-group').value.trim();
+            const workGroup = document.getElementById('edit-work-group').value.trim();
+            
+            if (!name || !studentClass || !studentId) {
+                alert("请填写必填字段");
+                return;
+            }
+            
+            db.collection('students').doc(id).update({
+                name,
+                class: studentClass,
+                studentId,
+                studyGroup: studyGroup || null,
+                workGroup: workGroup || null
+            })
+            .then(() => {
+                alert("学生信息更新成功");
+                document.getElementById('editStudentModal').querySelector('.btn-close').click();
+                loadStudents();
+            })
+            .catch(error => {
+                console.error("更新学生信息失败: ", error);
+                alert("更新学生信息失败");
+            });
+        }
+
+        // 加载项目数据
+        function loadProjects() {
+            db.collection('projects').orderBy('createdAt').get()
+                .then(querySnapshot => {
+                    projects = [];
+                    const projectSelect = document.getElementById('score-project-select');
+                    projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>';
+                    
+                    querySnapshot.forEach(doc => {
+                        const project = { id: doc.id, ...doc.data() };
+                        projects.push(project);
+                        
+                        // 添加到项目表格
+                        addProjectToTable(project);
+                        
+                        // 添加到项目选择下拉框
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${project.name} (满分: ${project.fullMark})`;
+                        projectSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error("加载项目数据失败: ", error);
+                    alert("加载项目数据失败");
+                });
+        }
+
+        // 添加项目到表格
+        function addProjectToTable(project) {
+            const tbody = document.getElementById('projects-table-body');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${project.name}</td>
+                <td>${project.fullMark}</td>
+                <td>${(project.weight * 100).toFixed(1)}%</td>
+                <td>${project.createdAt?.toDate().toLocaleString() || '未知'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-project" data-id="${project.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-project" data-id="${project.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 添加编辑和删除事件
+            row.querySelector('.edit-project').addEventListener('click', () => editProject(project.id));
+            row.querySelector('.delete-project').addEventListener('click', () => showDeleteConfirm('project', project.id, `确定要删除项目 ${project.name} 吗？`));
+        }
+
+        // 保存项目
+        function saveProject() {
+            const name = document.getElementById('project-name').value.trim();
+            const fullMark = parseFloat(document.getElementById('project-full-mark').value);
+            const weight = parseFloat(document.getElementById('project-weight').value);
+            
+            if (!name || isNaN(fullMark) || isNaN(weight)) {
+                alert("请填写所有字段");
+                return;
+            }
+            
+            if (fullMark <= 0) {
+                alert("满分必须大于0");
+                return;
+            }
+            
+            if (weight <= 0 || weight > 1) {
+                alert("占比必须在0到1之间");
+                return;
+            }
+            
+            db.collection('projects').add({
+                name,
+                fullMark,
+                weight,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("项目添加成功");
+                document.getElementById('addProjectModal').querySelector('.btn-close').click();
+                document.getElementById('add-project-form').reset();
+                loadProjects();
+            })
+            .catch(error => {
+                console.error("添加项目失败: ", error);
+                alert("添加项目失败");
+            });
+        }
+
+        // 编辑项目
+        function editProject(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            document.getElementById('edit-project-id').value = project.id;
+            document.getElementById('edit-project-name').value = project.name;
+            document.getElementById('edit-project-full-mark').value = project.fullMark;
+            document.getElementById('edit-project-weight').value = project.weight;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+            modal.show();
+        }
+
+        // 更新项目
+        function updateProject() {
+            const id = document.getElementById('edit-project-id').value;
+            const name = document.getElementById('edit-project-name').value.trim();
+            const fullMark = parseFloat(document.getElementById('edit-project-full-mark').value);
+            const weight = parseFloat(document.getElementById('edit-project-weight').value);
+            
+            if (!name || isNaN(fullMark) || isNaN(weight)) {
+                alert("请填写所有字段");
+                return;
+            }
+            
+            if (fullMark <= 0) {
+                alert("满分必须大于0");
+                return;
+            }
+            
+            if (weight <= 0 || weight > 1) {
+                alert("占比必须在0到1之间");
+                return;
+            }
+            
+            db.collection('projects').doc(id).update({
+                name,
+                fullMark,
+                weight
+            })
+            .then(() => {
+                alert("项目更新成功");
+                document.getElementById('editProjectModal').querySelector('.btn-close').click();
+                loadProjects();
+            })
+            .catch(error => {
+                console.error("更新项目失败: ", error);
+                alert("更新项目失败");
+            });
+        }
+
+        // 加载分数数据
+        function loadScores() {
+            db.collection('scores').get()
+                .then(querySnapshot => {
+                    scores = [];
+                    const tbody = document.getElementById('scores-table-body');
+                    tbody.innerHTML = '';
+                    
+                    querySnapshot.forEach(doc => {
+                        const score = { id: doc.id, ...doc.data() };
+                        scores.push(score);
+                        
+                        // 添加到分数表格
+                        addScoreToTable(score);
+                    });
+                })
+                .catch(error => {
+                    console.error("加载分数数据失败: ", error);
+                    alert("加载分数数据失败");
+                });
+        }
+
+        // 添加分数到表格
+        function addScoreToTable(score) {
+            const student = students.find(s => s.id === score.studentId);
+            const project = projects.find(p => p.id === score.projectId);
+            
+            if (!student || !project) return;
+            
+            const tbody = document.getElementById('scores-table-body');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${student.name} (${student.studentId})</td>
+                <td>${project.name}</td>
+                <td>${score.score}</td>
+                <td>${project.fullMark}</td>
+                <td>${(project.weight * 100).toFixed(1)}%</td>
+                <td>
+                    <button class="btn btn-sm btn-danger delete-score" data-id="${score.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 添加删除事件
+            row.querySelector('.delete-score').addEventListener('click', () => showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？'));
+        }
+
+        // 保存分数
+        function saveScore() {
+            const studentId = document.getElementById('score-student-select').value;
+            const projectId = document.getElementById('score-project-select').value;
+            const scoreValue = parseFloat(document.getElementById('score-input').value);
+            
+            if (!studentId || !projectId || isNaN(scoreValue)) {
+                alert("请选择学生、项目并输入分数");
+                return;
+            }
+            
+            const project = projects.find(p => p.id === projectId);
+            if (scoreValue > project.fullMark) {
+                alert("分数不能超过项目满分");
+                return;
+            }
+            
+            db.collection('scores').add({
+                studentId,
+                projectId,
+                score: scoreValue,
+                recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                alert("分数保存成功");
+                document.getElementById('score-input').value = '';
+                loadScores();
+            })
+            .catch(error => {
+                console.error("保存分数失败: ", error);
+                alert("保存分数失败");
+            });
+        }
+
+        // 更新班级选择下拉框
+        function updateClassSelect() {
+            // 收集所有班级
+            classes = [...new Set(students.map(s => s.class))];
+            
+            const classSelect = document.getElementById('report-class-select');
+            classSelect.innerHTML = '<option value="">-- 所有班级 --</option>';
+            
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls;
+                option.textContent = cls;
+                classSelect.appendChild(option);
+            });
+        }
+
+        // 更新仪表盘
+        function updateDashboard() {
+            document.getElementById('student-count').textContent = students.length;
+            document.getElementById('project-count').textContent = projects.length;
+            document.getElementById('score-count').textContent = scores.length;
+        }
+
+        // 显示删除确认
+        function showDeleteConfirm(type, id, message) {
+            deleteType = type;
+            deleteId = id;
+            document.getElementById('delete-message').textContent = message;
+            
+            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            modal.show();
+        }
+
+        // 确认删除
+        function confirmDelete() {
+            let collectionName = '';
+            switch (deleteType) {
+                case 'student':
+                    collectionName = 'students';
+                    break;
+                case 'project':
+                    collectionName = 'projects';
+                    break;
+                case 'score':
+                    collectionName = 'scores';
+                    break;
+                default:
+                    return;
+            }
+            
+            db.collection(collectionName).doc(deleteId).delete()
+                .then(() => {
+                    alert("删除成功");
+                    document.getElementById('confirmDeleteModal').querySelector('.btn-close').click();
+                    
+                    // 重新加载相关数据
+                    if (deleteType === 'student') {
+                        loadStudents();
+                        loadScores();
+                    } else if (deleteType === 'project') {
+                        loadProjects();
+                        loadScores();
+                    } else if (deleteType === 'score') {
+                        loadScores();
+                    }
+                })
+                .catch(error => {
+                    console.error("删除失败: ", error);
+                    alert("删除失败");
+                });
+        }
+
+        // 导入Excel
+        function importExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // 获取第一个工作表
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                // 验证数据格式
+                const requiredFields = ['姓名', '班级', '学号'];
+                const optionalFields = ['学习组', '工作组'];
+                
+                let batch = db.batch();
+                let successCount = 0;
+                
+                jsonData.forEach((row, index) => {
+                    // 检查必填字段
+                    if (!requiredFields.every(field => field in row)) {
+                        console.error(`第 ${index + 1} 行缺少必填字段`);
+                        return;
+                    }
+                    
+                    // 准备学生数据
+                    const studentData = {
+                        name: row['姓名'].toString().trim(),
+                        class: row['班级'].toString().trim(),
+                        studentId: row['学号'].toString().trim(),
+                        studyGroup: optionalFields[0] in row ? row['学习组']?.toString().trim() : null,
+                        workGroup: optionalFields[1] in row ? row['工作组']?.toString().trim() : null,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    // 添加到批量操作
+                    const docRef = db.collection('students').doc();
+                    batch.set(docRef, studentData);
+                    successCount++;
+                });
+                
+                // 执行批量操作
+                batch.commit()
+                    .then(() => {
+                        alert(`成功导入 ${successCount} 名学生`);
+                        event.target.value = ''; // 清空文件输入
+                        loadStudents();
+                    })
+                    .catch(error => {
+                        console.error("导入失败: ", error);
+                        alert(`导入失败: ${error.message}`);
+                    });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 生成报告
+        async function generateReport() {
+            const selectedClass = document.getElementById('report-class-select').value;
+            let filteredStudents = students;
+            
+            if (selectedClass) {
+                filteredStudents = students.filter(s => s.class === selectedClass);
+            }
+            
+            if (filteredStudents.length === 0) {
+                alert("没有找到符合条件的学生");
+                return;
+            }
+            
+            // 计算每个学生的平均分
+            const studentAverages = [];
+            
+            for (const student of filteredStudents) {
+                const studentScores = scores.filter(s => s.studentId === student.id);
+                let total = 0;
+                let totalWeight = 0;
+                
+                for (const score of studentScores) {
+                    const project = projects.find(p => p.id === score.projectId);
+                    if (project) {
+                        total += (score.score / project.fullMark) * project.weight;
+                        totalWeight += project.weight;
+                    }
+                }
+                
+                const average = totalWeight > 0 ? (total / totalWeight) * 100 : 0;
+                studentAverages.push({
+                    student,
+                    average,
+                    scores: studentScores.map(score => {
+                        const project = projects.find(p => p.id === score.projectId);
+                        return {
+                            projectName: project?.name || '未知项目',
+                            score: score.score,
+                            fullMark: project?.fullMark || 100,
+                            weight: project?.weight || 0
+                        };
+                    })
+                });
+            }
+            
+            // 按平均分排序
+            studentAverages.sort((a, b) => b.average - a.average);
+            
+            // 生成报告HTML
+            const reportHTML = `
+                <div class="report-container" style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+                    <h2 style="text-align: center; color: #4285f4;">${selectedClass || '全校'}成绩报告</h2>
+                    <p style="text-align: right;">生成日期: ${new Date().toLocaleDateString()}</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                        <thead>
+                            <tr style="background-color: #4285f4; color: white;">
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">排名</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">学号</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">姓名</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">班级</th>
+                                ${projects.map(p => `<th style="padding: 10px; text-align: left; border: 1px solid #ddd;">${p.name}<br><small>(${p.fullMark}分, ${(p.weight * 100).toFixed(1)}%)</small></th>`).join('')}
+                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">总平均</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${studentAverages.map((item, index) => `
+                                <tr style="border-bottom: 1px solid #ddd;">
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${index + 1}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.studentId}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.name}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.class}</td>
+                                    ${projects.map(p => {
+                                        const score = item.scores.find(s => s.projectName === p.name);
+                                        return `<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${score ? score.score : '-'}</td>`;
+                                    }).join('')}
+                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; text-align: center; color: ${item.average >= 60 ? 'green' : 'red'};">${item.average.toFixed(2)}%</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 30px; font-size: 12px; color: #666; text-align: center;">
+                        <p>系统自动生成 - 批改分数系统</p>
+                    </div>
+                </div>
+            `;
+            
+            // 显示预览
+            document.getElementById('report-preview').innerHTML = reportHTML;
+            
+            // 创建PDF并下载
+            try {
+                const { PDFDocument, rgb } = PDFLib;
+                const pdfDoc = await PDFDocument.create();
+                const page = pdfDoc.addPage([600, 800]);
+                
+                // 添加标题
+                page.drawText(`${selectedClass || '全校'}成绩报告`, {
+                    x: 50,
+                    y: 750,
+                    size: 20,
+                    color: rgb(0.262, 0.522, 0.956),
+                });
+                
+                // 添加日期
+                page.drawText(`生成日期: ${new Date().toLocaleDateString()}`, {
+                    x: 400,
+                    y: 750,
+                    size: 12,
+                });
+                
+                // 添加表格内容
+                let y = 700;
+                const rowHeight = 20;
+                const colWidths = [40, 60, 60, 60, ...projects.map(() => 60), 60];
+                
+                // 表头
+                page.drawText('排名', { x: 50, y, size: 12, color: rgb(1, 1, 1) });
+                page.drawText('学号', { x: 100, y, size: 12, color: rgb(1, 1, 1) });
+                page.drawText('姓名', { x: 170, y, size: 12, color: rgb(1, 1, 1) });
+                page.drawText('班级', { x: 240, y, size: 12, color: rgb(1, 1, 1) });
+                
+                projects.forEach((p, i) => {
+                    page.drawText(p.name, { x: 310 + (i * 60), y, size: 10, color: rgb(1, 1, 1) });
+                    page.drawText(`(${p.fullMark}分)`, { x: 310 + (i * 60), y: y - 12, size: 8, color: rgb(1, 1, 1) });
+                });
+                
+                page.drawText('总平均', { x: 310 + (projects.length * 60), y, size: 12, color: rgb(1, 1, 1) });
+                
+                y -= 30;
+                
+                // 表格内容
+                studentAverages.forEach((item, index) => {
+                    if (y < 50) {
+                        // 如果当前页空间不足，添加新页
+                        y = 750;
+                        pdfDoc.addPage([600, 800]);
+                    }
+                    
+                    page.drawText((index + 1).toString(), { x: 50, y, size: 10 });
+                    page.drawText(item.student.studentId, { x: 100, y, size: 10 });
+                    page.drawText(item.student.name, { x: 170, y, size: 10 });
+                    page.drawText(item.student.class, { x: 240, y, size: 10 });
+                    
+                    projects.forEach((p, i) => {
+                        const score = item.scores.find(s => s.projectName === p.name);
+                        page.drawText(score ? score.score.toString() : '-', { 
+                            x: 310 + (i * 60), 
+                            y, 
+                            size: 10,
+                            color: score && score.score < p.fullMark * 0.6 ? rgb(1, 0, 0) : rgb(0, 0, 0)
+                        });
+                    });
+                    
+                    page.drawText(`${item.average.toFixed(2)}%`, { 
+                        x: 310 + (projects.length * 60), 
+                        y, 
+                        size: 10,
+                        color: item.average >= 60 ? rgb(0, 0.5, 0) : rgb(1, 0, 0)
+                    });
+                    
+                    y -= rowHeight;
+                });
+                
+                // 保存PDF
+                const pdfBytes = await pdfDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                saveAs(blob, `${selectedClass || '全校'}_成绩报告_${new Date().toISOString().split('T')[0]}.pdf`);
+                
+            } catch (error) {
+                console.error("生成PDF失败: ", error);
+                alert("生成PDF失败，但HTML预览已创建");
+            }
+        }
+    </script>
+</body>
+</html>
