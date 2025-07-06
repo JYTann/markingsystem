@@ -3,41 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>批改分数系统</title>
+    <title>智能评分系统 | 电脑协会</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4285f4;
-            --secondary-color: #34a853;
-            --danger-color: #ea4335;
-            --warning-color: #fbbc05;
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #4cc9f0;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
             --light-color: #f8f9fa;
-            --dark-color: #343a40;
+            --dark-color: #212529;
+            --sidebar-width: 250px;
+            --transition-speed: 0.3s;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Noto Sans SC', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        /* 导航栏样式 */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 0.8rem 1rem;
         }
         
         .navbar-brand {
-            font-weight: bold;
-            color: var(--primary-color) !important;
+            font-weight: 700;
+            color: white !important;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
         }
         
+        .navbar-brand i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        /* 卡片样式 */
         .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
             border: none;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
         }
         
         .card-header {
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: bold;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 500;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: 500;
+            transition: all var(--transition-speed);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .btn-primary {
@@ -45,9 +90,16 @@
             border-color: var(--primary-color);
         }
         
+        .btn-primary:hover {
+            background-color: #3a56e8;
+            border-color: #3a56e8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
+        }
+        
         .btn-success {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
+            background-color: var(--success-color);
+            border-color: var(--success-color);
         }
         
         .btn-danger {
@@ -58,56 +110,286 @@
         .btn-warning {
             background-color: var(--warning-color);
             border-color: var(--warning-color);
-            color: var(--dark-color);
         }
         
+        /* 表格样式 */
         .table-responsive {
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table {
+            margin-bottom: 0;
         }
         
         .table thead th {
             background-color: var(--primary-color);
             color: white;
+            border: none;
+            padding: 15px;
+            font-weight: 500;
         }
         
+        .table tbody tr {
+            transition: background-color var(--transition-speed);
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .table tbody td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            border-top: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        
+        /* 登录页面样式 */
         .login-container {
-            max-width: 400px;
+            max-width: 450px;
             margin: 100px auto;
-            padding: 20px;
+            padding: 30px;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.6s ease-out;
         }
         
         .login-title {
             text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 2rem;
+        }
+        
+        .login-logo {
+            text-align: center;
             margin-bottom: 20px;
+        }
+        
+        .login-logo i {
+            font-size: 3.5rem;
             color: var(--primary-color);
         }
         
-        .tab-content {
-            padding: 20px;
-            background: white;
-            border-radius: 0 0 10px 10px;
-        }
-        
-        .nav-tabs .nav-link.active {
-            font-weight: bold;
-            color: var(--primary-color);
+        /* 表单样式 */
+        .form-control {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 1px solid #e0e0e0;
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
         }
         
         .form-control:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(66, 133, 244, 0.25);
+            box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
         }
         
-        .preview-image {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 5px;
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        /* 选项卡样式 */
+        .nav-tabs {
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            color: #666;
+            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            transition: all var(--transition-speed);
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border-color: transparent;
+            color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background-color: transparent;
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            padding: 25px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 统计卡片 */
+        .stat-card {
+            text-align: center;
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+            transition: transform var(--transition-speed);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            opacity: 0.9;
+        }
+        
+        .stat-card .card-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .card-text {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* 加载动画 */
+        .spinner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        
+        /* 模态框样式 */
+        .modal-content {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-bottom: none;
+            padding: 15px 20px;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 50px auto;
+                padding: 20px;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+        }
+        
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+        
+        /* 评分星星样式 */
+        .rating-stars {
+            color: var(--warning-color);
+            font-size: 1.2rem;
+        }
+        
+        /* 进度条样式 */
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+        
+        .progress-bar {
+            background-color: var(--primary-color);
+            border-radius: 5px;
+        }
+        
+        /* 标签样式 */
+        .badge {
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        /* 时间线样式 */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--primary-color);
+            opacity: 0.2;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            border: 2px solid white;
+        }
+        
+        /* 图表容器 */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
         }
     </style>
 </head>
@@ -116,7 +398,10 @@
     <!-- 登录页面 -->
     <div id="login-page" class="container">
         <div class="login-container">
-            <h2 class="login-title">批改分数系统</h2>
+            <div class="login-logo">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h2 class="login-title">智能评分系统</h2>
             <form id="login-form">
                 <div class="mb-3">
                     <label for="login-email" class="form-label">邮箱</label>
@@ -126,41 +411,64 @@
                     <label for="login-password" class="form-label">密码</label>
                     <input type="password" class="form-control" id="login-password" required>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">登录</button>
+                <button type="submit" class="btn btn-primary w-100 mt-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
             </form>
         </div>
     </div>
 
     <!-- 主系统页面 (默认隐藏) -->
     <div id="main-system" style="display: none;">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="javascript:void(0)">批改分数系统</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
-                </li>
-            </ul>
-            <button id="logout-btn" class="btn btn-outline-light">退出登录</button>
-        </div>
-    </div>
-</nav>
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="javascript:void(0)">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>智能评分系统</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                                <i class="fas fa-tachometer-alt me-1"></i>仪表盘
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">
+                                <i class="fas fa-user-graduate me-1"></i>学生管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab">
+                                <i class="fas fa-tasks me-1"></i>评分项目
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">
+                                <i class="fas fa-edit me-1"></i>分数录入
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">
+                                <i class="fas fa-file-pdf me-1"></i>成绩报告
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="d-flex align-items-center">
+                        <div class="text-white me-3">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span id="user-email">admin@example.com</span>
+                        </div>
+                        <button id="logout-btn" class="btn btn-outline-light">
+                            <i class="fas fa-sign-out-alt me-1"></i>退出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
         <div class="container mt-4">
             <div class="tab-content">
@@ -168,35 +476,57 @@
                 <div class="tab-pane fade show active" id="dashboard-tab">
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <i class="fas fa-users me-2"></i>学生统计
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title" id="student-count">0</h5>
-                                    <p class="card-text">已注册学生总数</p>
-                                </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4361ee, #3a0ca3);">
+                                <i class="fas fa-users"></i>
+                                <h5 class="card-title" id="student-count">0</h5>
+                                <p class="card-text">已注册学生总数</p>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <i class="fas fa-tasks me-2"></i>评分项目
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title" id="project-count">0</h5>
-                                    <p class="card-text">已创建评分项目</p>
-                                </div>
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #4895ef);">
+                                <i class="fas fa-tasks"></i>
+                                <h5 class="card-title" id="project-count">0</h5>
+                                <p class="card-text">已创建评分项目</p>
                             </div>
                         </div>
                         <div class="col-md-4">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);">
+                                <i class="fas fa-chart-line"></i>
+                                <h5 class="card-title" id="score-count">0</h5>
+                                <p class="card-text">已录入分数记录</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
                             <div class="card">
                                 <div class="card-header">
-                                    <i class="fas fa-chart-line me-2"></i>分数记录
+                                    <i class="fas fa-chart-pie me-2"></i>成绩分布
                                 </div>
                                 <div class="card-body">
-                                    <h5 class="card-title" id="score-count">0</h5>
-                                    <p class="card-text">已录入分数记录</p>
+                                    <div class="chart-container">
+                                        <canvas id="scoreDistributionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-history me-2"></i>最近活动
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        <div class="timeline-item">
+                                            <h6>系统初始化</h6>
+                                            <p class="text-muted small mb-0">欢迎使用智能评分系统</p>
+                                            <p class="text-muted small">刚刚</p>
+                                        </div>
+                                        <div id="recent-activities">
+                                            <!-- 动态加载最近活动 -->
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -205,19 +535,47 @@
 
                 <!-- 学生管理 -->
                 <div class="tab-pane fade" id="students-tab">
-                    <div class="card">
+                    <div class="card fade-in">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="fas fa-user-graduate me-2"></i>学生管理</span>
-                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addStudentModal">
-                                <i class="fas fa-plus me-1"></i>添加学生
-                            </button>
+                            <div>
+                                <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                    <i class="fas fa-plus me-1"></i>添加学生
+                                </button>
+                                <button class="btn btn-sm btn-primary" id="export-students-btn">
+                                    <i class="fas fa-file-export me-1"></i>导出
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" id="student-search" placeholder="搜索学生...">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                                        <select class="form-select" id="student-class-filter">
+                                            <option value="">所有班级</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="mb-3">
                                 <label for="import-excel" class="form-label">从Excel导入学生</label>
-                                <input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls">
+                                <div class="input-group">
+                                    <input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls">
+                                    <button class="btn btn-outline-secondary" type="button" id="import-excel-btn">
+                                        <i class="fas fa-upload me-1"></i>上传
+                                    </button>
+                                </div>
                                 <small class="text-muted">请上传从Google Form生成的Excel文件</small>
                             </div>
+                            
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover">
                                     <thead>
@@ -235,13 +593,19 @@
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            <nav aria-label="学生分页">
+                                <ul class="pagination justify-content-center mt-3" id="student-pagination">
+                                    <!-- 分页将通过JavaScript动态加载 -->
+                                </ul>
+                            </nav>
                         </div>
                     </div>
                 </div>
 
                 <!-- 评分项目 -->
                 <div class="tab-pane fade" id="projects-tab">
-                    <div class="card">
+                    <div class="card fade-in">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span><i class="fas fa-tasks me-2"></i>评分项目管理</span>
                             <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">
@@ -257,6 +621,7 @@
                                             <th>满分</th>
                                             <th>占比</th>
                                             <th>创建时间</th>
+                                            <th>状态</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
@@ -271,36 +636,41 @@
 
                 <!-- 分数录入 -->
                 <div class="tab-pane fade" id="scores-tab">
-                    <div class="card">
+                    <div class="card fade-in">
                         <div class="card-header">
                             <i class="fas fa-edit me-2"></i>分数录入
                         </div>
                         <div class="card-body">
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="score-student-select" class="form-label">选择学生</label>
                                     <select class="form-select" id="score-student-select">
                                         <option value="">-- 选择学生 --</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="score-project-select" class="form-label">选择项目</label>
                                     <select class="form-select" id="score-project-select">
                                         <option value="">-- 选择项目 --</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label for="score-input" class="form-label">分数</label>
-                                    <input type="number" class="form-control" id="score-input" min="0" step="0.1">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="score-input" min="0" step="0.1">
+                                        <span class="input-group-text">分</span>
+                                    </div>
                                 </div>
-                                <div class="col-md-6 d-flex align-items-end">
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12 d-flex justify-content-end">
                                     <button id="save-score-btn" class="btn btn-primary">
                                         <i class="fas fa-save me-1"></i>保存分数
                                     </button>
                                 </div>
                             </div>
+                            
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover">
                                     <thead>
@@ -324,26 +694,43 @@
 
                 <!-- 成绩报告 -->
                 <div class="tab-pane fade" id="reports-tab">
-                    <div class="card">
+                    <div class="card fade-in">
                         <div class="card-header">
                             <i class="fas fa-file-pdf me-2"></i>成绩报告生成
                         </div>
                         <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
+                            <div class="row mb-4">
+                                <div class="col-md-4">
                                     <label for="report-class-select" class="form-label">选择班级</label>
                                     <select class="form-select" id="report-class-select">
                                         <option value="">-- 所有班级 --</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6 d-flex align-items-end">
-                                    <button id="generate-report-btn" class="btn btn-primary">
+                                <div class="col-md-4">
+                                    <label for="report-format-select" class="form-label">报告格式</label>
+                                    <select class="form-select" id="report-format-select">
+                                        <option value="pdf">PDF</option>
+                                        <option value="excel">Excel</option>
+                                        <option value="html">HTML</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button id="generate-report-btn" class="btn btn-primary w-100">
                                         <i class="fas fa-download me-1"></i>生成并下载报告
                                     </button>
                                 </div>
                             </div>
-                            <div id="report-preview" class="text-center">
-                                <p class="text-muted">报告预览将显示在这里</p>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>报告将包含所有学生的成绩汇总和统计分析。
+                            </div>
+                            
+                            <div id="report-preview" class="text-center p-4 border rounded">
+                                <div class="spinner-container">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -363,15 +750,15 @@
                 <div class="modal-body">
                     <form id="add-student-form">
                         <div class="mb-3">
-                            <label for="student-name" class="form-label">姓名</label>
+                            <label for="student-name" class="form-label">姓名 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="student-name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="student-class" class="form-label">班级</label>
+                            <label for="student-class" class="form-label">班级 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="student-class" required>
                         </div>
                         <div class="mb-3">
-                            <label for="student-id" class="form-label">学号</label>
+                            <label for="student-id" class="form-label">学号 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="student-id" required>
                         </div>
                         <div class="mb-3">
@@ -386,7 +773,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="save-student-btn">保存</button>
+                    <button type="button" class="btn btn-primary" id="save-student-btn">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
                 </div>
             </div>
         </div>
@@ -404,15 +793,15 @@
                     <form id="edit-student-form">
                         <input type="hidden" id="edit-student-id">
                         <div class="mb-3">
-                            <label for="edit-student-name" class="form-label">姓名</label>
+                            <label for="edit-student-name" class="form-label">姓名 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit-student-name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit-student-class" class="form-label">班级</label>
+                            <label for="edit-student-class" class="form-label">班级 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit-student-class" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit-student-id" class="form-label">学号</label>
+                            <label for="edit-student-id" class="form-label">学号 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit-student-id" required>
                         </div>
                         <div class="mb-3">
@@ -427,7 +816,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="update-student-btn">更新</button>
+                    <button type="button" class="btn btn-primary" id="update-student-btn">
+                        <i class="fas fa-sync-alt me-1"></i>更新
+                    </button>
                 </div>
             </div>
         </div>
@@ -444,22 +835,35 @@
                 <div class="modal-body">
                     <form id="add-project-form">
                         <div class="mb-3">
-                            <label for="project-name" class="form-label">项目名称</label>
+                            <label for="project-name" class="form-label">项目名称 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="project-name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="project-full-mark" class="form-label">满分</label>
+                            <label for="project-full-mark" class="form-label">满分 <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label for="project-weight" class="form-label">占总成绩比例 (0-100%)</label>
-                            <input type="number" class="form-control" id="project-weight" min="0" max="100" required>
+                            <label for="project-weight" class="form-label">占总成绩比例 (0-100%) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="project-weight" min="0" max="100" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="progress mt-2">
+                                <div id="weight-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">当前总权重: <span id="total-weight">0</span>%</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-description" class="form-label">项目描述</label>
+                            <textarea class="form-control" id="project-description" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="save-project-btn">保存</button>
+                    <button type="button" class="btn btn-primary" id="save-project-btn">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
                 </div>
             </div>
         </div>
@@ -477,22 +881,35 @@
                     <form id="edit-project-form">
                         <input type="hidden" id="edit-project-id">
                         <div class="mb-3">
-                            <label for="edit-project-name" class="form-label">项目名称</label>
+                            <label for="edit-project-name" class="form-label">项目名称 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit-project-name" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit-project-full-mark" class="form-label">满分</label>
+                            <label for="edit-project-full-mark" class="form-label">满分 <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" id="edit-project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-100%)</label>
-                            <input type="number" class="form-control" id="edit-project-weight" min="0" max="100" required>
+                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-100%) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="edit-project-weight" min="0" max="100" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="progress mt-2">
+                                <div id="edit-weight-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">当前总权重: <span id="edit-total-weight">0</span>%</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-description" class="form-label">项目描述</label>
+                            <textarea class="form-control" id="edit-project-description" rows="3"></textarea>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="update-project-btn">更新</button>
+                    <button type="button" class="btn btn-primary" id="update-project-btn">
+                        <i class="fas fa-sync-alt me-1"></i>更新
+                    </button>
                 </div>
             </div>
         </div>
@@ -502,16 +919,21 @@
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">确认删除</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="delete-message">您确定要删除此项吗？</p>
+                    <div class="text-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <p id="delete-message" class="h5">您确定要删除此项吗？</p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">删除</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                        <i class="fas fa-trash-alt me-1"></i>删除
+                    </button>
                 </div>
             </div>
         </div>
@@ -524,8 +946,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>、
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         // Firebase配置
@@ -551,29 +975,7 @@
         let classes = [];
         let deleteType = '';
         let deleteId = '';
-
-        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('click', function(e) {
-        e.preventDefault();
-
-        // 所有按钮去除active
-        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-
-        // 所有内容隐藏
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-            pane.classList.remove('show', 'active');
-        });
-
-        // 显示目标内容
-        const targetId = this.getAttribute('data-bs-target');
-        const targetPane = document.querySelector(targetId);
-        if (targetPane) {
-            targetPane.classList.add('show', 'active');
-        }
-    });
-});
-
+        let scoreDistributionChart = null;
 
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
@@ -584,8 +986,10 @@
             auth.onAuthStateChanged(user => {
                 if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
                     currentUser = user;
+                    document.getElementById('user-email').textContent = user.email;
                     showMainSystem();
                     loadAllData();
+                    addActivity("用户登录系统", "success");
                 } else {
                     showLoginPage();
                 }
@@ -596,28 +1000,34 @@
         function initUIEvents() {
             // 登录表单提交
             document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault(); // 阻止表单默认提交
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    
-    if (email !== "tanjunyuanfoonyew@gmail.com") {
-        alert("只有授权账户可以登录系统");
-        return;
-    }
-    
-    auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-            alert("登录成功");
-        })
-        .catch(error => {
-            alert("登录失败: " + error.message);
-        });
-});
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                if (email !== "tanjunyuanfoonyew@gmail.com") {
+                    showAlert("只有授权账户可以登录系统", "danger");
+                    return;
+                }
+                
+                const loginBtn = e.target.querySelector('button[type="submit"]');
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 登录中...';
+                
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        showAlert("登录成功", "success");
+                    })
+                    .catch(error => {
+                        showAlert("登录失败: " + error.message, "danger");
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-1"></i>登录';
+                    });
+            });
 
             // 退出登录
             document.getElementById('logout-btn').addEventListener('click', function() {
                 auth.signOut().then(() => {
-                    alert("已退出登录");
+                    showAlert("已退出登录", "success");
                     showLoginPage();
                 });
             });
@@ -644,7 +1054,27 @@
             document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
             
             // Excel导入
-            document.getElementById('import-excel').addEventListener('change', importExcel);
+            document.getElementById('import-excel-btn').addEventListener('click', function() {
+                const fileInput = document.getElementById('import-excel');
+                if (fileInput.files.length > 0) {
+                    importExcel({ target: fileInput });
+                } else {
+                    showAlert("请先选择Excel文件", "warning");
+                }
+            });
+            
+            // 项目权重变化监听
+            document.getElementById('project-weight').addEventListener('input', updateWeightProgress);
+            document.getElementById('edit-project-weight').addEventListener('input', updateEditWeightProgress);
+            
+            // 导出学生
+            document.getElementById('export-students-btn').addEventListener('click', exportStudents);
+            
+            // 学生搜索
+            document.getElementById('student-search').addEventListener('input', filterStudents);
+            
+            // 班级筛选
+            document.getElementById('student-class-filter').addEventListener('change', filterStudents);
         }
 
         // 显示登录页面
@@ -660,6 +1090,26 @@
             document.getElementById('main-system').style.display = 'block';
         }
 
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3" style="z-index: 1100;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    new bootstrap.Alert(alert).close();
+                });
+            }, 5000);
+        }
+
         // 加载所有数据
         function loadAllData() {
             loadStudents();
@@ -670,6 +1120,8 @@
 
         // 加载学生数据
         function loadStudents() {
+            showLoading('students-table-body');
+            
             db.collection('students').orderBy('studentId').get()
                 .then(querySnapshot => {
                     students = [];
@@ -692,10 +1144,14 @@
                     
                     // 更新班级选择下拉框
                     updateClassSelect();
+                    updateDashboard();
+                    
+                    addActivity("加载学生数据完成", "info");
                 })
                 .catch(error => {
                     console.error("加载学生数据失败: ", error);
-                    alert("加载学生数据失败");
+                    showAlert("加载学生数据失败", "danger");
+                    addActivity("加载学生数据失败", "danger");
                 });
         }
 
@@ -703,12 +1159,20 @@
         function addStudentToTable(student) {
             const tbody = document.getElementById('students-table-body');
             const row = document.createElement('tr');
+            row.className = 'fade-in';
             row.innerHTML = `
                 <td>${student.studentId}</td>
-                <td>${student.name}</td>
-                <td>${student.class}</td>
-                <td>${student.studyGroup || '-'}</td>
-                <td>${student.workGroup || '-'}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${student.name.charAt(0)}
+                        </div>
+                        ${student.name}
+                    </div>
+                </td>
+                <td><span class="badge bg-primary">${student.class}</span></td>
+                <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
+                <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
                         <i class="fas fa-edit"></i>
@@ -734,9 +1198,13 @@
             const workGroup = document.getElementById('work-group').value.trim();
             
             if (!name || !studentClass || !studentId) {
-                alert("请填写必填字段");
+                showAlert("请填写必填字段", "warning");
                 return;
             }
+            
+            const btn = document.getElementById('save-student-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
             
             db.collection('students').add({
                 name,
@@ -747,14 +1215,20 @@
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                alert("学生添加成功");
+                showAlert("学生添加成功", "success");
                 document.getElementById('addStudentModal').querySelector('.btn-close').click();
                 document.getElementById('add-student-form').reset();
                 loadStudents();
+                addActivity(`添加学生: ${name} (${studentId})`, "success");
             })
             .catch(error => {
                 console.error("添加学生失败: ", error);
-                alert("添加学生失败");
+                showAlert("添加学生失败", "danger");
+                addActivity("添加学生失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
             });
         }
 
@@ -784,9 +1258,13 @@
             const workGroup = document.getElementById('edit-work-group').value.trim();
             
             if (!name || !studentClass || !studentId) {
-                alert("请填写必填字段");
+                showAlert("请填写必填字段", "warning");
                 return;
             }
+            
+            const btn = document.getElementById('update-student-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
             
             db.collection('students').doc(id).update({
                 name,
@@ -796,18 +1274,26 @@
                 workGroup: workGroup || null
             })
             .then(() => {
-                alert("学生信息更新成功");
+                showAlert("学生信息更新成功", "success");
                 document.getElementById('editStudentModal').querySelector('.btn-close').click();
                 loadStudents();
+                addActivity(`更新学生信息: ${name} (${studentId})`, "info");
             })
             .catch(error => {
                 console.error("更新学生信息失败: ", error);
-                alert("更新学生信息失败");
+                showAlert("更新学生信息失败", "danger");
+                addActivity("更新学生信息失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
             });
         }
 
         // 加载项目数据
         function loadProjects() {
+            showLoading('projects-table-body');
+            
             db.collection('projects').orderBy('createdAt').get()
                 .then(querySnapshot => {
                     projects = [];
@@ -827,10 +1313,17 @@
                         option.textContent = `${project.name} (满分: ${project.fullMark})`;
                         projectSelect.appendChild(option);
                     });
+                    
+                    updateWeightProgress();
+                    updateDashboard();
+                    updateScoreDistributionChart();
+                    
+                    addActivity("加载项目数据完成", "info");
                 })
                 .catch(error => {
                     console.error("加载项目数据失败: ", error);
-                    alert("加载项目数据失败");
+                    showAlert("加载项目数据失败", "danger");
+                    addActivity("加载项目数据失败", "danger");
                 });
         }
 
@@ -838,11 +1331,27 @@
         function addProjectToTable(project) {
             const tbody = document.getElementById('projects-table-body');
             const row = document.createElement('tr');
+            row.className = 'fade-in';
             row.innerHTML = `
-                <td>${project.name}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(project.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${project.name.charAt(0)}
+                        </div>
+                        ${project.name}
+                    </div>
+                </td>
                 <td>${project.fullMark}</td>
-                <td>${(project.weight * 100).toFixed(1)}%</td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${project.weight * 100}%" aria-valuenow="${project.weight * 100}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small>${(project.weight * 100).toFixed(1)}%</small>
+                </td>
                 <td>${project.createdAt?.toDate().toLocaleString() || '未知'}</td>
+                <td>
+                    <span class="badge bg-success">活跃</span>
+                </td>
                 <td>
                     <button class="btn btn-sm btn-primary edit-project" data-id="${project.id}">
                         <i class="fas fa-edit"></i>
@@ -859,6 +1368,63 @@
             row.querySelector('.delete-project').addEventListener('click', () => showDeleteConfirm('project', project.id, `确定要删除项目 ${project.name} 吗？`));
         }
 
+        // 更新权重进度条
+        function updateWeightProgress() {
+            const weightInput = document.getElementById('project-weight');
+            const weight = parseFloat(weightInput.value) || 0;
+            const progressBar = document.getElementById('weight-progress');
+            
+            progressBar.style.width = `${weight}%`;
+            progressBar.setAttribute('aria-valuenow', weight);
+            
+            // 计算总权重
+            const totalWeight = projects.reduce((sum, p) => sum + p.weight * 100, weight);
+            document.getElementById('total-weight').textContent = totalWeight.toFixed(1);
+            
+            // 根据权重值改变颜色
+            if (weight > 100) {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add('bg-danger');
+            } else if (weight > 80) {
+                progressBar.classList.remove('bg-danger');
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.remove('bg-danger', 'bg-warning');
+                progressBar.classList.add('bg-success');
+            }
+        }
+
+        // 更新编辑权重进度条
+        function updateEditWeightProgress() {
+            const weightInput = document.getElementById('edit-project-weight');
+            const weight = parseFloat(weightInput.value) || 0;
+            const progressBar = document.getElementById('edit-weight-progress');
+            
+            progressBar.style.width = `${weight}%`;
+            progressBar.setAttribute('aria-valuenow', weight);
+            
+            // 计算总权重（排除当前项目的权重）
+            const projectId = document.getElementById('edit-project-id').value;
+            const currentProject = projects.find(p => p.id === projectId);
+            const otherProjectsWeight = projects.reduce((sum, p) => 
+                p.id === projectId ? sum : sum + p.weight * 100, 0);
+            const totalWeight = otherProjectsWeight + weight;
+            
+            document.getElementById('edit-total-weight').textContent = totalWeight.toFixed(1);
+            
+            // 根据权重值改变颜色
+            if (weight > 100) {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add('bg-danger');
+            } else if (weight > 80) {
+                progressBar.classList.remove('bg-danger');
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.remove('bg-danger', 'bg-warning');
+                progressBar.classList.add('bg-success');
+            }
+        }
+
         // 保存项目
         function saveProject() {
             const name = document.getElementById('project-name').value.trim();
@@ -869,35 +1435,46 @@
             weight = weight / 100;
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
-                alert("请填写所有字段");
+                showAlert("请填写所有字段", "warning");
                 return;
             }
             
             if (fullMark <= 0) {
-                alert("满分必须大于0");
+                showAlert("满分必须大于0", "warning");
                 return;
             }
             
-            if (weight <= 0 || weight > 100) {
-                alert("占比必须在0到100%之间");
+            if (weight <= 0 || weight > 1) {
+                showAlert("占比必须在0到100%之间", "warning");
                 return;
             }
+            
+            const btn = document.getElementById('save-project-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
             
             db.collection('projects').add({
                 name,
                 fullMark,
                 weight,
+                description: document.getElementById('project-description').value.trim() || null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                alert("项目添加成功");
+                showAlert("项目添加成功", "success");
                 document.getElementById('addProjectModal').querySelector('.btn-close').click();
                 document.getElementById('add-project-form').reset();
                 loadProjects();
+                addActivity(`添加评分项目: ${name}`, "success");
             })
             .catch(error => {
                 console.error("添加项目失败: ", error);
-                alert("添加项目失败");
+                showAlert("添加项目失败", "danger");
+                addActivity("添加评分项目失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
             });
         }
 
@@ -909,7 +1486,10 @@
             document.getElementById('edit-project-id').value = project.id;
             document.getElementById('edit-project-name').value = project.name;
             document.getElementById('edit-project-full-mark').value = project.fullMark;
-            document.getElementById('edit-project-weight').value = project.weight;
+            document.getElementById('edit-project-weight').value = project.weight * 100;
+            document.getElementById('edit-project-description').value = project.description || '';
+            
+            updateEditWeightProgress();
             
             const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
             modal.show();
@@ -920,41 +1500,56 @@
             const id = document.getElementById('edit-project-id').value;
             const name = document.getElementById('edit-project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('edit-project-full-mark').value);
-            const weight = parseFloat(document.getElementById('edit-project-weight').value);
+            let weight = parseFloat(document.getElementById('edit-project-weight').value);
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
-                alert("请填写所有字段");
+                showAlert("请填写所有字段", "warning");
                 return;
             }
             
             if (fullMark <= 0) {
-                alert("满分必须大于0");
+                showAlert("满分必须大于0", "warning");
                 return;
             }
             
             if (weight <= 0 || weight > 100) {
-                alert("占比必须在0到100%之间");
+                showAlert("占比必须在0到100%之间", "warning");
                 return;
             }
+            
+            weight = weight / 100;
+            
+            const btn = document.getElementById('update-project-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
             
             db.collection('projects').doc(id).update({
                 name,
                 fullMark,
-                weight
+                weight,
+                description: document.getElementById('edit-project-description').value.trim() || null
             })
             .then(() => {
-                alert("项目更新成功");
+                showAlert("项目更新成功", "success");
                 document.getElementById('editProjectModal').querySelector('.btn-close').click();
                 loadProjects();
+                addActivity(`更新评分项目: ${name}`, "info");
             })
             .catch(error => {
                 console.error("更新项目失败: ", error);
-                alert("更新项目失败");
+                showAlert("更新项目失败", "danger");
+                addActivity("更新评分项目失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
             });
         }
 
         // 加载分数数据
         function loadScores() {
+            showLoading('scores-table-body');
+            
             db.collection('scores').get()
                 .then(querySnapshot => {
                     scores = [];
@@ -968,10 +1563,16 @@
                         // 添加到分数表格
                         addScoreToTable(score);
                     });
+                    
+                    updateDashboard();
+                    updateScoreDistributionChart();
+                    
+                    addActivity("加载分数数据完成", "info");
                 })
                 .catch(error => {
                     console.error("加载分数数据失败: ", error);
-                    alert("加载分数数据失败");
+                    showAlert("加载分数数据失败", "danger");
+                    addActivity("加载分数数据失败", "danger");
                 });
         }
 
@@ -982,12 +1583,27 @@
             
             if (!student || !project) return;
             
+            const percentage = (score.score / project.fullMark * 100).toFixed(1);
             const tbody = document.getElementById('scores-table-body');
             const row = document.createElement('tr');
+            row.className = 'fade-in';
             row.innerHTML = `
-                <td>${student.name} (${student.studentId})</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${student.name.charAt(0)}
+                        </div>
+                        ${student.name} (${student.studentId})
+                    </div>
+                </td>
                 <td>${project.name}</td>
-                <td>${score.score}</td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%" 
+                             aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small>${score.score} (${percentage}%)</small>
+                </td>
                 <td>${project.fullMark}</td>
                 <td>${(project.weight * 100).toFixed(1)}%</td>
                 <td>
@@ -997,6 +1613,16 @@
                 </td>
             `;
             tbody.appendChild(row);
+            
+            // 根据分数百分比设置进度条颜色
+            const progressBar = row.querySelector('.progress-bar');
+            if (percentage < 60) {
+                progressBar.classList.add('bg-danger');
+            } else if (percentage < 80) {
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.add('bg-success');
+            }
             
             // 添加删除事件
             row.querySelector('.delete-score').addEventListener('click', () => showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？'));
@@ -1009,15 +1635,19 @@
             const scoreValue = parseFloat(document.getElementById('score-input').value);
             
             if (!studentId || !projectId || isNaN(scoreValue)) {
-                alert("请选择学生、项目并输入分数");
+                showAlert("请选择学生、项目并输入分数", "warning");
                 return;
             }
             
             const project = projects.find(p => p.id === projectId);
             if (scoreValue > project.fullMark) {
-                alert("分数不能超过项目满分");
+                showAlert("分数不能超过项目满分", "warning");
                 return;
             }
+            
+            const btn = document.getElementById('save-score-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
             
             db.collection('scores').add({
                 studentId,
@@ -1026,13 +1656,21 @@
                 recordedAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                alert("分数保存成功");
+                showAlert("分数保存成功", "success");
                 document.getElementById('score-input').value = '';
                 loadScores();
+                
+                const student = students.find(s => s.id === studentId);
+                addActivity(`为 ${student.name} 录入 ${project.name} 分数: ${scoreValue}/${project.fullMark}`, "info");
             })
             .catch(error => {
                 console.error("保存分数失败: ", error);
-                alert("保存分数失败");
+                showAlert("保存分数失败", "danger");
+                addActivity("保存分数失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
             });
         }
 
@@ -1042,13 +1680,21 @@
             classes = [...new Set(students.map(s => s.class))];
             
             const classSelect = document.getElementById('report-class-select');
+            const filterSelect = document.getElementById('student-class-filter');
+            
             classSelect.innerHTML = '<option value="">-- 所有班级 --</option>';
+            filterSelect.innerHTML = '<option value="">所有班级</option>';
             
             classes.forEach(cls => {
-                const option = document.createElement('option');
-                option.value = cls;
-                option.textContent = cls;
-                classSelect.appendChild(option);
+                const option1 = document.createElement('option');
+                option1.value = cls;
+                option1.textContent = cls;
+                classSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = cls;
+                option2.textContent = cls;
+                filterSelect.appendChild(option2);
             });
         }
 
@@ -1057,6 +1703,88 @@
             document.getElementById('student-count').textContent = students.length;
             document.getElementById('project-count').textContent = projects.length;
             document.getElementById('score-count').textContent = scores.length;
+        }
+
+        // 更新分数分布图表
+        function updateScoreDistributionChart() {
+            const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+            
+            // 如果图表已存在，先销毁
+            if (scoreDistributionChart) {
+                scoreDistributionChart.destroy();
+            }
+            
+            // 如果没有分数数据，显示空状态
+            if (scores.length === 0) {
+                document.getElementById('scoreDistributionChart').parentElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无分数数据</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 计算分数分布
+            const scoreRanges = [
+                { min: 0, max: 59, label: '不及格 (<60)' },
+                { min: 60, max: 69, label: '及格 (60-69)' },
+                { min: 70, max: 79, label: '中等 (70-79)' },
+                { min: 80, max: 89, label: '良好 (80-89)' },
+                { min: 90, max: 100, label: '优秀 (90-100)' }
+            ];
+            
+            const data = scoreRanges.map(range => {
+                const count = scores.reduce((sum, score) => {
+                    const project = projects.find(p => p.id === score.projectId);
+                    if (!project) return sum;
+                    
+                    const percentage = (score.score / project.fullMark) * 100;
+                    return percentage >= range.min && percentage <= range.max ? sum + 1 : sum;
+                }, 0);
+                
+                return count;
+            });
+            
+            const labels = scoreRanges.map(range => range.label);
+            const backgroundColors = [
+                'rgba(231, 76, 60, 0.7)',
+                'rgba(241, 196, 15, 0.7)',
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)'
+            ];
+            
+            scoreDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.raw;
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // 显示删除确认
@@ -1072,39 +1800,58 @@
         // 确认删除
         function confirmDelete() {
             let collectionName = '';
+            let successMessage = '';
+            
             switch (deleteType) {
                 case 'student':
                     collectionName = 'students';
+                    const student = students.find(s => s.id === deleteId);
+                    successMessage = `学生 ${student.name} (${student.studentId}) 删除成功`;
                     break;
                 case 'project':
                     collectionName = 'projects';
+                    const project = projects.find(p => p.id === deleteId);
+                    successMessage = `项目 ${project.name} 删除成功`;
                     break;
                 case 'score':
                     collectionName = 'scores';
+                    successMessage = '分数记录删除成功';
                     break;
                 default:
                     return;
             }
             
+            const btn = document.getElementById('confirm-delete-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 删除中...';
+            
             db.collection(collectionName).doc(deleteId).delete()
                 .then(() => {
-                    alert("删除成功");
+                    showAlert(successMessage, "success");
                     document.getElementById('confirmDeleteModal').querySelector('.btn-close').click();
                     
                     // 重新加载相关数据
                     if (deleteType === 'student') {
                         loadStudents();
                         loadScores();
+                        addActivity(successMessage, "info");
                     } else if (deleteType === 'project') {
                         loadProjects();
                         loadScores();
+                        addActivity(successMessage, "info");
                     } else if (deleteType === 'score') {
                         loadScores();
+                        addActivity(successMessage, "info");
                     }
                 })
                 .catch(error => {
                     console.error("删除失败: ", error);
-                    alert("删除失败");
+                    showAlert("删除失败", "danger");
+                    addActivity("删除操作失败", "danger");
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>删除';
                 });
         }
 
@@ -1113,63 +1860,148 @@
             const file = event.target.files[0];
             if (!file) return;
             
+            const btn = document.getElementById('import-excel-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 导入中...';
+            
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // 获取第一个工作表
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                
-                // 验证数据格式
-                const requiredFields = ['姓名', '班级', '学号'];
-                const optionalFields = ['学习组', '工作组'];
-                
-                let batch = db.batch();
-                let successCount = 0;
-                
-                jsonData.forEach((row, index) => {
-                    // 检查必填字段
-                    if (!requiredFields.every(field => field in row)) {
-                        console.error(`第 ${index + 1} 行缺少必填字段`);
-                        return;
-                    }
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // 准备学生数据
-                    const studentData = {
-                        name: row['姓名'].toString().trim(),
-                        class: row['班级'].toString().trim(),
-                        studentId: row['学号'].toString().trim(),
-                        studyGroup: optionalFields[0] in row ? row['学习组']?.toString().trim() : null,
-                        workGroup: optionalFields[1] in row ? row['工作组']?.toString().trim() : null,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
+                    // 获取第一个工作表
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
                     
-                    // 添加到批量操作
-                    const docRef = db.collection('students').doc();
-                    batch.set(docRef, studentData);
-                    successCount++;
-                });
-                
-                // 执行批量操作
-                batch.commit()
-                    .then(() => {
-                        alert(`成功导入 ${successCount} 名学生`);
-                        event.target.value = ''; // 清空文件输入
-                        loadStudents();
-                    })
-                    .catch(error => {
-                        console.error("导入失败: ", error);
-                        alert(`导入失败: ${error.message}`);
+                    // 验证数据格式
+                    const requiredFields = ['姓名', '班级', '学号'];
+                    const optionalFields = ['学习组', '工作组'];
+                    
+                    let batch = db.batch();
+                    let successCount = 0;
+                    
+                    jsonData.forEach((row, index) => {
+                        // 检查必填字段
+                        if (!requiredFields.every(field => field in row)) {
+                            console.error(`第 ${index + 1} 行缺少必填字段`);
+                            return;
+                        }
+                        
+                        // 准备学生数据
+                        const studentData = {
+                            name: row['姓名'].toString().trim(),
+                            class: row['班级'].toString().trim(),
+                            studentId: row['学号'].toString().trim(),
+                            studyGroup: optionalFields[0] in row ? row['学习组']?.toString().trim() : null,
+                            workGroup: optionalFields[1] in row ? row['工作组']?.toString().trim() : null,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        
+                        // 添加到批量操作
+                        const docRef = db.collection('students').doc();
+                        batch.set(docRef, studentData);
+                        successCount++;
                     });
+                    
+                    // 执行批量操作
+                    batch.commit()
+                        .then(() => {
+                            showAlert(`成功导入 ${successCount} 名学生`, "success");
+                            event.target.value = ''; // 清空文件输入
+                            loadStudents();
+                            addActivity(`从Excel导入 ${successCount} 名学生`, "success");
+                        })
+                        .catch(error => {
+                            console.error("导入失败: ", error);
+                            showAlert(`导入失败: ${error.message}`, "danger");
+                            addActivity("从Excel导入学生失败", "danger");
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-upload me-1"></i>上传';
+                        });
+                } catch (error) {
+                    console.error("处理Excel文件失败: ", error);
+                    showAlert("处理Excel文件失败", "danger");
+                    addActivity("处理Excel文件失败", "danger");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload me-1"></i>上传';
+                }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // 导出学生数据
+        function exportStudents() {
+            try {
+                // 准备数据
+                const data = students.map(student => ({
+                    '学号': student.studentId,
+                    '姓名': student.name,
+                    '班级': student.class,
+                    '学习组': student.studyGroup || '',
+                    '工作组': student.workGroup || ''
+                }));
+                
+                // 创建工作表
+                const ws = XLSX.utils.json_to_sheet(data);
+                
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "学生数据");
+                
+                // 导出Excel文件
+                const date = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `学生数据_${date}.xlsx`);
+                
+                addActivity("导出学生数据", "info");
+            } catch (error) {
+                console.error("导出失败: ", error);
+                showAlert("导出学生数据失败", "danger");
+                addActivity("导出学生数据失败", "danger");
+            }
+        }
+
+        // 筛选学生
+        function filterStudents() {
+            const searchText = document.getElementById('student-search').value.toLowerCase();
+            const classFilter = document.getElementById('student-class-filter').value;
+            
+            const filteredStudents = students.filter(student => {
+                const matchesSearch = 
+                    student.studentId.toLowerCase().includes(searchText) ||
+                    student.name.toLowerCase().includes(searchText) ||
+                    (student.studyGroup && student.studyGroup.toLowerCase().includes(searchText)) ||
+                    (student.workGroup && student.workGroup.toLowerCase().includes(searchText));
+                
+                const matchesClass = classFilter === '' || student.class === classFilter;
+                
+                return matchesSearch && matchesClass;
+            });
+            
+            // 更新表格
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = '';
+            
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>没有找到匹配的学生</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filteredStudents.forEach(student => addStudentToTable(student));
+            }
         }
 
         // 生成报告
         async function generateReport() {
             const selectedClass = document.getElementById('report-class-select').value;
+            const format = document.getElementById('report-format-select').value;
             let filteredStudents = students;
             
             if (selectedClass) {
@@ -1177,9 +2009,13 @@
             }
             
             if (filteredStudents.length === 0) {
-                alert("没有找到符合条件的学生");
+                showAlert("没有找到符合条件的学生", "warning");
                 return;
             }
+            
+            const btn = document.getElementById('generate-report-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
             
             // 计算每个学生的平均分
             const studentAverages = [];
@@ -1189,17 +2025,16 @@
                 let total = 0;
                 let totalWeight = 0;
                 
-                // 修改generateReport函数中的计算部分
-for (const score of studentScores) {
-    const project = projects.find(p => p.id === score.projectId);
-    if (project) {
-        // 修正为：(实际得分/满分)×权重×100
-        total += (score.score / project.fullMark) * project.weight * 100;
-        totalWeight += project.weight;
-    }
-}
+                for (const score of studentScores) {
+                    const project = projects.find(p => p.id === score.projectId);
+                    if (project) {
+                        // (实际得分/满分)×权重×100
+                        total += (score.score / project.fullMark) * project.weight * 100;
+                        totalWeight += project.weight;
+                    }
+                }
                 
-                const average = totalWeight > 0 ? (total / totalWeight) : 0; // 结果直接是百分比
+                const average = totalWeight > 0 ? (total / totalWeight) : 0;
                 studentAverages.push({
                     student,
                     average,
@@ -1220,157 +2055,262 @@ for (const score of studentScores) {
             
             // 生成报告HTML
             const reportHTML = `
-                <div class="report-container" style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-                    <h2 style="text-align: center; color: #4285f4;">${selectedClass || '电脑协会'}成绩报告</h2>
-                    <p style="text-align: right;">生成日期: ${new Date().toLocaleDateString()}</p>
+                <div class="report-container" style="font-family: 'Noto Sans SC', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h2 style="color: var(--primary-color); margin-bottom: 5px;">${selectedClass || '电脑协会'}成绩报告</h2>
+                        <p style="color: #666;">生成日期: ${new Date().toLocaleDateString()}</p>
+                    </div>
                     
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                        <thead>
-                            <tr style="background-color: #4285f4; color: white;">
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">排名</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">学号</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">姓名</th>
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">班级</th>
-                                ${projects.map(p => `<th style="padding: 10px; text-align: left; border: 1px solid #ddd;">${p.name}<br><small>(${p.fullMark}分, ${(p.weight * 100).toFixed(1)}%)</small></th>`).join('')}
-                                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">总平均</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${studentAverages.map((item, index) => `
-                                <tr style="border-bottom: 1px solid #ddd;">
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${index + 1}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.studentId}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.name}</td>
-                                    <td style="padding: 10px; border: 1px solid #ddd;">${item.student.class}</td>
-                                    ${projects.map(p => {
-                                        const score = item.scores.find(s => s.projectName === p.name);
-                                        return `<td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${score ? score.score : '-'}</td>`;
-                                    }).join('')}
-                                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; text-align: center; color: ${item.average >= 60 ? 'green' : 'red'};">${item.average.toFixed(2)}%</td>
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">成绩概览</h4>
+                        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 15px;">
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${filteredStudents.length}</div>
+                                <div style="font-size: 0.9rem; color: #666;">学生人数</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${projects.length}</div>
+                                <div style="font-size: 0.9rem; color: #666;">评分项目</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${studentAverages.length > 0 ? studentAverages[0].student.name : '-'}</div>
+                                <div style="font-size: 0.9rem; color: #666;">最高分学生</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${studentAverages.length > 0 ? studentAverages[0].average.toFixed(2) + '%' : '-'}</div>
+                                <div style="font-size: 0.9rem; color: #666;">最高平均分</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">成绩明细</h4>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                            <thead>
+                                <tr style="background-color: var(--primary-color); color: white;">
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">排名</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">学号</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">姓名</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">班级</th>
+                                    ${projects.map(p => `
+                                        <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">
+                                            ${p.name}<br>
+                                            <small style="font-weight: normal;">(${p.fullMark}分, ${(p.weight * 100).toFixed(1)}%)</small>
+                                        </th>
+                                    `).join('')}
+                                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">总平均</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${studentAverages.map((item, index) => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.studentId}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.name}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.class}</td>
+                                        ${projects.map(p => {
+                                            const score = item.scores.find(s => s.projectName === p.name);
+                                            const percentage = score ? (score.score / p.fullMark * 100).toFixed(1) : '-';
+                                            const color = score ? (percentage < 60 ? 'color: #e74c3c;' : percentage < 80 ? 'color: #f39c12;' : 'color: #2ecc71;') : '';
+                                            return `
+                                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; ${color}">
+                                                    ${score ? score.score + ` (${percentage}%)` : '-'}
+                                                </td>
+                                            `;
+                                        }).join('')}
+                                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; ${item.average >= 60 ? 'color: #2ecc71;' : 'color: #e74c3c;'}">
+                                            ${item.average.toFixed(2)}%
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                     
-                    <div style="margin-top: 30px; font-size: 12px; color: #666; text-align: center;">
-                        <p>系统自动生成 - 批改分数系统</p>
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 0.9rem;">
+                        <p>系统自动生成 - 智能评分系统</p>
+                        <p>© ${new Date().getFullYear()} 电脑协会 - 版权所有</p>
                     </div>
                 </div>
             `;
             
             // 显示预览
             document.getElementById('report-preview').innerHTML = reportHTML;
-
-            // 如果PDFLib不可用，使用html2canvas+jsPDF备用方案
-function generatePDFFallback() {
-    const element = document.getElementById('report-preview');
-    html2canvas(element).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF();
-        pdf.addImage(imgData, 'PNG', 0, 0);
-        pdf.save('成绩报告.pdf');
-    });
-}
-
-            // 在保存项目时验证权重总和
-function validateWeights(newWeight) {
-    const total = projects.reduce((sum, p) => sum + p.weight, 0) + newWeight;
-    return total <= 1; // 确保总和不超过100%
-}
-
-            // 在生成报告时添加加载提示
-document.getElementById('generate-report-btn').addEventListener('click', function() {
-    this.disabled = true;
-    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
-    
-    generateReport().finally(() => {
-        this.disabled = false;
-        this.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
-    });
-});
-            // 创建PDF并下载
+            
+            // 根据选择的格式生成报告
             try {
-                const { PDFDocument, rgb } = PDFLib;
-                const pdfDoc = await PDFDocument.create();
-                const page = pdfDoc.addPage([600, 800]);
+                const date = new Date().toISOString().split('T')[0];
+                let fileName = `${selectedClass || '全校'}_成绩报告_${date}`;
                 
-                // 添加标题
-                page.drawText(`${selectedClass || '全校'}成绩报告`, {
-                    x: 50,
-                    y: 750,
-                    size: 20,
-                    color: rgb(0.262, 0.522, 0.956),
-                });
-                
-                // 添加日期
-                page.drawText(`生成日期: ${new Date().toLocaleDateString()}`, {
-                    x: 400,
-                    y: 750,
-                    size: 12,
-                });
-                
-                // 添加表格内容
-                let y = 700;
-                const rowHeight = 20;
-                const colWidths = [40, 60, 60, 60, ...projects.map(() => 60), 60];
-                
-                // 表头
-                page.drawText('排名', { x: 50, y, size: 12, color: rgb(1, 1, 1) });
-                page.drawText('学号', { x: 100, y, size: 12, color: rgb(1, 1, 1) });
-                page.drawText('姓名', { x: 170, y, size: 12, color: rgb(1, 1, 1) });
-                page.drawText('班级', { x: 240, y, size: 12, color: rgb(1, 1, 1) });
-                
-                projects.forEach((p, i) => {
-                    page.drawText(p.name, { x: 310 + (i * 60), y, size: 10, color: rgb(1, 1, 1) });
-                    page.drawText(`(${p.fullMark}分)`, { x: 310 + (i * 60), y: y - 12, size: 8, color: rgb(1, 1, 1) });
-                });
-                
-                page.drawText('总平均', { x: 310 + (projects.length * 60), y, size: 12, color: rgb(1, 1, 1) });
-                
-                y -= 30;
-                
-                // 表格内容
-                studentAverages.forEach((item, index) => {
-                    if (y < 50) {
-                        // 如果当前页空间不足，添加新页
-                        y = 750;
-                        pdfDoc.addPage([600, 800]);
-                    }
+                if (format === 'pdf') {
+                    // 使用html2canvas+jsPDF生成PDF
+                    const element = document.getElementById('report-preview');
                     
-                    page.drawText((index + 1).toString(), { x: 50, y, size: 10 });
-                    page.drawText(item.student.studentId, { x: 100, y, size: 10 });
-                    page.drawText(item.student.name, { x: 170, y, size: 10 });
-                    page.drawText(item.student.class, { x: 240, y, size: 10 });
+                    // 设置更高的缩放比例以获得更好的质量
+                    const scale = 2;
+                    const options = {
+                        scale: scale,
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: true
+                    };
                     
-                    projects.forEach((p, i) => {
-                        const score = item.scores.find(s => s.projectName === p.name);
-                        page.drawText(score ? score.score.toString() : '-', { 
-                            x: 310 + (i * 60), 
-                            y, 
-                            size: 10,
-                            color: score && score.score < p.fullMark * 0.6 ? rgb(1, 0, 0) : rgb(0, 0, 0)
+                    html2canvas(element, options).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                        
+                        // 计算PDF页面尺寸
+                        const imgWidth = 210; // A4宽度 (mm)
+                        const pageHeight = 295; // A4高度 (mm)
+                        const imgHeight = canvas.height * imgWidth / canvas.width;
+                        let heightLeft = imgHeight;
+                        let position = 0;
+                        
+                        // 第一页
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                        
+                        // 如果有剩余内容，添加新页
+                        while (heightLeft >= 0) {
+                            position = heightLeft - imgHeight;
+                            pdf.addPage();
+                            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                        }
+                        
+                        pdf.save(`${fileName}.pdf`);
+                        
+                        showAlert("PDF报告生成成功", "success");
+                        addActivity("生成PDF成绩报告", "success");
+                    }).catch(error => {
+                        console.error("生成PDF失败: ", error);
+                        showAlert("生成PDF报告失败", "danger");
+                        addActivity("生成PDF成绩报告失败", "danger");
+                    });
+                } else if (format === 'excel') {
+                    // 准备Excel数据
+                    const excelData = studentAverages.map((item, index) => {
+                        const row = {
+                            '排名': index + 1,
+                            '学号': item.student.studentId,
+                            '姓名': item.student.name,
+                            '班级': item.student.class
+                        };
+                        
+                        projects.forEach(p => {
+                            const score = item.scores.find(s => s.projectName === p.name);
+                            row[p.name] = score ? score.score : '-';
                         });
+                        
+                        row['总平均'] = item.average.toFixed(2) + '%';
+                        return row;
                     });
                     
-                    page.drawText(`${item.average.toFixed(2)}%`, { 
-                        x: 310 + (projects.length * 60), 
-                        y, 
-                        size: 10,
-                        color: item.average >= 60 ? rgb(0, 0.5, 0) : rgb(1, 0, 0)
-                    });
+                    // 创建工作表
+                    const ws = XLSX.utils.json_to_sheet(excelData);
                     
-                    y -= rowHeight;
-                });
-                
-                // 保存PDF
-                const pdfBytes = await pdfDoc.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                saveAs(blob, `${selectedClass || '全校'}_成绩报告_${new Date().toISOString().split('T')[0]}.pdf`);
-                
+                    // 创建工作簿
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "成绩报告");
+                    
+                    // 导出Excel文件
+                    XLSX.writeFile(wb, `${fileName}.xlsx`);
+                    
+                    showAlert("Excel报告生成成功", "success");
+                    addActivity("生成Excel成绩报告", "success");
+                } else {
+                    // HTML格式 - 直接下载HTML文件
+                    const blob = new Blob([reportHTML], { type: 'text/html' });
+                    saveAs(blob, `${fileName}.html`);
+                    
+                    showAlert("HTML报告生成成功", "success");
+                    addActivity("生成HTML成绩报告", "success");
+                }
             } catch (error) {
-                console.error("生成PDF失败: ", error);
-                alert("生成PDF失败，但HTML预览已创建");
+                console.error("生成报告失败: ", error);
+                showAlert("生成报告失败", "danger");
+                addActivity("生成成绩报告失败", "danger");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
             }
+        }
+
+        // 添加活动记录
+        function addActivity(message, type) {
+            const activitiesContainer = document.getElementById('recent-activities');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            let icon = '';
+            let color = '';
+            
+            switch (type) {
+                case 'success':
+                    icon = 'fa-check-circle';
+                    color = 'text-success';
+                    break;
+                case 'danger':
+                    icon = 'fa-times-circle';
+                    color = 'text-danger';
+                    break;
+                case 'warning':
+                    icon = 'fa-exclamation-circle';
+                    color = 'text-warning';
+                    break;
+                case 'info':
+                default:
+                    icon = 'fa-info-circle';
+                    color = 'text-primary';
+            }
+            
+            const activityHtml = `
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between">
+                        <h6>${message}</h6>
+                        <small class="text-muted">${timeString}</small>
+                    </div>
+                    <p class="small mb-0 ${color}">
+                        <i class="fas ${icon} me-1"></i> ${type === 'success' ? '成功' : type === 'danger' ? '错误' : type === 'warning' ? '警告' : '信息'}
+                    </p>
+                </div>
+            `;
+            
+            activitiesContainer.insertAdjacentHTML('afterbegin', activityHtml);
+            
+            // 限制活动记录数量
+            const items = activitiesContainer.querySelectorAll('.timeline-item');
+            if (items.length > 10) {
+                activitiesContainer.removeChild(items[items.length - 1]);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2 text-muted">数据加载中...</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 根据字符串生成颜色
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 60%)`;
         }
     </script>
 </body>
