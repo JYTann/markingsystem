@@ -984,7 +984,7 @@
             
             // 检查登录状态
             auth.onAuthStateChanged(user => {
-                if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
+                if (user && user.email === "tanjunyuanfoonyew@gmail.com" && user && user.email === "test@gmail.com") {
                     currentUser = user;
                     document.getElementById('user-email').textContent = user.email;
                     showMainSystem();
