@@ -401,7 +401,7 @@
             <div class="login-logo">
                 <i class="fas fa-graduation-cap"></i>
             </div>
-            <h2 class="login-title">智能评分系统</h2>
+            <h2 class="login-title">电脑协会评分系统</h2>
             <form id="login-form">
                 <div class="mb-3">
                     <label for="login-email" class="form-label">邮箱</label>
@@ -424,7 +424,7 @@
             <div class="container-fluid">
                 <a class="navbar-brand" href="javascript:void(0)">
                     <i class="fas fa-graduation-cap"></i>
-                    <span>智能评分系统</span>
+                    <span>电脑协会评分系统</span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
@@ -1569,55 +1569,36 @@ navLinks.forEach(link => {
             });
         }
 
+        // 加载分数数据
         function loadScores() {
-    showLoading('scores-table-body');
-    
-    db.collection('scores').get()
-        .then(querySnapshot => {
-            scores = [];
-            const tbody = document.getElementById('scores-table-body');
-            tbody.innerHTML = '';
+            showLoading('scores-table-body');
             
-            if (querySnapshot.empty) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="fas fa-database fa-2x mb-2"></i>
-                            <p>暂无分数数据</p>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            querySnapshot.forEach(doc => {
-                const score = { id: doc.id, ...doc.data() };
-                scores.push(score);
-                addScoreToTable(score);
-            });
-            
-            updateDashboard();
-            updateScoreDistributionChart();
-            addActivity("加载分数数据完成", "info");
-        })
-        .catch(error => {
-            console.error("加载分数数据失败: ", error);
-            showAlert(`加载分数数据失败: ${error.message}`, "danger");
-            addActivity("加载分数数据失败", "danger");
-            
-            // 显示友好的错误信息
-            const tbody = document.getElementById('scores-table-body');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center py-4 text-danger">
-                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                        <p>加载分数数据失败</p>
-                        <small>${error.message}</small>
-                    </td>
-                </tr>
-            `;
-        });
-}
+            db.collection('scores').get()
+                .then(querySnapshot => {
+                    scores = [];
+                    const tbody = document.getElementById('scores-table-body');
+                    tbody.innerHTML = '';
+                    
+                    querySnapshot.forEach(doc => {
+                        const score = { id: doc.id, ...doc.data() };
+                        scores.push(score);
+                        
+                        // 添加到分数表格
+                        addScoreToTable(score);
+                    });
+                    
+                    updateDashboard();
+                    updateScoreDistributionChart();
+                    
+                    addActivity("加载分数数据完成", "info");
+                })
+                .catch(error => {
+                    console.error("加载分数数据失败: ", error);
+                    showAlert("加载分数数据失败", "danger");
+                    addActivity("加载分数数据失败", "danger");
+                });
+        }
+
         // 添加分数到表格
         function addScoreToTable(score) {
             const student = students.find(s => s.id === score.studentId);
