@@ -141,19 +141,19 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
+                            <a class="nav-link active" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
+                            <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
+                            <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
+                            <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
+                            <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
                         </li>
                     </ul>
                     <button id="logout-btn" class="btn btn-outline-light">退出登录</button>
@@ -571,23 +571,23 @@
         function initUIEvents() {
             // 登录表单提交
             document.getElementById('login-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-                
-                if (email !== "tanjunyuanfoonyew@gmail.com") {
-                    alert("只有授权账户可以登录系统");
-                    return;
-                }
-                
-                auth.signInWithEmailAndPassword(email, password)
-                    .then(() => {
-                        alert("登录成功");
-                    })
-                    .catch(error => {
-                        alert("登录失败: " + error.message);
-                    });
-            });
+    e.preventDefault(); // 阻止表单默认提交
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    if (email !== "tanjunyuanfoonyew@gmail.com") {
+        alert("只有授权账户可以登录系统");
+        return;
+    }
+    
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            alert("登录成功");
+        })
+        .catch(error => {
+            alert("登录失败: " + error.message);
+        });
+});
 
             // 退出登录
             document.getElementById('logout-btn').addEventListener('click', function() {
