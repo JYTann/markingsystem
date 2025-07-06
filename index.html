@@ -111,6 +111,7 @@
         }
     </style>
 </head>
+    
 <body>
     <!-- 登录页面 -->
     <div id="login-page" class="container">
@@ -141,19 +142,19 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link active" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
+                    <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">仪表盘</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
+                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">学生管理</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
+                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab">评分项目</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
+                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">分数录入</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="javascript:void(0)" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
+                    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">成绩报告</a>
                 </li>
             </ul>
             <button id="logout-btn" class="btn btn-outline-light">退出登录</button>
@@ -523,7 +524,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>、
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Firebase配置
@@ -549,6 +551,14 @@
         let classes = [];
         let deleteType = '';
         let deleteId = '';
+
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('data-bs-target'));
+        new bootstrap.Tab(target).show();
+    });
+});
 
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
