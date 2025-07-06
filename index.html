@@ -452,8 +452,8 @@
                             <input type="number" class="form-control" id="project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">占总成绩比例 (0-100%)</label>
-                            <input type="number" class="form-control" id="project-weight" min="0" max="100" step="0.1" required>
+                            <label for="project-weight" class="form-label">占总成绩比例 (0-100%)</label>
+                            <input type="number" class="form-control" id="project-weight" min="0" max="100" required>
                         </div>
                     </form>
                 </div>
@@ -485,8 +485,8 @@
                             <input type="number" class="form-control" id="edit-project-full-mark" min="1" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">占总成绩比例 (0-100%)</label>
-                            <input type="number" class="form-control" id="edit-project-weight" min="0" max="100" step="0.1" required>
+                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-100%)</label>
+                            <input type="number" class="form-control" id="edit-project-weight" min="0" max="100" required>
                         </div>
                     </form>
                 </div>
@@ -863,7 +863,10 @@
         function saveProject() {
             const name = document.getElementById('project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('project-full-mark').value);
-            const weight = parseFloat(document.getElementById('project-weight').value) / 100;
+            const weight = parseFloat(document.getElementById('project-weight').value);
+
+            // 将百分比转换为小数
+            weight = weight / 100;
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
                 alert("请填写所有字段");
@@ -875,8 +878,8 @@
                 return;
             }
             
-            if (weight <= 0 || weight > 1) {
-                alert("占比必须在0到1之间");
+            if (weight <= 0 || weight > 100) {
+                alert("占比必须在0到100%之间");
                 return;
             }
             
@@ -906,7 +909,7 @@
             document.getElementById('edit-project-id').value = project.id;
             document.getElementById('edit-project-name').value = project.name;
             document.getElementById('edit-project-full-mark').value = project.fullMark;
-            document.getElementById('edit-project-weight').value = (project.weight * 100).toFixed(1);
+            document.getElementById('edit-project-weight').value = project.weight;
             
             const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
             modal.show();
@@ -917,7 +920,7 @@
             const id = document.getElementById('edit-project-id').value;
             const name = document.getElementById('edit-project-name').value.trim();
             const fullMark = parseFloat(document.getElementById('edit-project-full-mark').value);
-            const weight = parseFloat(document.getElementById('edit-project-weight').value) / 100;
+            const weight = parseFloat(document.getElementById('edit-project-weight').value);
             
             if (!name || isNaN(fullMark) || isNaN(weight)) {
                 alert("请填写所有字段");
@@ -929,10 +932,10 @@
                 return;
             }
             
-            if (weight < 0 || weight > 1) {
-    alert("占比必须在0到100%之间");
-    return;
-}
+            if (weight <= 0 || weight > 100) {
+                alert("占比必须在0到100%之间");
+                return;
+            }
             
             db.collection('projects').doc(id).update({
                 name,
@@ -1186,15 +1189,17 @@
                 let total = 0;
                 let totalWeight = 0;
                 
-                for (const score of studentScores) {
-                    const project = projects.find(p => p.id === score.projectId);
-                    if (project) {
-                        total += (score.score / project.fullMark) * project.weight;
-                        totalWeight += project.weight;
-                    }
-                }
+                // 修改generateReport函数中的计算部分
+for (const score of studentScores) {
+    const project = projects.find(p => p.id === score.projectId);
+    if (project) {
+        // 修正为：(实际得分/满分)×权重×100
+        total += (score.score / project.fullMark) * project.weight * 100;
+        totalWeight += project.weight;
+    }
+}
                 
-                const average = totalWeight > 0 ? (total / totalWeight) * 100 : 0;
+                const average = totalWeight > 0 ? (total / totalWeight) : 0; // 结果直接是百分比
                 studentAverages.push({
                     student,
                     average,
@@ -1255,26 +1260,39 @@
             
             // 显示预览
             document.getElementById('report-preview').innerHTML = reportHTML;
-            
+
+            // 如果PDFLib不可用，使用html2canvas+jsPDF备用方案
+function generatePDFFallback() {
+    const element = document.getElementById('report-preview');
+    html2canvas(element).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF();
+        pdf.addImage(imgData, 'PNG', 0, 0);
+        pdf.save('成绩报告.pdf');
+    });
+}
+
+            // 在保存项目时验证权重总和
+function validateWeights(newWeight) {
+    const total = projects.reduce((sum, p) => sum + p.weight, 0) + newWeight;
+    return total <= 1; // 确保总和不超过100%
+}
+
+            // 在生成报告时添加加载提示
+document.getElementById('generate-report-btn').addEventListener('click', function() {
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
+    
+    generateReport().finally(() => {
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
+    });
+});
             // 创建PDF并下载
             try {
                 const { PDFDocument, rgb } = PDFLib;
                 const pdfDoc = await PDFDocument.create();
-                let page = pdfDoc.addPage([600, 800]);
-let y = 750;
-
-studentAverages.forEach((item, index) => {
-    if (y < 50) {
-        page = pdfDoc.addPage([600, 800]); // 新页赋值
-        y = 750;
-    }
-
-    // 绘制内容
-    page.drawText(...);
-
-    y -= rowHeight;
-});
-
+                const page = pdfDoc.addPage([600, 800]);
                 
                 // 添加标题
                 page.drawText(`${selectedClass || '全校'}成绩报告`, {
