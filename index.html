@@ -1008,6 +1008,27 @@
                     showAlert("只有授权账户可以登录系统", "danger");
                     return;
                 }
+
+                const navLinks = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabTarget = this.getAttribute('data-bs-target');
+            const tabPane = document.querySelector(tabTarget);
+            
+            // 移除所有活动状态
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('show', 'active');
+            });
+            document.querySelectorAll('.nav-link').forEach(navLink => {
+                navLink.classList.remove('active');
+            });
+            
+            // 添加活动状态到当前选项卡
+            this.classList.add('active');
+            tabPane.classList.add('show', 'active');
+        });
+    });
                 
                 const loginBtn = e.target.querySelector('button[type="submit"]');
                 loginBtn.disabled = true;
