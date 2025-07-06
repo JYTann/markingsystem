@@ -998,18 +998,29 @@
 
         // 初始化UI事件
         function initUIEvents() {
-            // 使用 Bootstrap 原生 Tab 组件
-    const tab = new bootstrap.Tab(document.querySelector('a[data-bs-toggle="tab"]'));
-    
-    // 监听所有选项卡点击
-    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tabEl => {
-        tabEl.addEventListener('click', function(e) {
-            e.preventDefault();
-            const tab = new bootstrap.Tab(this);
-            tab.show();
-        });
-    });
+            const navLinks = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+navLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const tabTarget = this.getAttribute('data-bs-target');
+        const tabPane = document.querySelector(tabTarget);
 
+        // 移除所有活动状态
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        document.querySelectorAll('.nav-link').forEach(navLink => {
+            navLink.classList.remove('active');
+        });
+
+        // 添加当前的活动状态
+        this.classList.add('active');
+        tabPane.classList.add('show', 'active');
+    });
+});
+
+
+            
             // 登录表单提交
             document.getElementById('login-form').addEventListener('submit', function(e) {
                 e.preventDefault();
