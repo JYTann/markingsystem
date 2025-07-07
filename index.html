@@ -1731,7 +1731,13 @@ navLinks.forEach(link => {
 
         // 更新分数分布图表
         function updateScoreDistributionChart() {
-            const ctx = document.getElementById('scoreDistributionChart').getContext('2d');
+            const canvas = document.getElementById('scoreDistributionChart');
+    if (!canvas) {
+        console.warn("找不到 canvas 元素: scoreDistributionChart");
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
             
             // 如果图表已存在，先销毁
             if (scoreDistributionChart) {
