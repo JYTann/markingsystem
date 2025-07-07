@@ -1594,7 +1594,7 @@ navLinks.forEach(link => {
                 })
                 .catch(error => {
                     console.error("加载分数数据失败: ", error);
-                    showAlert("加载分数数据失败", "danger");
+                    showAlert("加载分数数据失败: " + error.message, "danger");
                     addActivity("加载分数数据失败", "danger");
                 });
         }
