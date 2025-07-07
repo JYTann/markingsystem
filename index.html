@@ -414,8 +414,16 @@
                 <button type="submit" class="btn btn-primary w-100 mt-3">
                     <i class="fas fa-sign-in-alt me-2"></i>登录
                 </button>
-            </form>
-        </div>
+                
+                <!-- 添加Google登录按钮 -->
+            <div class="text-center my-3">
+                <p class="text-muted">或</p>
+                <button type="button" id="google-login-btn" class="btn btn-outline-danger w-100">
+                    <i class="fab fa-google me-2"></i>使用Google账号登录
+                </button>
+            </div>
+        </form>
+    </div>
     </div>
 
     <!-- 主系统页面 (默认隐藏) -->
@@ -967,6 +975,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // 添加Google登录提供程序
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
         // 全局变量
         let currentUser = null;
         let students = [];
@@ -984,16 +995,16 @@
             initUIEvents();
             
             // 检查登录状态
-            auth.onAuthStateChanged(user => {
-                if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
-                    currentUser = user;
-                    document.getElementById('user-email').textContent = user.email;
-                    showMainSystem();
-                    loadAllData();
-                    addActivity("用户登录系统", "success");
-                } else {
-                    showLoginPage();
-                }
+           auth.onAuthStateChanged(user => {
+    if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
+        currentUser = user;
+        document.getElementById('user-email').textContent = user.email;
+        showMainSystem();
+        loadAllData();
+        addActivity("用户登录系统", "success");
+    } else {
+        showLoginPage();
+    }
             });
         });
 
@@ -1018,6 +1029,7 @@ navLinks.forEach(link => {
         this.classList.add('active');
         tabPane.classList.add('show', 'active');
     });
+    document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
 });
 
 
@@ -1107,6 +1119,32 @@ navLinks.forEach(link => {
             document.getElementById('main-system').style.display = 'none';
             document.getElementById('login-form').reset();
         }
+
+        // Google登录函数
+function signInWithGoogle() {
+    const btn = document.getElementById('google-login-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 登录中...';
+    
+    auth.signInWithPopup(googleProvider)
+        .then((result) => {
+            // 检查是否授权用户
+            const user = result.user;
+            if (user.email === "tanjunyuanfoonyew@gmail.com") {
+                showAlert("Google登录成功", "success");
+            } else {
+                // 如果不是授权用户，登出
+                auth.signOut();
+                showAlert("只有授权账户可以登录系统", "danger");
+            }
+        })
+        .catch((error) => {
+            console.error("Google登录失败:", error);
+            showAlert("Google登录失败: " + error.message, "danger");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
+        });
+}
 
         // 显示主系统
         function showMainSystem() {
