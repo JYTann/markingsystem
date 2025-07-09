@@ -1201,6 +1201,27 @@
 
             // Google登录按钮
             document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
+
+            // 保存学生
+            document.getElementById('save-student-btn').addEventListener('click', saveStudent);
+            
+            // 更新学生
+            document.getElementById('update-student-btn').addEventListener('click', updateStudent);
+            
+            // 保存项目
+            document.getElementById('save-project-btn').addEventListener('click', saveProject);
+            
+            // 更新项目
+            document.getElementById('update-project-btn').addEventListener('click', updateProject);
+            
+            // 保存分数
+            document.getElementById('save-score-btn').addEventListener('click', saveScore);
+            
+            // 生成报告
+            document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+            
+            // 确认删除
+            document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
             
              // 管理员系统 tab 切换（手动绑定）
     const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
