@@ -805,31 +805,34 @@
             }
         }
 
-        // Google登录函数
         function signInWithGoogle() {
-            const btn = document.getElementById('google-login-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 登录中...';
-            
-            auth.signInWithPopup(googleProvider)
-                .then((result) => {
-                    // 检查是否授权用户
-                    const user = result.user;
-                    if (user.email === "tanjunyuanfoonyew@gmail.com") {
-                        showAlert("Google登录成功", "success");
-                    } else {
-                        // 如果不是授权用户，登出
-                        auth.signOut();
-                        showAlert("只有授权账户可以登录系统", "danger");
-                    }
-                })
-                .catch((error) => {
-                    console.error("Google登录失败:", error);
-                    showAlert("Google登录失败: " + error.message, "danger");
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
-                });
-        }
+    const btn = document.getElementById('google-login-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 登录中...';
+    
+    auth.signInWithPopup(googleProvider)
+        .then((result) => {
+            const user = result.user;
+            if (user.email === "tanjunyuanfoonyew@gmail.com") {
+                showAlert("Google登录成功", "success");
+                document.getElementById('user-email').textContent = user.email;
+                currentUser = user;
+                showMainSystem();
+                loadAllData();
+                addActivity("用户通过Google登录系统", "success");
+            } else {
+                auth.signOut();
+                showAlert("只有授权账户可以登录系统", "danger");
+            }
+        })
+        .catch((error) => {
+            console.error("Google登录失败:", error);
+            showAlert("Google登录失败: " + error.message, "danger");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
+        });
+}
+
 
         // 显示学生查询页面
         function showStudentQueryPage() {
