@@ -1472,6 +1472,7 @@
 
         // 加载学生数据
         function loadStudents() {
+            document.getElementById('students-table-body').innerHTML = '';
             showLoading('students-table-body');
             
             db.collection('students').orderBy('studentId').get()
@@ -1644,6 +1645,7 @@
 
         // 加载项目数据
         function loadProjects() {
+            document.getElementById('projects-table-body').innerHTML = '';
             showLoading('projects-table-body');
             
             db.collection('projects').orderBy('createdAt').get()
@@ -1900,6 +1902,7 @@
 
         // 加载分数数据
         function loadScores() {
+            document.getElementById('scores-table-body').innerHTML = '';
             showLoading('scores-table-body');
             
             db.collection('scores').get()
