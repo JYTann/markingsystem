@@ -1207,6 +1207,13 @@
                 });
             });
 
+             // 显示登录页面
+        function showLoginPage() {
+            document.getElementById('login-page').style.display = 'block';
+            document.getElementById('main-system').style.display = 'none';
+            document.getElementById('login-form').reset();
+        }
+
             // Google登录按钮
             document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
 
@@ -1253,14 +1260,6 @@
             
             // 班级筛选
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
-        }
-
-        // 显示登录页面
-        function showLoginPage() {
-            document.getElementById('login-page').style.display = 'block';
-            document.getElementById('main-system').style.display = 'none';
-            document.getElementById('login-form').reset();
-        }
             
              // 管理员系统 tab 切换（手动绑定）
     const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
