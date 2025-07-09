@@ -1129,26 +1129,20 @@
             // 初始化UI事件
             initUIEvents();
             
+            // 检查登录状态
             auth.onAuthStateChanged(user => {
-    if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
-        currentUser = user;
-        document.getElementById('user-email').textContent = user.email;
-        // 先隐藏学生查询页面，再显示主系统
-        document.getElementById('student-query-page').style.display = 'none';
-        document.getElementById('main-system').style.display = 'block';
-        loadAllData();
-        addActivity("用户登录系统", "success");
-    } else {
-        // 先隐藏主系统，再显示学生查询页面
-        document.getElementById('main-system').style.display = 'none';
-        document.getElementById('student-query-page').style.display = 'block';
-        // 重置所有数据
-        students = [];
-        projects = [];
-        scores = [];
-        classes = [];
-    }
-});
+                if (user && user.email === "tanjunyuanfoonyew@gmail.com") {
+                    currentUser = user;
+                    document.getElementById('user-email').textContent = user.email;
+                    showMainSystem();
+                    loadAllData();
+                    addActivity("用户登录系统", "success");
+                } else {
+                    showStudentQueryPage();
+                }
+            });
+        });
+
         // 初始化UI事件
         function initUIEvents() {
             // 学生查询表单提交
@@ -1205,20 +1199,13 @@
                     });
             });
 
-           
-// 修改后的登出函数
-function logout() {
-    auth.signOut().then(() => {
-        showAlert("已退出登录", "success");
-        // 确保完全重置UI状态
-        document.getElementById('main-system').style.display = 'none';
-        document.getElementById('student-query-page').style.display = 'block';
-        // 清除所有数据表格
-        document.getElementById('students-table-body').innerHTML = '';
-        document.getElementById('projects-table-body').innerHTML = '';
-        document.getElementById('scores-table-body').innerHTML = '';
-    });
-}
+            // 退出登录
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                auth.signOut().then(() => {
+                    showAlert("已退出登录", "success");
+                    showLoginPage();
+                });
+            });
 
              // 显示登录页面
         function showLoginPage() {
