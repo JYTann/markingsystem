@@ -2057,93 +2057,98 @@
             document.getElementById('score-count').textContent = scores.length;
         }
 
-        // 更新分数分布图表
-        function updateScoreDistributionChart() {
-            const canvas = document.getElementById('scoreDistributionChart');
-            if (!canvas) {
-                console.warn("找不到 canvas 元素: scoreDistributionChart");
-                return;
-            }
+        // 修改后的更新分数分布图表函数
+function updateScoreDistributionChart() {
+    const canvas = document.getElementById('scoreDistributionChart');
+    if (!canvas) {
+        console.warn("找不到 canvas 元素: scoreDistributionChart");
+        return;
+    }
 
-            const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
+    
+    // 如果图表已存在，先销毁
+    if (scoreDistributionChart) {
+        scoreDistributionChart.destroy();
+    }
+    
+    // 获取当前活跃学生的分数
+    const activeStudentScores = scores.filter(score => {
+        return students.some(student => student.id === score.studentId);
+    });
+    
+    // 如果没有分数数据，显示空状态
+    if (activeStudentScores.length === 0) {
+        document.getElementById('scoreDistributionChart').parentElement.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                <p class="mt-2 text-muted">暂无学生成绩数据</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 计算分数分布
+    const scoreRanges = [
+        { min: 0, max: 59, label: '不及格 (<60)' },
+        { min: 60, max: 69, label: '及格 (60-69)' },
+        { min: 70, max: 79, label: '中等 (70-79)' },
+        { min: 80, max: 89, label: '良好 (80-89)' },
+        { min: 90, max: 100, label: '优秀 (90-100)' }
+    ];
+    
+    const data = scoreRanges.map(range => {
+        const count = activeStudentScores.reduce((sum, score) => {
+            const project = projects.find(p => p.id === score.projectId);
+            if (!project) return sum;
             
-            // 如果图表已存在，先销毁
-            if (scoreDistributionChart) {
-                scoreDistributionChart.destroy();
-            }
-            
-            // 如果没有分数数据，显示空状态
-            if (scores.length === 0) {
-                document.getElementById('scoreDistributionChart').parentElement.innerHTML = `
-                    <div class="text-center py-4">
-                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
-                        <p class="mt-2 text-muted">暂无分数数据</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // 计算分数分布
-            const scoreRanges = [
-                { min: 0, max: 59, label: '不及格 (<60)' },
-                { min: 60, max: 69, label: '及格 (60-69)' },
-                { min: 70, max: 79, label: '中等 (70-79)' },
-                { min: 80, max: 89, label: '良好 (80-89)' },
-                { min: 90, max: 100, label: '优秀 (90-100)' }
-            ];
-            
-            const data = scoreRanges.map(range => {
-                const count = scores.reduce((sum, score) => {
-                    const project = projects.find(p => p.id === score.projectId);
-                    if (!project) return sum;
-                    
-                    const percentage = (score.score / project.fullMark) * 100;
-                    return percentage >= range.min && percentage <= range.max ? sum + 1 : sum;
-                }, 0);
-                
-                return count;
-            });
-            
-            const labels = scoreRanges.map(range => range.label);
-            const backgroundColors = [
-                'rgba(231, 76, 60, 0.7)',
-                'rgba(241, 196, 15, 0.7)',
-                'rgba(52, 152, 219, 0.7)',
-                'rgba(46, 204, 113, 0.7)',
-                'rgba(155, 89, 182, 0.7)'
-            ];
-            
-            scoreDistributionChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: backgroundColors,
-                        borderWidth: 1
-                    }]
+            const percentage = (score.score / project.fullMark) * 100;
+            return percentage >= range.min && percentage <= range.max ? sum + 1 : sum;
+        }, 0);
+        
+        return count;
+    });
+    
+    const labels = scoreRanges.map(range => range.label);
+    const backgroundColors = [
+        'rgba(231, 76, 60, 0.7)',
+        'rgba(241, 196, 15, 0.7)',
+        'rgba(52, 152, 219, 0.7)',
+        'rgba(46, 204, 113, 0.7)',
+        'rgba(155, 89, 182, 0.7)'
+    ];
+    
+    scoreDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const value = context.raw;
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${context.label}: ${value} (${percentage}%)`;
-                                }
-                            }
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const value = context.raw;
+                            const percentage = Math.round((value / total) * 100);
+                            return `${context.label}: ${value} (${percentage}%)`;
                         }
                     }
                 }
-            });
+            }
         }
+    });
+}
 
         // 显示删除确认
         function showDeleteConfirm(type, id, message) {
