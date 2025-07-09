@@ -1380,8 +1380,1240 @@
             document.getElementById('main-system').style.display = 'block';
         }
 
-        // 其他原有函数保持不变
-        // ...
+        // 显示主系统
+        function showMainSystem() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-system').style.display = 'block';
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3" style="z-index: 1100;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    new bootstrap.Alert(alert).close();
+                });
+            }, 5000);
+        }
+
+        // 加载所有数据
+        function loadAllData() {
+            loadStudents();
+            loadProjects();
+            loadScores();
+            updateDashboard();
+        }
+
+        // 加载学生数据
+        function loadStudents() {
+            showLoading('students-table-body');
+            
+            db.collection('students').orderBy('studentId').get()
+                .then(querySnapshot => {
+                    students = [];
+                    const studentSelect = document.getElementById('score-student-select');
+                    studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
+                    
+                    querySnapshot.forEach(doc => {
+                        const student = { id: doc.id, ...doc.data() };
+                        students.push(student);
+                        
+                        // 添加到学生表格
+                        addStudentToTable(student);
+                        
+                        // 添加到学生选择下拉框
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${student.name} (${student.studentId})`;
+                        studentSelect.appendChild(option);
+                    });
+                    
+                    // 更新班级选择下拉框
+                    updateClassSelect();
+                    updateDashboard();
+                    
+                    addActivity("加载学生数据完成", "info");
+                })
+                .catch(error => {
+                    console.error("加载学生数据失败: ", error);
+                    showAlert("加载学生数据失败", "danger");
+                    addActivity("加载学生数据失败", "danger");
+                });
+        }
+
+        // 添加学生到表格
+        function addStudentToTable(student) {
+            const tbody = document.getElementById('students-table-body');
+            const row = document.createElement('tr');
+            row.className = 'fade-in';
+            row.innerHTML = `
+                <td>${student.studentId}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${student.name.charAt(0)}
+                        </div>
+                        ${student.name}
+                    </div>
+                </td>
+                <td><span class="badge bg-primary">${student.class}</span></td>
+                <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
+                <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 添加编辑和删除事件
+            row.querySelector('.edit-student').addEventListener('click', () => editStudent(student.id));
+            row.querySelector('.delete-student').addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
+        }
+
+        // 保存学生
+        function saveStudent() {
+            const name = document.getElementById('student-name').value.trim();
+            const studentClass = document.getElementById('student-class').value.trim();
+            const studentId = document.getElementById('student-id').value.trim();
+            const studyGroup = document.getElementById('study-group').value.trim();
+            const workGroup = document.getElementById('work-group').value.trim();
+            
+            if (!name || !studentClass || !studentId) {
+                showAlert("请填写必填字段", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById('save-student-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+            
+            db.collection('students').add({
+                name,
+                class: studentClass,
+                studentId,
+                studyGroup: studyGroup || null,
+                workGroup: workGroup || null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                showAlert("学生添加成功", "success");
+                document.getElementById('addStudentModal').querySelector('.btn-close').click();
+                document.getElementById('add-student-form').reset();
+                loadStudents();
+                addActivity(`添加学生: ${name} (${studentId})`, "success");
+            })
+            .catch(error => {
+                console.error("添加学生失败: ", error);
+                showAlert("添加学生失败", "danger");
+                addActivity("添加学生失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            });
+        }
+
+        // 编辑学生
+        function editStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            document.getElementById('edit-student-id').value = student.id;
+            document.getElementById('edit-student-name').value = student.name;
+            document.getElementById('edit-student-class').value = student.class;
+            document.getElementById('edit-student-id').value = student.studentId;
+            document.getElementById('edit-study-group').value = student.studyGroup || '';
+            document.getElementById('edit-work-group').value = student.workGroup || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+            modal.show();
+        }
+
+        // 更新学生
+        function updateStudent() {
+            const id = document.getElementById('edit-student-id').value;
+            const name = document.getElementById('edit-student-name').value.trim();
+            const studentClass = document.getElementById('edit-student-class').value.trim();
+            const studentId = document.getElementById('edit-student-id').value.trim();
+            const studyGroup = document.getElementById('edit-study-group').value.trim();
+            const workGroup = document.getElementById('edit-work-group').value.trim();
+            
+            if (!name || !studentClass || !studentId) {
+                showAlert("请填写必填字段", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById('update-student-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
+            
+            db.collection('students').doc(id).update({
+                name,
+                class: studentClass,
+                studentId,
+                studyGroup: studyGroup || null,
+                workGroup: workGroup || null
+            })
+            .then(() => {
+                showAlert("学生信息更新成功", "success");
+                document.getElementById('editStudentModal').querySelector('.btn-close').click();
+                loadStudents();
+                addActivity(`更新学生信息: ${name} (${studentId})`, "info");
+            })
+            .catch(error => {
+                console.error("更新学生信息失败: ", error);
+                showAlert("更新学生信息失败", "danger");
+                addActivity("更新学生信息失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
+            });
+        }
+
+        // 加载项目数据
+        function loadProjects() {
+            showLoading('projects-table-body');
+            
+            db.collection('projects').orderBy('createdAt').get()
+                .then(querySnapshot => {
+                    projects = [];
+                    const projectSelect = document.getElementById('score-project-select');
+                    projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>';
+                    
+                    querySnapshot.forEach(doc => {
+                        const project = { id: doc.id, ...doc.data() };
+                        projects.push(project);
+                        
+                        // 添加到项目表格
+                        addProjectToTable(project);
+                        
+                        // 添加到项目选择下拉框
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${project.name} (满分: ${project.fullMark})`;
+                        projectSelect.appendChild(option);
+                    });
+                    
+                    updateWeightProgress();
+                    updateDashboard();
+                    updateScoreDistributionChart();
+                    
+                    addActivity("加载项目数据完成", "info");
+                })
+                .catch(error => {
+                    console.error("加载项目数据失败: ", error);
+                    showAlert("加载项目数据失败", "danger");
+                    addActivity("加载项目数据失败", "danger");
+                });
+        }
+
+        // 添加项目到表格
+        function addProjectToTable(project) {
+            const tbody = document.getElementById('projects-table-body');
+            const row = document.createElement('tr');
+            row.className = 'fade-in';
+            row.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(project.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${project.name.charAt(0)}
+                        </div>
+                        ${project.name}
+                    </div>
+                </td>
+                <td>${project.fullMark}</td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${project.weight * 100}%" aria-valuenow="${project.weight * 100}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small>${(project.weight * 100).toFixed(1)}%</small>
+                </td>
+                <td>${project.createdAt?.toDate().toLocaleString() || '未知'}</td>
+                <td>
+                    <span class="badge bg-success">活跃</span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary edit-project" data-id="${project.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger delete-project" data-id="${project.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 添加编辑和删除事件
+            row.querySelector('.edit-project').addEventListener('click', () => editProject(project.id));
+            row.querySelector('.delete-project').addEventListener('click', () => showDeleteConfirm('project', project.id, `确定要删除项目 ${project.name} 吗？`));
+        }
+
+        // 更新权重进度条
+        function updateWeightProgress() {
+            const weightInput = document.getElementById('project-weight');
+            const weight = parseFloat(weightInput.value) || 0;
+            const progressBar = document.getElementById('weight-progress');
+            
+            progressBar.style.width = `${weight}%`;
+            progressBar.setAttribute('aria-valuenow', weight);
+            
+            // 计算总权重
+            const totalWeight = projects.reduce((sum, p) => sum + p.weight * 100, weight);
+            document.getElementById('total-weight').textContent = totalWeight.toFixed(1);
+            
+            // 根据权重值改变颜色
+            if (weight > 100) {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add('bg-danger');
+            } else if (weight > 80) {
+                progressBar.classList.remove('bg-danger');
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.remove('bg-danger', 'bg-warning');
+                progressBar.classList.add('bg-success');
+            }
+        }
+
+        // 更新编辑权重进度条
+        function updateEditWeightProgress() {
+            const weightInput = document.getElementById('edit-project-weight');
+            const weight = parseFloat(weightInput.value) || 0;
+            const progressBar = document.getElementById('edit-weight-progress');
+            
+            progressBar.style.width = `${weight}%`;
+            progressBar.setAttribute('aria-valuenow', weight);
+            
+            // 计算总权重（排除当前项目的权重）
+            const projectId = document.getElementById('edit-project-id').value;
+            const currentProject = projects.find(p => p.id === projectId);
+            const otherProjectsWeight = projects.reduce((sum, p) => 
+                p.id === projectId ? sum : sum + p.weight * 100, 0);
+            const totalWeight = otherProjectsWeight + weight;
+            
+            document.getElementById('edit-total-weight').textContent = totalWeight.toFixed(1);
+            
+            // 根据权重值改变颜色
+            if (weight > 100) {
+                progressBar.classList.remove('bg-success');
+                progressBar.classList.add('bg-danger');
+            } else if (weight > 80) {
+                progressBar.classList.remove('bg-danger');
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.remove('bg-danger', 'bg-warning');
+                progressBar.classList.add('bg-success');
+            }
+        }
+
+        // 保存项目
+        function saveProject() {
+            const name = document.getElementById('project-name').value.trim();
+            const fullMark = parseFloat(document.getElementById('project-full-mark').value);
+            let weight = parseFloat(document.getElementById('project-weight').value);
+
+            // 将百分比转换为小数
+            weight = weight / 100;
+            
+            if (!name || isNaN(fullMark) || isNaN(weight)) {
+                showAlert("请填写所有字段", "warning");
+                return;
+            }
+            
+            if (fullMark <= 0) {
+                showAlert("满分必须大于0", "warning");
+                return;
+            }
+            
+            if (weight <= 0 || weight > 1) {
+                showAlert("占比必须在0到100%之间", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById('save-project-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+            
+            db.collection('projects').add({
+                name,
+                fullMark,
+                weight,
+                description: document.getElementById('project-description').value.trim() || null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                showAlert("项目添加成功", "success");
+                document.getElementById('addProjectModal').querySelector('.btn-close').click();
+                document.getElementById('add-project-form').reset();
+                loadProjects();
+                addActivity(`添加评分项目: ${name}`, "success");
+            })
+            .catch(error => {
+                console.error("添加项目失败: ", error);
+                showAlert("添加项目失败", "danger");
+                addActivity("添加评分项目失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            });
+        }
+
+        // 编辑项目
+        function editProject(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            document.getElementById('edit-project-id').value = project.id;
+            document.getElementById('edit-project-name').value = project.name;
+            document.getElementById('edit-project-full-mark').value = project.fullMark;
+            document.getElementById('edit-project-weight').value = project.weight * 100;
+            document.getElementById('edit-project-description').value = project.description || '';
+            
+            updateEditWeightProgress();
+            
+            const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+            modal.show();
+        }
+
+        // 更新项目
+        function updateProject() {
+            const id = document.getElementById('edit-project-id').value;
+            const name = document.getElementById('edit-project-name').value.trim();
+            const fullMark = parseFloat(document.getElementById('edit-project-full-mark').value);
+            let weight = parseFloat(document.getElementById('edit-project-weight').value);
+            
+            if (!name || isNaN(fullMark) || isNaN(weight)) {
+                showAlert("请填写所有字段", "warning");
+                return;
+            }
+            
+            if (fullMark <= 0) {
+                showAlert("满分必须大于0", "warning");
+                return;
+            }
+            
+            if (weight <= 0 || weight > 100) {
+                showAlert("占比必须在0到100%之间", "warning");
+                return;
+            }
+            
+            weight = weight / 100;
+            
+            const btn = document.getElementById('update-project-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
+            
+            db.collection('projects').doc(id).update({
+                name,
+                fullMark,
+                weight,
+                description: document.getElementById('edit-project-description').value.trim() || null
+            })
+            .then(() => {
+                showAlert("项目更新成功", "success");
+                document.getElementById('editProjectModal').querySelector('.btn-close').click();
+                loadProjects();
+                addActivity(`更新评分项目: ${name}`, "info");
+            })
+            .catch(error => {
+                console.error("更新项目失败: ", error);
+                showAlert("更新项目失败", "danger");
+                addActivity("更新评分项目失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
+            });
+        }
+
+        // 加载分数数据
+        function loadScores() {
+            showLoading('scores-table-body');
+            
+            db.collection('scores').get()
+                .then(querySnapshot => {
+                    scores = [];
+                    const tbody = document.getElementById('scores-table-body');
+                    tbody.innerHTML = '';
+                    
+                    querySnapshot.forEach(doc => {
+                        const score = { id: doc.id, ...doc.data() };
+                        scores.push(score);
+                        
+                        // 添加到分数表格
+                        addScoreToTable(score);
+                    });
+                    
+                    updateDashboard();
+                    updateScoreDistributionChart();
+                    
+                    addActivity("加载分数数据完成", "info");
+                })
+                .catch(error => {
+                    console.error("加载分数数据失败: ", error);
+                    showAlert("加载分数数据失败: " + error.message, "danger");
+                    addActivity("加载分数数据失败", "danger");
+                });
+        }
+
+        // 添加分数到表格
+        function addScoreToTable(score) {
+            const student = students.find(s => s.id === score.studentId);
+            const project = projects.find(p => p.id === score.projectId);
+            
+            if (!student || !project) return;
+            
+            const percentage = (score.score / project.fullMark * 100).toFixed(1);
+            const tbody = document.getElementById('scores-table-body');
+            const row = document.createElement('tr');
+            row.className = 'fade-in';
+            row.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            ${student.name.charAt(0)}
+                        </div>
+                        ${student.name} (${student.studentId})
+                    </div>
+                </td>
+                <td>${project.name}</td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%" 
+                             aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small>${score.score} (${percentage}%)</small>
+                </td>
+                <td>${project.fullMark}</td>
+                <td>${(project.weight * 100).toFixed(1)}%</td>
+                <td>
+                    <button class="btn btn-sm btn-danger delete-score" data-id="${score.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            // 根据分数百分比设置进度条颜色
+            const progressBar = row.querySelector('.progress-bar');
+            if (percentage < 60) {
+                progressBar.classList.add('bg-danger');
+            } else if (percentage < 80) {
+                progressBar.classList.add('bg-warning');
+            } else {
+                progressBar.classList.add('bg-success');
+            }
+            
+            // 添加删除事件
+            row.querySelector('.delete-score').addEventListener('click', () => showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？'));
+        }
+
+        // 保存分数
+        function saveScore() {
+            const studentId = document.getElementById('score-student-select').value;
+            const projectId = document.getElementById('score-project-select').value;
+            const scoreValue = parseFloat(document.getElementById('score-input').value);
+            
+            if (!studentId || !projectId || isNaN(scoreValue)) {
+                showAlert("请选择学生、项目并输入分数", "warning");
+                return;
+            }
+            
+            const project = projects.find(p => p.id === projectId);
+            if (scoreValue > project.fullMark) {
+                showAlert("分数不能超过项目满分", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById('save-score-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+            
+            db.collection('scores').add({
+                studentId,
+                projectId,
+                score: scoreValue,
+                recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                showAlert("分数保存成功", "success");
+                document.getElementById('score-input').value = '';
+                loadScores();
+                
+                const student = students.find(s => s.id === studentId);
+                addActivity(`为 ${student.name} 录入 ${project.name} 分数: ${scoreValue}/${project.fullMark}`, "info");
+            })
+            .catch(error => {
+                console.error("保存分数失败: ", error);
+                showAlert("保存分数失败", "danger");
+                addActivity("保存分数失败", "danger");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            });
+        }
+
+        // 更新班级选择下拉框
+        function updateClassSelect() {
+            // 收集所有班级
+            classes = [...new Set(students.map(s => s.class))];
+            
+            const classSelect = document.getElementById('report-class-select');
+            const filterSelect = document.getElementById('student-class-filter');
+            
+            classSelect.innerHTML = '<option value="">-- 所有班级 --</option>';
+            filterSelect.innerHTML = '<option value="">所有班级</option>';
+            
+            classes.forEach(cls => {
+                const option1 = document.createElement('option');
+                option1.value = cls;
+                option1.textContent = cls;
+                classSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = cls;
+                option2.textContent = cls;
+                filterSelect.appendChild(option2);
+            });
+        }
+
+        // 更新仪表盘
+        function updateDashboard() {
+            document.getElementById('student-count').textContent = students.length;
+            document.getElementById('project-count').textContent = projects.length;
+            document.getElementById('score-count').textContent = scores.length;
+        }
+
+        // 更新分数分布图表
+        function updateScoreDistributionChart() {
+            const canvas = document.getElementById('scoreDistributionChart');
+    if (!canvas) {
+        console.warn("找不到 canvas 元素: scoreDistributionChart");
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+            
+            // 如果图表已存在，先销毁
+            if (scoreDistributionChart) {
+                scoreDistributionChart.destroy();
+            }
+            
+            // 如果没有分数数据，显示空状态
+            if (scores.length === 0) {
+                document.getElementById('scoreDistributionChart').parentElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无分数数据</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 计算分数分布
+            const scoreRanges = [
+                { min: 0, max: 59, label: '不及格 (<60)' },
+                { min: 60, max: 69, label: '及格 (60-69)' },
+                { min: 70, max: 79, label: '中等 (70-79)' },
+                { min: 80, max: 89, label: '良好 (80-89)' },
+                { min: 90, max: 100, label: '优秀 (90-100)' }
+            ];
+            
+            const data = scoreRanges.map(range => {
+                const count = scores.reduce((sum, score) => {
+                    const project = projects.find(p => p.id === score.projectId);
+                    if (!project) return sum;
+                    
+                    const percentage = (score.score / project.fullMark) * 100;
+                    return percentage >= range.min && percentage <= range.max ? sum + 1 : sum;
+                }, 0);
+                
+                return count;
+            });
+            
+            const labels = scoreRanges.map(range => range.label);
+            const backgroundColors = [
+                'rgba(231, 76, 60, 0.7)',
+                'rgba(241, 196, 15, 0.7)',
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)'
+            ];
+            
+            scoreDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.raw;
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 显示删除确认
+        function showDeleteConfirm(type, id, message) {
+            deleteType = type;
+            deleteId = id;
+            document.getElementById('delete-message').textContent = message;
+            
+            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            modal.show();
+        }
+
+        // 确认删除
+        function confirmDelete() {
+            let collectionName = '';
+            let successMessage = '';
+            
+            switch (deleteType) {
+                case 'student':
+                    collectionName = 'students';
+                    const student = students.find(s => s.id === deleteId);
+                    successMessage = `学生 ${student.name} (${student.studentId}) 删除成功`;
+                    break;
+                case 'project':
+                    collectionName = 'projects';
+                    const project = projects.find(p => p.id === deleteId);
+                    successMessage = `项目 ${project.name} 删除成功`;
+                    break;
+                case 'score':
+                    collectionName = 'scores';
+                    successMessage = '分数记录删除成功';
+                    break;
+                default:
+                    return;
+            }
+            
+            const btn = document.getElementById('confirm-delete-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 删除中...';
+            
+            db.collection(collectionName).doc(deleteId).delete()
+                .then(() => {
+                    showAlert(successMessage, "success");
+                    document.getElementById('confirmDeleteModal').querySelector('.btn-close').click();
+                    
+                    // 重新加载相关数据
+                    if (deleteType === 'student') {
+                        loadStudents();
+                        loadScores();
+                        addActivity(successMessage, "info");
+                    } else if (deleteType === 'project') {
+                        loadProjects();
+                        loadScores();
+                        addActivity(successMessage, "info");
+                    } else if (deleteType === 'score') {
+                        loadScores();
+                        addActivity(successMessage, "info");
+                    }
+                })
+                .catch(error => {
+                    console.error("删除失败: ", error);
+                    showAlert("删除失败", "danger");
+                    addActivity("删除操作失败", "danger");
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>删除';
+                });
+        }
+
+        // 导入Excel
+        function importExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const btn = document.getElementById('import-excel-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 导入中...';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // 获取第一个工作表
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    // 验证数据格式
+                    const requiredFields = ['姓名', '班级', '学号'];
+                    const optionalFields = ['学习组', '工作组'];
+                    
+                    let batch = db.batch();
+                    let successCount = 0;
+                    
+                    jsonData.forEach((row, index) => {
+                        // 检查必填字段
+                        if (!requiredFields.every(field => field in row)) {
+                            console.error(`第 ${index + 1} 行缺少必填字段`);
+                            return;
+                        }
+                        
+                        // 准备学生数据
+                        const studentData = {
+                            name: row['姓名'].toString().trim(),
+                            class: row['班级'].toString().trim(),
+                            studentId: row['学号'].toString().trim(),
+                            studyGroup: optionalFields[0] in row ? row['学习组']?.toString().trim() : null,
+                            workGroup: optionalFields[1] in row ? row['工作组']?.toString().trim() : null,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        
+                        // 添加到批量操作
+                        const docRef = db.collection('students').doc();
+                        batch.set(docRef, studentData);
+                        successCount++;
+                    });
+                    
+                    // 执行批量操作
+                    batch.commit()
+                        .then(() => {
+                            showAlert(`成功导入 ${successCount} 名学生`, "success");
+                            event.target.value = ''; // 清空文件输入
+                            loadStudents();
+                            addActivity(`从Excel导入 ${successCount} 名学生`, "success");
+                        })
+                        .catch(error => {
+                            console.error("导入失败: ", error);
+                            showAlert(`导入失败: ${error.message}`, "danger");
+                            addActivity("从Excel导入学生失败", "danger");
+                        })
+                        .finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-upload me-1"></i>上传';
+                        });
+                } catch (error) {
+                    console.error("处理Excel文件失败: ", error);
+                    showAlert("处理Excel文件失败", "danger");
+                    addActivity("处理Excel文件失败", "danger");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload me-1"></i>上传';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 导出学生数据
+        function exportStudents() {
+            try {
+                // 准备数据
+                const data = students.map(student => ({
+                    '学号': student.studentId,
+                    '姓名': student.name,
+                    '班级': student.class,
+                    '学习组': student.studyGroup || '',
+                    '工作组': student.workGroup || ''
+                }));
+                
+                // 创建工作表
+                const ws = XLSX.utils.json_to_sheet(data);
+                
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "学生数据");
+                
+                // 导出Excel文件
+                const date = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `学生数据_${date}.xlsx`);
+                
+                addActivity("导出学生数据", "info");
+            } catch (error) {
+                console.error("导出失败: ", error);
+                showAlert("导出学生数据失败", "danger");
+                addActivity("导出学生数据失败", "danger");
+            }
+        }
+
+        // 筛选学生
+        function filterStudents() {
+            const searchText = document.getElementById('student-search').value.toLowerCase();
+            const classFilter = document.getElementById('student-class-filter').value;
+            
+            const filteredStudents = students.filter(student => {
+                const matchesSearch = 
+                    student.studentId.toLowerCase().includes(searchText) ||
+                    student.name.toLowerCase().includes(searchText) ||
+                    (student.studyGroup && student.studyGroup.toLowerCase().includes(searchText)) ||
+                    (student.workGroup && student.workGroup.toLowerCase().includes(searchText));
+                
+                const matchesClass = classFilter === '' || student.class === classFilter;
+                
+                return matchesSearch && matchesClass;
+            });
+            
+            // 更新表格
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = '';
+            
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>没有找到匹配的学生</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                filteredStudents.forEach(student => addStudentToTable(student));
+            }
+        }
+
+        // 生成报告
+        async function generateReport() {
+            const selectedClass = document.getElementById('report-class-select').value;
+            const format = document.getElementById('report-format-select').value;
+            let filteredStudents = students;
+            
+            if (selectedClass) {
+                filteredStudents = students.filter(s => s.class === selectedClass);
+            }
+            
+            if (filteredStudents.length === 0) {
+                showAlert("没有找到符合条件的学生", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById('generate-report-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
+            
+            // 计算每个学生的平均分
+            const studentAverages = [];
+            
+            for (const student of filteredStudents) {
+                const studentScores = scores.filter(s => s.studentId === student.id);
+                let total = 0;
+                let totalWeight = 0;
+                
+                for (const score of studentScores) {
+                    const project = projects.find(p => p.id === score.projectId);
+                    if (project) {
+                        // (实际得分/满分)×权重×100
+                        total += (score.score / project.fullMark) * project.weight * 100;
+                        totalWeight += project.weight;
+                    }
+                }
+                
+                const average = totalWeight > 0 ? (total / totalWeight) : 0;
+                studentAverages.push({
+                    student,
+                    average,
+                    scores: studentScores.map(score => {
+                        const project = projects.find(p => p.id === score.projectId);
+                        return {
+                            projectName: project?.name || '未知项目',
+                            score: score.score,
+                            fullMark: project?.fullMark || 100,
+                            weight: project?.weight || 0
+                        };
+                    })
+                });
+            }
+            
+            // 按平均分排序
+            studentAverages.sort((a, b) => b.average - a.average);
+            
+            // 生成报告HTML
+            const reportHTML = `
+                <div class="report-container" style="font-family: 'Noto Sans SC', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h2 style="color: var(--primary-color); margin-bottom: 5px;">${selectedClass || '电脑协会'}成绩报告</h2>
+                        <p style="color: #666;">生成日期: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">成绩概览</h4>
+                        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 15px;">
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${filteredStudents.length}</div>
+                                <div style="font-size: 0.9rem; color: #666;">学生人数</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${projects.length}</div>
+                                <div style="font-size: 0.9rem; color: #666;">评分项目</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${studentAverages.length > 0 ? studentAverages[0].student.name : '-'}</div>
+                                <div style="font-size: 0.9rem; color: #666;">最高分学生</div>
+                            </div>
+                            <div style="flex: 1; min-width: 150px; margin: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                <div style="font-size: 1.2rem; color: var(--primary-color); font-weight: bold;">${studentAverages.length > 0 ? studentAverages[0].average.toFixed(2) + '%' : '-'}</div>
+                                <div style="font-size: 0.9rem; color: #666;">最高平均分</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px;">成绩明细</h4>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                            <thead>
+                                <tr style="background-color: var(--primary-color); color: white;">
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">排名</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">学号</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">姓名</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">班级</th>
+                                    ${projects.map(p => `
+                                        <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">
+                                            ${p.name}<br>
+                                            <small style="font-weight: normal;">(${p.fullMark}分, ${(p.weight * 100).toFixed(1)}%)</small>
+                                        </th>
+                                    `).join('')}
+                                    <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">总平均</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${studentAverages.map((item, index) => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">${index + 1}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.studentId}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.name}</td>
+                                        <td style="padding: 12px; border: 1px solid #ddd;">${item.student.class}</td>
+                                        ${projects.map(p => {
+                                            const score = item.scores.find(s => s.projectName === p.name);
+                                            const percentage = score ? (score.score / p.fullMark * 100).toFixed(1) : '-';
+                                            const color = score ? (percentage < 60 ? 'color: #e74c3c;' : percentage < 80 ? 'color: #f39c12;' : 'color: #2ecc71;') : '';
+                                            return `
+                                                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; ${color}">
+                                                    ${score ? score.score + ` (${percentage}%)` : '-'}
+                                                </td>
+                                            `;
+                                        }).join('')}
+                                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; ${item.average >= 60 ? 'color: #2ecc71;' : 'color: #e74c3c;'}">
+                                            ${item.average.toFixed(2)}%
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 0.9rem;">
+                        <p>系统自动生成 - 智能评分系统</p>
+                        <p>© ${new Date().getFullYear()} 电脑协会 - 版权所有</p>
+                    </div>
+                </div>
+            `;
+            
+            // 显示预览
+            document.getElementById('report-preview').innerHTML = reportHTML;
+            
+            // 根据选择的格式生成报告
+            try {
+                const date = new Date().toISOString().split('T')[0];
+                let fileName = `${selectedClass || '全校'}_成绩报告_${date}`;
+                
+                if (format === 'pdf') {
+                    // 使用html2canvas+jsPDF生成PDF
+                    const element = document.getElementById('report-preview');
+                    
+                    // 设置更高的缩放比例以获得更好的质量
+                    const scale = 2;
+                    const options = {
+                        scale: scale,
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: true
+                    };
+                    
+                    html2canvas(element, options).then(canvas => {
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                        
+                        // 计算PDF页面尺寸
+                        const imgWidth = 210; // A4宽度 (mm)
+                        const pageHeight = 295; // A4高度 (mm)
+                        const imgHeight = canvas.height * imgWidth / canvas.width;
+                        let heightLeft = imgHeight;
+                        let position = 0;
+                        
+                        // 第一页
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                        
+                        // 如果有剩余内容，添加新页
+                        while (heightLeft >= 0) {
+                            position = heightLeft - imgHeight;
+                            pdf.addPage();
+                            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                        }
+                        
+                        pdf.save(`${fileName}.pdf`);
+                        
+                        showAlert("PDF报告生成成功", "success");
+                        addActivity("生成PDF成绩报告", "success");
+                    }).catch(error => {
+                        console.error("生成PDF失败: ", error);
+                        showAlert("生成PDF报告失败", "danger");
+                        addActivity("生成PDF成绩报告失败", "danger");
+                    });
+                } else if (format === 'excel') {
+                    // 准备Excel数据
+                    const excelData = studentAverages.map((item, index) => {
+                        const row = {
+                            '排名': index + 1,
+                            '学号': item.student.studentId,
+                            '姓名': item.student.name,
+                            '班级': item.student.class
+                        };
+                        
+                        projects.forEach(p => {
+                            const score = item.scores.find(s => s.projectName === p.name);
+                            row[p.name] = score ? score.score : '-';
+                        });
+                        
+                        row['总平均'] = item.average.toFixed(2) + '%';
+                        return row;
+                    });
+                    
+                    // 创建工作表
+                    const ws = XLSX.utils.json_to_sheet(excelData);
+                    
+                    // 创建工作簿
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "成绩报告");
+                    
+                    // 导出Excel文件
+                    XLSX.writeFile(wb, `${fileName}.xlsx`);
+                    
+                    showAlert("Excel报告生成成功", "success");
+                    addActivity("生成Excel成绩报告", "success");
+                } else {
+                    // HTML格式 - 直接下载HTML文件
+                    const blob = new Blob([reportHTML], { type: 'text/html' });
+                    saveAs(blob, `${fileName}.html`);
+                    
+                    showAlert("HTML报告生成成功", "success");
+                    addActivity("生成HTML成绩报告", "success");
+                }
+            } catch (error) {
+                console.error("生成报告失败: ", error);
+                showAlert("生成报告失败", "danger");
+                addActivity("生成成绩报告失败", "danger");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
+            }
+        }
+
+        // 添加活动记录
+        function addActivity(message, type) {
+            const activitiesContainer = document.getElementById('recent-activities');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            let icon = '';
+            let color = '';
+            
+            switch (type) {
+                case 'success':
+                    icon = 'fa-check-circle';
+                    color = 'text-success';
+                    break;
+                case 'danger':
+                    icon = 'fa-times-circle';
+                    color = 'text-danger';
+                    break;
+                case 'warning':
+                    icon = 'fa-exclamation-circle';
+                    color = 'text-warning';
+                    break;
+                case 'info':
+                default:
+                    icon = 'fa-info-circle';
+                    color = 'text-primary';
+            }
+            
+            const activityHtml = `
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between">
+                        <h6>${message}</h6>
+                        <small class="text-muted">${timeString}</small>
+                    </div>
+                    <p class="small mb-0 ${color}">
+                        <i class="fas ${icon} me-1"></i> ${type === 'success' ? '成功' : type === 'danger' ? '错误' : type === 'warning' ? '警告' : '信息'}
+                    </p>
+                </div>
+            `;
+            
+            activitiesContainer.insertAdjacentHTML('afterbegin', activityHtml);
+            
+            // 限制活动记录数量
+            const items = activitiesContainer.querySelectorAll('.timeline-item');
+            if (items.length > 10) {
+                activitiesContainer.removeChild(items[items.length - 1]);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-2 text-muted">数据加载中...</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 根据字符串生成颜色
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 60%)`;
+        }
         
         // 显示提示信息
         function showAlert(message, type) {
