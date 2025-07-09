@@ -560,14 +560,527 @@
         </div>
     </div>
 
-    <!-- 主系统页面 (默认隐藏) -->
+   <!-- 主系统页面 (默认隐藏) -->
     <div id="main-system" style="display: none;">
-        <!-- 原有主系统内容保持不变 -->
-        <!-- ... -->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="javascript:void(0)">
+                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 40px; margin-right: 10px;">
+                    <span>新山宽柔中学电脑协会评分系统</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                                <i class="fas fa-tachometer-alt me-1"></i>仪表盘
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">
+                                <i class="fas fa-user-graduate me-1"></i>学生管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab">
+                                <i class="fas fa-tasks me-1"></i>评分项目
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">
+                                <i class="fas fa-edit me-1"></i>分数录入
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">
+                                <i class="fas fa-file-pdf me-1"></i>成绩报告
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="d-flex align-items-center">
+                        <div class="text-white me-3">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span id="user-email">admin@example.com</span>
+                        </div>
+                        <button id="logout-btn" class="btn btn-outline-light">
+                            <i class="fas fa-sign-out-alt me-1"></i>退出
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            <div class="tab-content">
+                <!-- 仪表盘 -->
+                <div class="tab-pane fade show active" id="dashboard-tab">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4361ee, #3a0ca3);">
+                                <i class="fas fa-users"></i>
+                                <h5 class="card-title" id="student-count">0</h5>
+                                <p class="card-text">已注册学生总数</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #4895ef);">
+                                <i class="fas fa-tasks"></i>
+                                <h5 class="card-title" id="project-count">0</h5>
+                                <p class="card-text">已创建评分项目</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);">
+                                <i class="fas fa-chart-line"></i>
+                                <h5 class="card-title" id="score-count">0</h5>
+                                <p class="card-text">已录入分数记录</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-chart-pie me-2"></i>成绩分布
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="scoreDistributionChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="fas fa-history me-2"></i>最近活动
+                                </div>
+                                <div class="card-body">
+                                    <div class="timeline">
+                                        <div class="timeline-item">
+                                            <h6>系统初始化</h6>
+                                            <p class="text-muted small mb-0">欢迎使用智能评分系统</p>
+                                            <p class="text-muted small">刚刚</p>
+                                        </div>
+                                        <div id="recent-activities">
+                                            <!-- 动态加载最近活动 -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学生管理 -->
+                <div class="tab-pane fade" id="students-tab">
+                    <div class="card fade-in">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-user-graduate me-2"></i>学生管理</span>
+                            <div>
+                                <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                    <i class="fas fa-plus me-1"></i>添加学生
+                                </button>
+                                <button class="btn btn-sm btn-primary" id="export-students-btn">
+                                    <i class="fas fa-file-export me-1"></i>导出
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="text" class="form-control" id="student-search" placeholder="搜索学生...">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                                        <select class="form-select" id="student-class-filter">
+                                            <option value="">所有班级</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="import-excel" class="form-label">从Excel导入学生</label>
+                                <div class="input-group">
+                                    <input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls">
+                                    <button class="btn btn-outline-secondary" type="button" id="import-excel-btn">
+                                        <i class="fas fa-upload me-1"></i>上传
+                                    </button>
+                                </div>
+                                <small class="text-muted">请上传从Google Form生成的Excel文件</small>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>学号</th>
+                                            <th>姓名</th>
+                                            <th>班级</th>
+                                            <th>学习组</th>
+                                            <th>工作组</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-table-body">
+                                        <!-- 学生数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <nav aria-label="学生分页">
+                                <ul class="pagination justify-content-center mt-3" id="student-pagination">
+                                    <!-- 分页将通过JavaScript动态加载 -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 评分项目 -->
+                <div class="tab-pane fade" id="projects-tab">
+                    <div class="card fade-in">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-tasks me-2"></i>评分项目管理</span>
+                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal">
+                                <i class="fas fa-plus me-1"></i>添加项目
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>项目名称</th>
+                                            <th>满分</th>
+                                            <th>占比</th>
+                                            <th>创建时间</th>
+                                            <th>状态</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="projects-table-body">
+                                        <!-- 项目数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分数录入 -->
+                <div class="tab-pane fade" id="scores-tab">
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <i class="fas fa-edit me-2"></i>分数录入
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="score-student-select" class="form-label">选择学生</label>
+                                    <select class="form-select" id="score-student-select">
+                                        <option value="">-- 选择学生 --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="score-project-select" class="form-label">选择项目</label>
+                                    <select class="form-select" id="score-project-select">
+                                        <option value="">-- 选择项目 --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="score-input" class="form-label">分数</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="score-input" min="0" step="0.1">
+                                        <span class="input-group-text">分</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-12 d-flex justify-content-end">
+                                    <button id="save-score-btn" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>保存分数
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>学生</th>
+                                            <th>项目</th>
+                                            <th>分数</th>
+                                            <th>满分</th>
+                                            <th>占比</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scores-table-body">
+                                        <!-- 分数数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成绩报告 -->
+                <div class="tab-pane fade" id="reports-tab">
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <i class="fas fa-file-pdf me-2"></i>成绩报告生成
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <label for="report-class-select" class="form-label">选择班级</label>
+                                    <select class="form-select" id="report-class-select">
+                                        <option value="">-- 所有班级 --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="report-format-select" class="form-label">报告格式</label>
+                                    <select class="form-select" id="report-format-select">
+                                        <option value="pdf">PDF</option>
+                                        <option value="excel">Excel</option>
+                                        <option value="html">HTML</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button id="generate-report-btn" class="btn btn-primary w-100">
+                                        <i class="fas fa-download me-1"></i>生成并下载报告
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>报告将包含所有学生的成绩汇总和统计分析。
+                            </div>
+                            
+                            <div id="report-preview" class="text-center p-4 border rounded">
+                                <div class="spinner-container">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 原有模态框保持不变 -->
-    <!-- ... -->
+    <!-- 添加学生模态框 -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加学生</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-student-form">
+                        <div class="mb-3">
+                            <label for="student-name" class="form-label">姓名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="student-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="student-class" class="form-label">班级 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="student-class" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="student-id" class="form-label">学号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="student-id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="study-group" class="form-label">学习组</label>
+                            <input type="text" class="form-control" id="study-group">
+                        </div>
+                        <div class="mb-3">
+                            <label for="work-group" class="form-label">工作组</label>
+                            <input type="text" class="form-control" id="work-group">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-student-btn">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑学生模态框 -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑学生信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-student-form">
+                        <input type="hidden" id="edit-student-id">
+                        <div class="mb-3">
+                            <label for="edit-student-name" class="form-label">姓名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-student-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-student-class" class="form-label">班级 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-student-class" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-student-id" class="form-label">学号 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-student-id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-study-group" class="form-label">学习组</label>
+                            <input type="text" class="form-control" id="edit-study-group">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-work-group" class="form-label">工作组</label>
+                            <input type="text" class="form-control" id="edit-work-group">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="update-student-btn">
+                        <i class="fas fa-sync-alt me-1"></i>更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加项目模态框 -->
+    <div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加评分项目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-project-form">
+                        <div class="mb-3">
+                            <label for="project-name" class="form-label">项目名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="project-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-full-mark" class="form-label">满分 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="project-full-mark" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-weight" class="form-label">占总成绩比例 (0-100%) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="project-weight" min="0" max="100" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="progress mt-2">
+                                <div id="weight-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">当前总权重: <span id="total-weight">0</span>%</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="project-description" class="form-label">项目描述</label>
+                            <textarea class="form-control" id="project-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-project-btn">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑项目模态框 -->
+    <div class="modal fade" id="editProjectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑评分项目</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-project-form">
+                        <input type="hidden" id="edit-project-id">
+                        <div class="mb-3">
+                            <label for="edit-project-name" class="form-label">项目名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="edit-project-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-full-mark" class="form-label">满分 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="edit-project-full-mark" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-weight" class="form-label">占总成绩比例 (0-100%) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="edit-project-weight" min="0" max="100" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="progress mt-2">
+                                <div id="edit-weight-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted">当前总权重: <span id="edit-total-weight">0</span>%</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-project-description" class="form-label">项目描述</label>
+                            <textarea class="form-control" id="edit-project-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="update-project-btn">
+                        <i class="fas fa-sync-alt me-1"></i>更新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">确认删除</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <p id="delete-message" class="h5">您确定要删除此项吗？</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                        <i class="fas fa-trash-alt me-1"></i>删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- 引入必要的JS库 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
