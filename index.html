@@ -1202,8 +1202,28 @@
             // Google登录按钮
             document.getElementById('google-login-btn').addEventListener('click', signInWithGoogle);
             
-            // 其他原有事件监听器保持不变
-            // ...
+             // 管理员系统 tab 切换（手动绑定）
+    const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
+    const tabContents = document.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            // 移除所有按钮的 active 类
+            tabButtons.forEach(b => b.classList.remove('active'));
+            // 添加当前按钮 active 类
+            btn.classList.add('active');
+
+            // 隐藏所有内容页
+            tabContents.forEach(tab => tab.classList.remove('show', 'active'));
+
+            // 获取要显示的目标 tab
+            const targetSelector = btn.getAttribute('data-bs-target');
+            const target = document.querySelector(targetSelector);
+            if (target) {
+                target.classList.add('show', 'active');
+            }
+        });
+    });
         }
 
         // 查询学生成绩
