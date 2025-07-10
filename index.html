@@ -1640,6 +1640,10 @@ document.getElementById('attendance-status-filter').addEventListener('change', f
             }
         });
     });
+
+            document.querySelector('[data-bs-target="#attendance-tab"]').addEventListener('click', function () {
+    loadAttendances();
+});
         }
 
         // 加载考勤数据
