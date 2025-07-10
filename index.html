@@ -27,6 +27,241 @@
             color: #333;
             overflow-x: hidden;
         }
+
+        /* 考勤状态标签样式 */
+.badge-attendance-present {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-attendance-absent {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-attendance-late {
+    background-color: var(--warning-color);
+    color: #212529;
+}
+
+.badge-attendance-leave {
+    background-color: #17a2b8; /* info color */
+    color: white;
+}
+
+/* 考勤表格特殊样式 */
+#attendance-table-body tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+#attendance-table-body td {
+    vertical-align: middle;
+}
+
+/* 考勤筛选控件样式 */
+#attendance-date-filter,
+#attendance-class-filter,
+#attendance-status-filter {
+    border-radius: 8px;
+    padding: 10px 15px;
+}
+
+/* 考勤日历图标 */
+.input-group-text[for="attendance-date"],
+.input-group-text[for="attendance-date-filter"] {
+    cursor: pointer;
+    background-color: #f8f9fa;
+}
+
+/* 考勤统计卡片样式 */
+.attendance-stats-card {
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.attendance-stats-card h5 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: var(--dark-color);
+}
+
+.attendance-stats-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+/* 考勤日历样式 */
+.attendance-calendar {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.attendance-calendar .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.attendance-calendar .calendar-title {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.attendance-calendar .calendar-nav button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    cursor: pointer;
+}
+
+.attendance-calendar .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: var(--dark-color);
+}
+
+.attendance-calendar .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.attendance-calendar .calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.attendance-calendar .calendar-day:hover {
+    background-color: #f0f2f5;
+}
+
+.attendance-calendar .calendar-day.empty {
+    visibility: hidden;
+}
+
+.attendance-calendar .calendar-day.today {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.attendance-calendar .day-number {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.attendance-calendar .day-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.attendance-calendar .day-status.present {
+    background-color: var(--success-color);
+}
+
+.attendance-calendar .day-status.absent {
+    background-color: var(--danger-color);
+}
+
+.attendance-calendar .day-status.late {
+    background-color: var(--warning-color);
+}
+
+.attendance-calendar .day-status.leave {
+    background-color: #17a2b8;
+}
+
+/* 考勤详情弹出框样式 */
+.attendance-detail-popup {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    min-width: 250px;
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+}
+
+.attendance-detail-popup.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.attendance-detail-popup:before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    border-width: 0 10px 10px 10px;
+    border-style: solid;
+    border-color: transparent transparent white transparent;
+}
+
+.attendance-detail-item {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+.attendance-detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.attendance-detail-label {
+    font-weight: 500;
+    min-width: 60px;
+    color: var(--dark-color);
+}
+
+.attendance-detail-value {
+    flex: 1;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .attendance-calendar .calendar-day {
+        font-size: 0.8rem;
+    }
+    
+    .attendance-stats-card {
+        padding: 15px;
+    }
+    
+    #attendance-table-body td, 
+    #attendance-table-body th {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .attendance-calendar .calendar-day {
+        font-size: 0.7rem;
+    }
+    
+    .attendance-stats-value {
+        font-size: 1.5rem;
+    }
+}
         
         /* 导航栏样式 */
         .navbar {
