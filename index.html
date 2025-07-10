@@ -597,12 +597,6 @@
                             <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">
                                 <i class="fas fa-file-pdf me-1"></i>成绩报告
                             </a>
-                            <li class="nav-item">
-  <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
-    <i class="fas fa-calendar-check me-1"></i>考勤管理
-  </a>
-</li>
-
                         </li>
                     </ul>
                     <div class="d-flex align-items-center">
@@ -610,7 +604,6 @@
                             <i class="fas fa-user-circle me-1"></i>
                             <span id="user-email">admin@example.com</span>
                         </div>
-                        
                         <button id="logout-btn" class="btn btn-outline-light">
                             <i class="fas fa-sign-out-alt me-1"></i>退出
                         </button>
@@ -841,79 +834,6 @@
                     </div>
                 </div>
 
-                <!-- 考勤管理 -->
-<div class="tab-pane fade" id="attendance-tab">
-  <div class="card fade-in">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span><i class="fas fa-calendar-check me-2"></i>考勤管理</span>
-      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addAttendanceModal">
-          
-        <i class="fas fa-plus me-1"></i>添加记录
-      </button>
-        <!-- 编辑考勤模态框 -->
-<div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">编辑考勤记录</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
-      </div>
-      <div class="modal-body">
-        <form id="edit-attendance-form">
-          <input type="hidden" id="edit-attendance-id">
-          <div class="mb-3">
-            <label for="edit-attendance-student" class="form-label">学生</label>
-            <input type="text" class="form-control" id="edit-attendance-student" disabled>
-          </div>
-          <div class="mb-3">
-            <label for="edit-attendance-date" class="form-label">日期</label>
-            <input type="date" class="form-control" id="edit-attendance-date" required>
-          </div>
-          <div class="mb-3">
-            <label for="edit-attendance-status" class="form-label">出缺席</label>
-            <select class="form-select" id="edit-attendance-status" required>
-              <option value="出席">出席</option>
-              <option value="缺席">缺席</option>
-              <option value="迟到">迟到</option>
-              <option value="请假">请假</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        <button class="btn btn-primary" id="update-attendance-btn">
-          <i class="fas fa-sync-alt me-1"></i>更新
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-    </div>
-    <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead>
-            <tr>
-              <th>学生姓名</th>
-              <th>班级</th>
-              <th>学号</th>
-              <th>日期</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="attendance-table-body">
-            <!-- 考勤数据将通过JavaScript动态加载 -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-
                 <!-- 成绩报告 -->
                 <div class="tab-pane fade" id="reports-tab">
                     <div class="card fade-in">
@@ -1002,48 +922,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 添加考勤模态框 -->
-<div class="modal fade" id="addAttendanceModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">添加考勤记录</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
-      </div>
-      <div class="modal-body">
-        <form id="add-attendance-form">
-          <div class="mb-3">
-            <label for="attendance-student-select" class="form-label">学生</label>
-            <select class="form-select" id="attendance-student-select" required>
-              <!-- 学生选项将由 JavaScript 填充 -->
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="attendance-date" class="form-label">日期</label>
-            <input type="date" class="form-control" id="attendance-date" required>
-          </div>
-          <div class="mb-3">
-            <label for="attendance-status" class="form-label">出缺席</label>
-            <select class="form-select" id="attendance-status" required>
-              <option value="出席">出席</option>
-              <option value="缺席">缺席</option>
-              <option value="迟到">迟到</option>
-              <option value="请假">请假</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        <button class="btn btn-primary" id="save-attendance-btn">
-          <i class="fas fa-save me-1"></i>保存
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 
     <!-- 编辑学生模态框 -->
     <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
@@ -1407,136 +1285,6 @@
     });
         }
 
-        function loadAttendances() {
-    const tbody = document.getElementById('attendance-table-body');
-    tbody.innerHTML = '';
-    showLoading('attendance-table-body');
-
-    db.collection('attendances').orderBy('date', 'desc').get()
-        .then(snapshot => {
-            tbody.innerHTML = '';
-            snapshot.forEach(doc => {
-                const record = { id: doc.id, ...doc.data() };
-                addAttendanceToTable(record);
-            });
-        })
-        .catch(error => {
-            console.error("加载考勤失败: ", error);
-            showAlert("加载考勤失败", "danger");
-        });
-}
-
-        document.getElementById('save-attendance-btn').addEventListener('click', function () {
-    const studentId = document.getElementById('attendance-student-select').value;
-    const date = document.getElementById('attendance-date').value;
-    const status = document.getElementById('attendance-status').value;
-
-    if (!studentId || !date || !status) {
-        showAlert("请填写所有字段", "warning");
-        return;
-    }
-
-    const btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
-
-    db.collection('attendances').add({
-        studentId,
-        date,
-        status
-    }).then(() => {
-        showAlert("考勤记录添加成功", "success");
-        document.getElementById('addAttendanceModal').querySelector('.btn-close').click();
-        document.getElementById('add-attendance-form').reset();
-        loadAttendances();
-    }).catch(error => {
-        console.error("添加考勤失败: ", error);
-        showAlert("添加考勤失败", "danger");
-    }).finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-    });
-});
-
-        function addAttendanceToTable(record) {
-    const student = students.find(s => s.id === record.studentId);
-    if (!student) return;
-
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>${student.name}</td>
-        <td>${student.class}</td>
-        <td>${student.studentId}</td>
-        <td>${record.date}</td>
-        <td><span class="badge bg-${record.status === '缺席' ? 'danger' : record.status === '迟到' ? 'warning' : 'success'}">${record.status}</span></td>
-        <td>
-  <button class="btn btn-sm btn-primary me-1 edit-attendance" data-id="${record.id}">
-    <i class="fas fa-edit"></i>
-  </button>
-  <button class="btn btn-sm btn-danger delete-attendance" data-id="${record.id}">
-    <i class="fas fa-trash-alt"></i>
-  </button>
-</td>
-
-    `;
-    row.querySelector('.delete-attendance').addEventListener('click', () => {
-        showDeleteConfirm('attendance', record.id, `确定要删除该考勤记录吗？`);
-    });
-            row.querySelector('.edit-attendance').addEventListener('click', () => {
-    openEditAttendanceModal(record.id);
-});
-    document.getElementById('attendance-table-body').appendChild(row);
-}
-
-        function openEditAttendanceModal(id) {
-    db.collection('attendances').doc(id).get().then(doc => {
-        if (!doc.exists) return;
-        const record = doc.data();
-        const student = students.find(s => s.id === record.studentId);
-        if (!student) return;
-
-        document.getElementById('edit-attendance-id').value = id;
-        document.getElementById('edit-attendance-student').value = `${student.name} (${student.studentId})`;
-        document.getElementById('edit-attendance-date').value = record.date;
-        document.getElementById('edit-attendance-status').value = record.status;
-
-        const modal = new bootstrap.Modal(document.getElementById('editAttendanceModal'));
-        modal.show();
-    });
-}
-
-        document.getElementById('update-attendance-btn').addEventListener('click', function () {
-    const id = document.getElementById('edit-attendance-id').value;
-    const date = document.getElementById('edit-attendance-date').value;
-    const status = document.getElementById('edit-attendance-status').value;
-
-    if (!date || !status) {
-        showAlert("请填写所有字段", "warning");
-        return;
-    }
-
-    const btn = this;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
-
-    db.collection('attendances').doc(id).update({ date, status })
-        .then(() => {
-            showAlert("考勤记录更新成功", "success");
-            document.getElementById('editAttendanceModal').querySelector('.btn-close').click();
-            loadAttendances();
-        })
-        .catch(error => {
-            console.error("更新失败: ", error);
-            showAlert("更新考勤失败", "danger");
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
-        });
-});
-
-
-
         // 查询学生成绩
         async function queryStudentScores(studentId) {
             try {
@@ -1736,15 +1484,6 @@
                     querySnapshot.forEach(doc => {
                         const student = { id: doc.id, ...doc.data() };
                         students.push(student);
-
-                        const attendanceSelect = document.getElementById('attendance-student-select');
-if (attendanceSelect) {
-    const option = document.createElement('option');
-    option.value = student.id;
-    option.textContent = `${student.name} (${student.studentId})`;
-    attendanceSelect.appendChild(option);
-}
-
                         
                         // 添加到学生表格
                         addStudentToTable(student);
@@ -2440,15 +2179,6 @@ function updateScoreDistributionChart() {
                     const project = projects.find(p => p.id === deleteId);
                     successMessage = `项目 ${project.name} 删除成功`;
                     break;
-                    case 'attendance':
-    db.collection('attendances').doc(deleteId).delete()
-        .then(() => {
-            showAlert("考勤记录删除成功", "success");
-            loadAttendances();
-        }).catch(err => {
-            showAlert("删除失败：" + err.message, "danger");
-        });
-    break;
                 case 'score':
                     collectionName = 'scores';
                     successMessage = '分数记录删除成功';
