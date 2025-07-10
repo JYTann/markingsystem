@@ -324,110 +324,6 @@
                 padding: 15px;
             }
         }
-
-        /* 深色模式样式 */
-body.dark-mode {
-    background-color: #121212;
-    color: #e0e0e0;
-}
-
-.dark-mode .card {
-    background-color: #1e1e1e;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .card-header {
-    background: linear-gradient(135deg, #3a56e8, #2d3bb3);
-}
-
-.dark-mode .table {
-    color: #e0e0e0;
-}
-
-.dark-mode .table thead th {
-    background-color: #3a56e8;
-}
-
-.dark-mode .table tbody tr {
-    background-color: #1e1e1e;
-}
-
-.dark-mode .table tbody tr:hover {
-    background-color: rgba(58, 86, 232, 0.1);
-}
-
-.dark-mode .form-control {
-    background-color: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
-}
-
-.dark-mode .form-control:focus {
-    background-color: #2d2d2d;
-    color: #e0e0e0;
-}
-
-.dark-mode .nav-tabs {
-    border-bottom-color: #444;
-}
-
-.dark-mode .nav-tabs .nav-link {
-    color: #e0e0e0;
-}
-
-.dark-mode .nav-tabs .nav-link:hover {
-    background-color: rgba(58, 86, 232, 0.1);
-}
-
-.dark-mode .tab-content {
-    background-color: #1e1e1e;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .alert {
-    background-color: #2d2d2d;
-    border-color: #444;
-    color: #e0e0e0;
-}
-
-.dark-mode .modal-content {
-    background-color: #1e1e1e;
-}
-
-.dark-mode .modal-header {
-    background: linear-gradient(135deg, #3a56e8, #2d3bb3);
-}
-
-.dark-mode .btn-outline-light {
-    color: #e0e0e0;
-    border-color: #444;
-}
-
-.dark-mode .btn-outline-light:hover {
-    background-color: #444;
-    color: #fff;
-}
-
-.dark-mode .text-muted {
-    color: #9e9e9e !important;
-}
-
-.dark-mode .student-score-card {
-    background-color: #1e1e1e;
-}
-
-.dark-mode .student-score-header {
-    background-color: rgba(58, 86, 232, 0.2);
-}
-
-.dark-mode .score-item {
-    border-bottom-color: #444;
-}
-
-/* 图表深色模式适配 */
-.dark-mode .chartjs-render-monitor {
-    filter: brightness(0.8) contrast(1.2);
-}
         
         /* 自定义滚动条 */
         ::-webkit-scrollbar {
@@ -708,14 +604,6 @@ body.dark-mode {
                             <i class="fas fa-user-circle me-1"></i>
                             <span id="user-email">admin@example.com</span>
                         </div>
-                        <!-- 深色模式切换按钮 -->
-    <button id="dark-mode-toggle" class="btn btn-outline-light me-2" title="切换深色模式">
-        <i class="fas fa-moon"></i>
-    </button>
-    <button id="logout-btn" class="btn btn-outline-light">
-        <i class="fas fa-sign-out-alt me-1"></i>退出
-    </button>
-</div>
                         <button id="logout-btn" class="btn btn-outline-light">
                             <i class="fas fa-sign-out-alt me-1"></i>退出
                         </button>
@@ -1237,18 +1125,6 @@ body.dark-mode {
 
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
-
-            // 深色模式初始化代码放在这里
-    const darkModeToggle = document.getElementById('dark-mode-toggle');
-    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const currentTheme = localStorage.getItem('theme');
-    if (currentTheme === 'dark' || (!currentTheme && prefersDarkScheme.matches)) {
-        document.body.classList.add('dark-mode');
-        darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-    } else {
-        darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-    }
             
             // 初始化UI事件
             initUIEvents();
@@ -1269,24 +1145,6 @@ body.dark-mode {
 
         // 初始化UI事件
         function initUIEvents() {
-
-            // 深色模式切换按钮
-    document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-        if (document.body.classList.contains('dark-mode')) {
-            document.body.classList.remove('dark-mode');
-            localStorage.setItem('theme', 'light');
-            this.innerHTML = '<i class="fas fa-moon"></i>';
-        } else {
-            document.body.classList.add('dark-mode');
-            localStorage.setItem('theme', 'dark');
-            this.innerHTML = '<i class="fas fa-sun"></i>';
-        }
-        
-        // 重新渲染图表以适应深色模式
-        if (scoreDistributionChart) {
-            updateScoreDistributionChart();
-        }
-    });
             // 学生查询表单提交
             document.getElementById('student-query-form').addEventListener('submit', function(e) {
                 e.preventDefault();
