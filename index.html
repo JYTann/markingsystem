@@ -1619,7 +1619,16 @@ document.getElementById('attendance-status-filter').addEventListener('change', f
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
             
              // 管理员系统 tab 切换（手动绑定）
-    const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
+   // 在initUIEvents()函数中，修改tab切换代码
+const tabButtons = document.querySelectorAll('[data-bs-toggle="tab"]');
+tabButtons.forEach(btn => {
+    btn.addEventListener('shown.bs.tab', function(e) {
+        const targetId = e.target.getAttribute('data-bs-target');
+        if (targetId === '#attendance-tab') {
+            loadAttendances(); // 当切换到考勤标签页时加载数据
+        }
+    });
+});
     const tabContents = document.querySelectorAll('.tab-pane');
 
     tabButtons.forEach(btn => {
@@ -1646,32 +1655,51 @@ document.getElementById('attendance-status-filter').addEventListener('change', f
 });
         }
 
-        // 加载考勤数据
-function loadAttendances() {
+     function loadAttendances() {
+    console.log("开始加载考勤数据..."); // 调试信息
     document.getElementById('attendance-table-body').innerHTML = '';
     showLoading('attendance-table-body');
     
     db.collection('attendances').orderBy('date', 'desc').get()
         .then(querySnapshot => {
+            console.log("获取到考勤数据:", querySnapshot.size, "条记录"); // 调试信息
             attendances = [];
             const studentSelect = document.getElementById('attendance-student');
             studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
             
+            if (querySnapshot.empty) {
+                console.warn("没有考勤记录"); // 调试信息
+                document.getElementById('attendance-table-body').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                            <p>暂无考勤记录</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
             querySnapshot.forEach(doc => {
                 const attendance = { id: doc.id, ...doc.data() };
                 attendances.push(attendance);
-                
-                // 添加到考勤表格
                 addAttendanceToTable(attendance);
             });
             
-            // 更新班级筛选下拉框
             updateAttendanceClassFilter();
-            
             addActivity("加载考勤数据完成", "info");
         })
         .catch(error => {
             console.error("加载考勤数据失败: ", error);
+            document.getElementById('attendance-table-body').innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p>加载考勤数据失败</p>
+                        <small>${error.message}</small>
+                    </td>
+                </tr>
+            `;
             showAlert("加载考勤数据失败", "danger");
             addActivity("加载考勤数据失败", "danger");
         });
