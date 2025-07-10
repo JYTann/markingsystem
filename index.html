@@ -531,6 +531,72 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 考勤管理标签页 -->
+<div class="tab-pane fade" id="attendance-tab">
+    <div class="card fade-in">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-calendar-check me-2"></i>考勤管理</span>
+            <div>
+                <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addAttendanceModal">
+                    <i class="fas fa-plus me-1"></i>添加记录
+                </button>
+                <button class="btn btn-sm btn-primary" id="export-attendance-btn">
+                    <i class="fas fa-file-export me-1"></i>导出
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="attendance-date-filter" class="form-label">日期筛选</label>
+                    <input type="date" class="form-control" id="attendance-date-filter">
+                </div>
+                <div class="col-md-4">
+                    <label for="attendance-class-filter" class="form-label">班级筛选</label>
+                    <select class="form-select" id="attendance-class-filter">
+                        <option value="">所有班级</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="attendance-status-filter" class="form-label">状态筛选</label>
+                    <select class="form-select" id="attendance-status-filter">
+                        <option value="">所有状态</option>
+                        <option value="present">出席</option>
+                        <option value="absent">缺席</option>
+                        <option value="late">迟到</option>
+                        <option value="leave">请假</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>学生</th>
+                            <th>班级</th>
+                            <th>状态</th>
+                            <th>备注</th>
+                            <th>记录时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-table-body">
+                        <!-- 考勤数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <nav aria-label="考勤分页">
+                <ul class="pagination justify-content-center mt-3" id="attendance-pagination">
+                    <!-- 分页将通过JavaScript动态加载 -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
                 
                 <!-- 管理员登录标签页 -->
                 <div class="tab-pane fade" id="login-tab">
@@ -578,6 +644,11 @@
                                 <i class="fas fa-tachometer-alt me-1"></i>仪表盘
                             </a>
                         </li>
+                        <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
+        <i class="fas fa-calendar-check me-1"></i>考勤管理
+    </a>
+</li>
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">
                                 <i class="fas fa-user-graduate me-1"></i>学生管理
@@ -674,6 +745,51 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 添加考勤记录模态框 -->
+<div class="modal fade" id="addAttendanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加考勤记录</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-attendance-form">
+                    <div class="mb-3">
+                        <label for="attendance-date" class="form-label">日期 <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="attendance-date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendance-student" class="form-label">学生 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="attendance-student" required>
+                            <option value="">-- 选择学生 --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendance-status" class="form-label">状态 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="attendance-status" required>
+                            <option value="present">出席</option>
+                            <option value="absent">缺席</option>
+                            <option value="late">迟到</option>
+                            <option value="leave">请假</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendance-remark" class="form-label">备注</label>
+                        <textarea class="form-control" id="attendance-remark" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-attendance-btn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- 学生管理 -->
                 <div class="tab-pane fade" id="students-tab">
@@ -1119,6 +1235,7 @@
         let projects = [];
         let scores = [];
         let classes = [];
+        let attendances = [];
         let deleteType = '';
         let deleteId = '';
         let scoreDistributionChart = null;
@@ -1146,6 +1263,11 @@
         // 初始化UI事件
         function initUIEvents() {
             // 学生查询表单提交
+            document.getElementById('save-attendance-btn').addEventListener('click', saveAttendance);
+document.getElementById('export-attendance-btn').addEventListener('click', exportAttendances);
+document.getElementById('attendance-date-filter').addEventListener('change', filterAttendances);
+document.getElementById('attendance-class-filter').addEventListener('change', filterAttendances);
+document.getElementById('attendance-status-filter').addEventListener('change', filterAttendances);
             document.getElementById('student-query-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const studentId = document.getElementById('student-id-query').value.trim();
@@ -1284,6 +1406,247 @@
         });
     });
         }
+
+        // 加载考勤数据
+function loadAttendances() {
+    document.getElementById('attendance-table-body').innerHTML = '';
+    showLoading('attendance-table-body');
+    
+    db.collection('attendances').orderBy('date', 'desc').get()
+        .then(querySnapshot => {
+            attendances = [];
+            const studentSelect = document.getElementById('attendance-student');
+            studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
+            
+            querySnapshot.forEach(doc => {
+                const attendance = { id: doc.id, ...doc.data() };
+                attendances.push(attendance);
+                
+                // 添加到考勤表格
+                addAttendanceToTable(attendance);
+            });
+            
+            // 更新班级筛选下拉框
+            updateAttendanceClassFilter();
+            
+            addActivity("加载考勤数据完成", "info");
+        })
+        .catch(error => {
+            console.error("加载考勤数据失败: ", error);
+            showAlert("加载考勤数据失败", "danger");
+            addActivity("加载考勤数据失败", "danger");
+        });
+}
+
+// 添加考勤记录到表格
+function addAttendanceToTable(attendance) {
+    const student = students.find(s => s.id === attendance.studentId);
+    if (!student) return;
+    
+    const tbody = document.getElementById('attendance-table-body');
+    const row = document.createElement('tr');
+    row.className = 'fade-in';
+    
+    // 格式化日期
+    const date = attendance.date.toDate();
+    const dateStr = date.toLocaleDateString();
+    const timeStr = date.toLocaleTimeString();
+    
+    // 根据状态设置样式
+    let statusClass = '';
+    let statusText = '';
+    switch(attendance.status) {
+        case 'present':
+            statusClass = 'bg-success';
+            statusText = '出席';
+            break;
+        case 'absent':
+            statusClass = 'bg-danger';
+            statusText = '缺席';
+            break;
+        case 'late':
+            statusClass = 'bg-warning text-dark';
+            statusText = '迟到';
+            break;
+        case 'leave':
+            statusClass = 'bg-info text-dark';
+            statusText = '请假';
+            break;
+    }
+    
+    row.innerHTML = `
+        <td>${dateStr}</td>
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    ${student.name.charAt(0)}
+                </div>
+                ${student.name} (${student.studentId})
+            </div>
+        </td>
+        <td><span class="badge bg-primary">${student.class}</span></td>
+        <td><span class="badge ${statusClass}">${statusText}</span></td>
+        <td>${attendance.remark || '-'}</td>
+        <td>${timeStr}</td>
+        <td>
+            <button class="btn btn-sm btn-danger delete-attendance" data-id="${attendance.id}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+    
+    // 添加删除事件
+    row.querySelector('.delete-attendance').addEventListener('click', () => 
+        showDeleteConfirm('attendance', attendance.id, `确定要删除 ${student.name} 的考勤记录吗？`));
+}
+
+// 更新考勤班级筛选下拉框
+function updateAttendanceClassFilter() {
+    const filterSelect = document.getElementById('attendance-class-filter');
+    filterSelect.innerHTML = '<option value="">所有班级</option>';
+    
+    classes.forEach(cls => {
+        const option = document.createElement('option');
+        option.value = cls;
+        option.textContent = cls;
+        filterSelect.appendChild(option);
+    });
+}
+
+// 保存考勤记录
+function saveAttendance() {
+    const date = document.getElementById('attendance-date').value;
+    const studentId = document.getElementById('attendance-student').value;
+    const status = document.getElementById('attendance-status').value;
+    const remark = document.getElementById('attendance-remark').value.trim();
+    
+    if (!date || !studentId || !status) {
+        showAlert("请填写必填字段", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-attendance-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+    
+    // 将日期字符串转换为Firestore Timestamp
+    const dateObj = new Date(date);
+    const timestamp = firebase.firestore.Timestamp.fromDate(dateObj);
+    
+    db.collection('attendances').add({
+        studentId,
+        status,
+        remark: remark || null,
+        date: timestamp,
+        recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("考勤记录添加成功", "success");
+        document.getElementById('addAttendanceModal').querySelector('.btn-close').click();
+        document.getElementById('add-attendance-form').reset();
+        loadAttendances();
+        
+        const student = students.find(s => s.id === studentId);
+        addActivity(`添加考勤记录: ${student.name} - ${status}`, "success");
+    })
+    .catch(error => {
+        console.error("添加考勤记录失败: ", error);
+        showAlert("添加考勤记录失败", "danger");
+        addActivity("添加考勤记录失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
+
+// 筛选考勤记录
+function filterAttendances() {
+    const dateFilter = document.getElementById('attendance-date-filter').value;
+    const classFilter = document.getElementById('attendance-class-filter').value;
+    const statusFilter = document.getElementById('attendance-status-filter').value;
+    
+    const filteredAttendances = attendances.filter(attendance => {
+        const student = students.find(s => s.id === attendance.studentId);
+        if (!student) return false;
+        
+        // 日期筛选
+        if (dateFilter) {
+            const attendanceDate = attendance.date.toDate().toISOString().split('T')[0];
+            if (attendanceDate !== dateFilter) return false;
+        }
+        
+        // 班级筛选
+        if (classFilter && student.class !== classFilter) return false;
+        
+        // 状态筛选
+        if (statusFilter && attendance.status !== statusFilter) return false;
+        
+        return true;
+    });
+    
+    // 更新表格
+    const tbody = document.getElementById('attendance-table-body');
+    tbody.innerHTML = '';
+    
+    if (filteredAttendances.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2"></i>
+                    <p>没有找到匹配的考勤记录</p>
+                </td>
+            </tr>
+        `;
+    } else {
+        filteredAttendances.forEach(attendance => addAttendanceToTable(attendance));
+    }
+}
+
+// 导出考勤数据
+function exportAttendances() {
+    try {
+        // 准备数据
+        const data = attendances.map(attendance => {
+            const student = students.find(s => s.id === attendance.studentId);
+            let statusText = '';
+            switch(attendance.status) {
+                case 'present': statusText = '出席'; break;
+                case 'absent': statusText = '缺席'; break;
+                case 'late': statusText = '迟到'; break;
+                case 'leave': statusText = '请假'; break;
+            }
+            
+            return {
+                '日期': attendance.date.toDate().toLocaleDateString(),
+                '学号': student?.studentId || '未知',
+                '姓名': student?.name || '未知',
+                '班级': student?.class || '未知',
+                '状态': statusText,
+                '备注': attendance.remark || '',
+                '记录时间': attendance.recordedAt?.toDate().toLocaleString() || '未知'
+            };
+        });
+        
+        // 创建工作表
+        const ws = XLSX.utils.json_to_sheet(data);
+        
+        // 创建工作簿
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "考勤数据");
+        
+        // 导出Excel文件
+        const date = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(wb, `考勤数据_${date}.xlsx`);
+        
+        addActivity("导出考勤数据", "info");
+    } catch (error) {
+        console.error("导出失败: ", error);
+        showAlert("导出考勤数据失败", "danger");
+        addActivity("导出考勤数据失败", "danger");
+    }
+}
 
         // 查询学生成绩
         async function queryStudentScores(studentId) {
@@ -1468,6 +1831,7 @@
             loadProjects();
             loadScores();
             updateDashboard();
+            loadAttendances();
         }
 
         // 加载学生数据
