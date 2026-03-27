@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能评分系统 | 阶级评分标准 | 新山宽柔中学电脑协会</title>
+    <title>智能评分系统 | 新山宽柔中学电脑协会 | 多年级分级评分</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        /* 保留原样式，新增部分样式 */
         :root {
             --primary-color: #4361ee;
             --secondary-color: #3a0ca3;
@@ -21,111 +17,223 @@
             --warning-color: #f39c12;
             --light-color: #f8f9fa;
             --dark-color: #212529;
+            --sidebar-width: 250px;
+            --transition-speed: 0.3s;
         }
-        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f5f7fa; }
-        .navbar { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .card { border: none; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.05); transition: transform 0.3s; margin-bottom: 25px; }
-        .card:hover { transform: translateY(-5px); }
-        .card-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-radius: 12px 12px 0 0; font-weight: 500; }
-        .btn { border-radius: 8px; font-weight: 500; transition: all 0.3s; }
-        .stat-card { text-align: center; padding: 25px; border-radius: 12px; color: white; transition: transform 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .table thead th { background-color: var(--primary-color); color: white; }
-        .badge-grade { background-color: #6c757d; color: white; border-radius: 20px; padding: 5px 12px; font-size: 0.8rem; }
-        .progress-bar-grade { background-color: var(--primary-color); }
-        .grade-section { background: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 20px; border-left: 5px solid var(--primary-color); }
-        .chart-container { position: relative; height: 300px; width: 100%; }
-        .student-query-container { max-width: 900px; margin: 50px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-        .login-container { max-width: 450px; margin: 100px auto; background: white; border-radius: 15px; padding: 30px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-        .radar-container { height: 300px; margin-top: 20px; }
-        .grade-selector { border-radius: 20px; background: #e9ecef; padding: 8px 15px; }
-        .btn-outline-grade { border-color: var(--primary-color); color: var(--primary-color); }
-        .btn-outline-grade:hover { background: var(--primary-color); color: white; }
+        
+        body {
+            font-family: 'Noto Sans SC', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 0.8rem 1rem;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 500;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-weight: 500;
+            transition: all var(--transition-speed);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a56e8;
+            border-color: #3a56e8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(67, 97, 238, 0.3);
+        }
+        
+        .badge-grade {
+            background-color: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .table-responsive {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: 500;
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .student-avatar {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .average-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .login-container, .student-query-container {
+                margin: 50px auto;
+                padding: 20px;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
     <!-- 学生查询页面 -->
     <div id="student-query-page" class="container">
         <div class="student-query-container">
-            <div class="login-logo text-center"><img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height: 80px;"></div>
-            <h2 class="student-query-title text-center">新山宽柔中学电脑协会成绩系统</h2>
+            <div class="login-logo">
+                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 80px;">
+            </div>
+            <h2 class="student-query-title">新山宽柔中学电脑协会成绩系统</h2>
             <ul class="nav nav-tabs">
-                <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#query-form-tab"><i class="fas fa-search"></i> 成绩查询</a></li>
-                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#login-tab"><i class="fas fa-sign-in-alt"></i> 管理员登录</a></li>
+                <li class="nav-item"><a class="nav-link active student-query-link" data-bs-toggle="tab" href="#query-form-tab"><i class="fas fa-search me-1"></i>成绩查询</a></li>
+                <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#login-tab"><i class="fas fa-sign-in-alt me-1"></i>管理员登录</a></li>
             </ul>
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="query-form-tab">
                     <form id="student-query-form">
-                        <div class="mb-3"><label for="student-id-query" class="form-label">学号</label><input type="text" class="form-control" id="student-id-query" required></div>
-                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>查询成绩</button>
+                        <div class="mb-3"><label for="student-id-query" class="form-label">学号</label><input type="text" class="form-control" id="student-id-query" placeholder="请输入您的学号" required></div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3"><i class="fas fa-search me-2"></i>查询成绩</button>
                     </form>
-                    <div id="query-results" class="mt-4" style="display:none;">
-                        <div class="card student-score-card">
-                            <div class="student-score-header d-flex align-items-center p-3">
-                                <div class="student-avatar" id="student-avatar" style="width:60px;height:60px;background:#4361ee;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;">A</div>
-                                <div class="ms-3"><h4 id="student-name-display"></h4><div><span class="me-3"><i class="fas fa-id-card"></i> <span id="student-id-display"></span></span><span><i class="fas fa-chart-line"></i> 阶级: <span id="student-grade-display"></span></span></div></div>
-                                <div class="ms-auto text-end"><small>总平均</small><div class="average-score" id="average-score-display">0%</div></div>
-                            </div>
-                            <div class="card-body"><h5><i class="fas fa-tasks"></i> 各项目成绩</h5><div id="score-details"></div><div class="radar-container mt-4"><canvas id="studentRadarChart" width="400" height="300"></canvas></div></div>
-                        </div>
-                        <div class="text-center mt-3"><button id="new-query-btn" class="btn btn-outline-primary"><i class="fas fa-redo"></i> 新的查询</button></div>
-                    </div>
+                    <div id="query-results" class="mt-4" style="display: none;"><div class="card student-score-card"><div class="student-score-header d-flex align-items-center"><div class="student-avatar" id="student-avatar">A</div><div><h4 id="student-name-display">学生姓名</h4><div><span class="me-3"><i class="fas fa-id-card me-1"></i> <span id="student-id-display">学号</span></span><span><i class="fas fa-users me-1"></i> <span id="student-class-display">班级</span></span><span class="ms-3"><i class="fas fa-layer-group me-1"></i> <span id="student-grade-display">年级阶段</span></span></div></div><div class="ms-auto text-end"><small class="text-muted">总平均</small><div class="average-score" id="average-score-display">0%</div></div></div><div class="card-body"><h5 class="mb-3"><i class="fas fa-tasks me-2"></i>各项目成绩</h5><div id="score-details"></div></div></div><div class="text-center mt-3"><button id="new-query-btn" class="btn btn-outline-primary"><i class="fas fa-redo me-1"></i>新的查询</button></div></div>
                 </div>
                 <div class="tab-pane fade" id="login-tab">
-                    <form id="login-form"><div class="mb-3"><label>邮箱</label><input type="email" class="form-control" id="login-email" required></div><div class="mb-3"><label>密码</label><input type="password" class="form-control" id="login-password" required></div><button type="submit" class="btn btn-primary w-100">登录</button><div class="text-center my-3">或<button type="button" id="google-login-btn" class="btn btn-outline-danger w-100 mt-2"><i class="fab fa-google"></i> Google登录</button></div></form>
+                    <form id="login-form"><div class="mb-3"><label for="login-email" class="form-label">邮箱</label><input type="email" class="form-control" id="login-email" required></div><div class="mb-3"><label for="login-password" class="form-label">密码</label><input type="password" class="form-control" id="login-password" required></div><button type="submit" class="btn btn-primary w-100 mt-3"><i class="fas fa-sign-in-alt me-2"></i>登录</button><div class="text-center my-3"><p class="text-muted">或</p><button type="button" id="google-login-btn" class="btn btn-outline-danger w-100"><i class="fab fa-google me-2"></i>使用Google账号登录</button></div></form>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 主系统页面 -->
-    <div id="main-system" style="display:none;">
-        <nav class="navbar navbar-expand-lg navbar-dark">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#"><img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" style="height:40px;margin-right:10px;">新山宽柔中学电脑协会评分系统</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item"><a class="nav-link active" data-tab="dashboard-tab"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="students-tab"><i class="fas fa-user-graduate"></i> 学生管理</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="projects-tab"><i class="fas fa-tasks"></i> 评分项目(阶级)</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="grade-config-tab"><i class="fas fa-layer-group"></i> 阶级评分设定</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="scores-tab"><i class="fas fa-edit"></i> 分数录入</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="reports-tab"><i class="fas fa-file-pdf"></i> 成绩报告</a></li>
-                        <li class="nav-item"><a class="nav-link" data-tab="analytics-tab"><i class="fas fa-chart-line"></i> 成绩分析</a></li>
-                    </ul>
-                    <div class="d-flex align-items-center text-white me-3"><i class="fas fa-user-circle"></i> <span id="user-email"></span></div>
-                    <button id="logout-btn" class="btn btn-outline-light btn-sm"><i class="fas fa-sign-out-alt"></i> 退出</button>
-                </div>
-            </div>
-        </nav>
+    <div id="main-system" style="display: none;">
+        <nav class="navbar navbar-expand-lg navbar-dark"><div class="container-fluid"><a class="navbar-brand" href="javascript:void(0)"><img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 40px; margin-right: 10px;"><span>新山宽柔中学电脑协会评分系统</span></a><button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button><div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab"><i class="fas fa-tachometer-alt me-1"></i>仪表盘</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab"><i class="fas fa-user-graduate me-1"></i>学生管理</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab"><i class="fas fa-tasks me-1"></i>评分项目</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#grades-tab"><i class="fas fa-chart-line me-1"></i>年级阶段管理</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#grade-projects-tab"><i class="fas fa-layer-group me-1"></i>年级项目配置</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab"><i class="fas fa-edit me-1"></i>分数录入</a></li><li class="nav-item"><a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab"><i class="fas fa-file-pdf me-1"></i>成绩报告</a></li></ul><div class="d-flex align-items-center"><div class="text-white me-3"><i class="fas fa-user-circle me-1"></i><span id="user-email">admin@example.com</span></div><button id="logout-btn" class="btn btn-outline-light"><i class="fas fa-sign-out-alt me-1"></i>退出</button></div></div></div></nav>
+
         <div class="container mt-4">
-            <div class="tab-content" id="mainTabContent">
+            <div class="tab-content">
                 <!-- 仪表盘 -->
-                <div class="tab-pane fade show active" id="dashboard-tab"><div class="row"><div class="col-md-3"><div class="stat-card" style="background:linear-gradient(135deg,#4361ee,#3a0ca3)"><i class="fas fa-users fa-2x"></i><h3 id="student-count">0</h3><p>学生总数</p></div></div><div class="col-md-3"><div class="stat-card" style="background:linear-gradient(135deg,#4cc9f0,#4895ef)"><i class="fas fa-tasks fa-2x"></i><h3 id="project-count">0</h3><p>项目总数(按阶级)</p></div></div><div class="col-md-3"><div class="stat-card" style="background:linear-gradient(135deg,#f72585,#b5179e)"><i class="fas fa-chart-line fa-2x"></i><h3 id="score-count">0</h3><p>分数记录</p></div></div><div class="col-md-3"><div class="stat-card" style="background:linear-gradient(135deg,#2ecc71,#27ae60)"><i class="fas fa-chart-pie fa-2x"></i><h3 id="grade-levels-count">0</h3><p>活跃阶级数</p></div></div></div><div class="row mt-4"><div class="col-md-6"><div class="card"><div class="card-header">成绩分布(全体)</div><div class="card-body"><canvas id="scoreDistributionChart"></canvas></div></div></div><div class="col-md-6"><div class="card"><div class="card-header">各阶级平均分对比</div><div class="card-body"><canvas id="gradeAvgChart"></canvas></div></div></div></div></div>
-                <!-- 学生管理(增加阶级列) -->
-                <div class="tab-pane fade" id="students-tab"><div class="card"><div class="card-header d-flex justify-content-between"><span><i class="fas fa-user-graduate"></i> 学生管理</span><div><button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addStudentModal"><i class="fas fa-plus"></i> 添加学生</button><button class="btn btn-sm btn-primary ms-2" id="export-students-btn"><i class="fas fa-file-export"></i> 导出</button><button class="btn btn-sm btn-info ms-2" id="batch-grade-btn"><i class="fas fa-layer-group"></i> 批量设定阶级</button></div></div><div class="card-body"><div class="row mb-3"><div class="col-md-6"><input type="text" id="student-search" class="form-control" placeholder="搜索学号/姓名"></div><div class="col-md-6"><select id="student-class-filter" class="form-select"><option value="">所有班级</option></select></div></div><div class="table-responsive"><table class="table"><thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>阶级(年)</th><th>学习组</th><th>工作组</th><th>操作</th></tr></thead><tbody id="students-table-body"></tbody></table></div></div></div></div>
-                <!-- 评分项目 (带阶级筛选) -->
-                <div class="tab-pane fade" id="projects-tab"><div class="card"><div class="card-header d-flex justify-content-between"><span><i class="fas fa-tasks"></i> 评分项目 (按阶级配置)</span><button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal"><i class="fas fa-plus"></i> 添加项目(指定阶级)</button></div><div class="card-body"><div class="mb-3"><label>筛选阶级</label><select id="project-grade-filter" class="form-select w-25"><option value="">全部</option></select></div><div class="table-responsive"><table class="table"><thead><tr><th>项目名称</th><th>适用阶级</th><th>满分</th><th>占比(%)</th><th>操作</th></tr></thead><tbody id="projects-table-body"></tbody></table></div></div></div></div>
-                <!-- 阶级评分设定专用 (独立管理每个阶级的项目权重) -->
-                <div class="tab-pane fade" id="grade-config-tab"><div class="card"><div class="card-header"><i class="fas fa-layer-group"></i> 阶级评分标准设定 (0.5年 ~ 4.0年)</div><div class="card-body"><div id="grade-config-list"></div><div class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> 每个阶级可独立配置评分项目，分数录入时将根据学生阶级自动匹配对应项目。</div></div></div></div>
-                <!-- 分数录入(自动根据学生阶级过滤项目) -->
-                <div class="tab-pane fade" id="scores-tab"><div class="card"><div class="card-header">分数录入</div><div class="card-body"><div class="row"><div class="col-md-4"><label>学生</label><select id="score-student-select" class="form-select"><option value="">--选择学生--</option></select></div><div class="col-md-4"><label>项目(基于阶级)</label><select id="score-project-select" class="form-select"><option value="">--选择项目--</option></select></div><div class="col-md-2"><label>分数</label><input type="number" id="score-input" class="form-control" step="0.1"></div><div class="col-md-2 d-flex align-items-end"><button id="save-score-btn" class="btn btn-primary w-100">保存分数</button></div></div><div class="mt-4"><div class="table-responsive"><table class="table"><thead><tr><th>学生</th><th>项目</th><th>分数/满分</th><th>占比</th><th>操作</th></tr></thead><tbody id="scores-table-body"></tbody></table></div></div></div></div></div>
-                <!-- 报告生成 (增加阶级筛选) -->
-                <div class="tab-pane fade" id="reports-tab"><div class="card"><div class="card-header">生成报告</div><div class="card-body"><div class="row"><div class="col-md-3"><label>班级</label><select id="report-class-select" class="form-select"><option value="">所有班级</option></select></div><div class="col-md-3"><label>阶级</label><select id="report-grade-select" class="form-select"><option value="">所有阶级</option></select></div><div class="col-md-3"><label>格式</label><select id="report-format-select" class="form-select"><option value="pdf">PDF</option><option value="excel">Excel</option><option value="html">HTML</option></select></div><div class="col-md-3 d-flex align-items-end"><button id="generate-report-btn" class="btn btn-primary w-100">生成报告</button></div></div><div id="report-preview" class="mt-4 p-3 border rounded bg-light" style="min-height:200px;">预览区域</div></div></div></div>
-                <!-- 新增成绩分析: 班级雷达对比/阶级趋势 -->
-                <div class="tab-pane fade" id="analytics-tab"><div class="card"><div class="card-header"><i class="fas fa-chart-line"></i> 成绩深度分析</div><div class="card-body"><div class="row"><div class="col-md-6"><h5>班级平均分排行</h5><canvas id="classBarChart" height="250"></canvas></div><div class="col-md-6"><h5>各阶级优秀率(≥80%)</h5><canvas id="gradePassRateChart" height="250"></canvas></div></div><div class="row mt-4"><div class="col-12"><h5>成绩预警 (平均分低于60分学生)</h5><div id="warning-student-list" class="list-group"></div></div></div></div></div></div>
+                <div class="tab-pane fade show active" id="dashboard-tab"><div class="row"><div class="col-md-3"><div class="stat-card" style="background: linear-gradient(135deg, #4361ee, #3a0ca3);"><i class="fas fa-users"></i><h5 class="card-title" id="student-count">0</h5><p class="card-text">学生总数</p></div></div><div class="col-md-3"><div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #4895ef);"><i class="fas fa-tasks"></i><h5 class="card-title" id="project-count">0</h5><p class="card-text">评分项目</p></div></div><div class="col-md-3"><div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);"><i class="fas fa-chart-line"></i><h5 class="card-title" id="score-count">0</h5><p class="card-text">分数记录</p></div></div><div class="col-md-3"><div class="stat-card" style="background: linear-gradient(135deg, #20c997, #0dcaf0);"><i class="fas fa-layer-group"></i><h5 class="card-title" id="grade-count">0</h5><p class="card-text">年级阶段数</p></div></div></div><div class="row mt-4"><div class="col-md-6"><div class="card"><div class="card-header"><i class="fas fa-chart-pie me-2"></i>成绩分布 (按分数段)</div><div class="card-body"><div class="chart-container"><canvas id="scoreDistributionChart"></canvas></div></div></div></div><div class="col-md-6"><div class="card"><div class="card-header"><i class="fas fa-chart-bar me-2"></i>各年级平均分对比</div><div class="card-body"><div class="chart-container"><canvas id="gradeAvgChart"></canvas></div></div></div></div></div></div>
+
+                <!-- 学生管理 (增加年级列) -->
+                <div class="tab-pane fade" id="students-tab"><div class="card"><div class="card-header d-flex justify-content-between"><span><i class="fas fa-user-graduate me-2"></i>学生管理</span><div><button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addStudentModal"><i class="fas fa-plus me-1"></i>添加学生</button><button class="btn btn-sm btn-primary" id="export-students-btn"><i class="fas fa-file-export me-1"></i>导出</button></div></div><div class="card-body"><div class="row mb-3"><div class="col-md-4"><input type="text" class="form-control" id="student-search" placeholder="搜索学号/姓名"></div><div class="col-md-4"><select class="form-select" id="student-class-filter"><option value="">所有班级</option></select></div><div class="col-md-4"><select class="form-select" id="student-grade-filter"><option value="">所有年级阶段</option></select></div></div><div class="mb-3"><label class="form-label">从Excel导入学生 (需包含: 学号,姓名,班级,年级阶段,学习组,工作组)</label><div class="input-group"><input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls"><button class="btn btn-outline-secondary" type="button" id="import-excel-btn"><i class="fas fa-upload me-1"></i>上传</button></div></div><div class="table-responsive"><table class="table table-striped"><thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>年级阶段</th><th>学习组</th><th>工作组</th><th>操作</th></tr></thead><tbody id="students-table-body"></tbody></table></div></div></div></div>
+
+                <!-- 评分项目 (增加年级归属) -->
+                <div class="tab-pane fade" id="projects-tab"><div class="card"><div class="card-header d-flex justify-content-between"><span><i class="fas fa-tasks me-2"></i>评分项目管理 (可指定适用年级)</span><button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addProjectModal"><i class="fas fa-plus me-1"></i>添加项目</button></div><div class="card-body"><div class="table-responsive"><table class="table table-striped"><thead><tr><th>项目名称</th><th>满分</th><th>占比</th><th>适用年级</th><th>创建时间</th><th>操作</th></tr></thead><tbody id="projects-table-body"></tbody></table></div></div></div></div>
+
+                <!-- 年级阶段管理 -->
+                <div class="tab-pane fade" id="grades-tab"><div class="card"><div class="card-header d-flex justify-content-between"><span><i class="fas fa-layer-group me-2"></i>年级阶段管理 (0.5,1.0,1.5...4.0)</span><button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addGradeModal"><i class="fas fa-plus me-1"></i>新增年级</button></div><div class="card-body"><div class="table-responsive"><table class="table table-striped"><thead><tr><th>年级阶段值</th><th>显示名称</th><th>排序</th><th>操作</th></tr></thead><tbody id="grades-table-body"></tbody></table></div><div class="alert alert-info mt-3"><i class="fas fa-info-circle"></i> 每个年级可独立配置评分项目，在“年级项目配置”中为各年级分配项目。</div></div></div></div>
+
+                <!-- 年级项目配置 -->
+                <div class="tab-pane fade" id="grade-projects-tab"><div class="card"><div class="card-header"><i class="fas fa-cogs me-2"></i>年级专属评分项目配置</div><div class="card-body"><div class="row"><div class="col-md-4"><label>选择年级阶段</label><select id="config-grade-select" class="form-select"></select><button id="refresh-grade-projects" class="btn btn-outline-primary mt-2 w-100"><i class="fas fa-sync"></i> 刷新项目列表</button></div><div class="col-md-8"><h6>当前年级已分配项目</h6><ul id="assigned-projects-list" class="list-group mb-3"></ul><div class="input-group mt-2"><select id="available-projects-select" class="form-select"></select><button id="assign-project-to-grade" class="btn btn-success">分配项目到当前年级</button></div><button id="remove-selected-project" class="btn btn-danger mt-2">移除选中项目</button></div></div></div></div></div>
+
+                <!-- 分数录入 (根据学生年级自动过滤项目) -->
+                <div class="tab-pane fade" id="scores-tab"><div class="card"><div class="card-header"><i class="fas fa-edit me-2"></i>分数录入</div><div class="card-body"><div class="row"><div class="col-md-4"><label>选择学生</label><select class="form-select" id="score-student-select"><option value="">-- 选择学生 --</option></select></div><div class="col-md-4"><label>选择项目 (仅显示该学生年级适用项目)</label><select class="form-select" id="score-project-select"><option value="">-- 选择项目 --</option></select></div><div class="col-md-4"><label>分数</label><input type="number" class="form-control" id="score-input" min="0" step="0.1"></div></div><div class="mt-3"><button id="save-score-btn" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存分数</button></div><div class="table-responsive mt-4"><table class="table table-striped"><thead><tr><th>学生</th><th>项目</th><th>分数</th><th>满分</th><th>占比</th><th>操作</th></tr></thead><tbody id="scores-table-body"></tbody></table></div></div></div></div>
+
+                <!-- 成绩报告 (增加年级筛选) -->
+                <div class="tab-pane fade" id="reports-tab"><div class="card"><div class="card-header"><i class="fas fa-file-pdf me-2"></i>成绩报告生成</div><div class="card-body"><div class="row"><div class="col-md-4"><label>选择班级</label><select id="report-class-select" class="form-select"><option value="">所有班级</option></select></div><div class="col-md-4"><label>选择年级阶段</label><select id="report-grade-select" class="form-select"><option value="">所有年级</option></select></div><div class="col-md-4"><label>报告格式</label><select id="report-format-select" class="form-select"><option value="pdf">PDF</option><option value="excel">Excel</option><option value="html">HTML</option></select></div></div><div class="mt-3"><button id="generate-report-btn" class="btn btn-primary w-100"><i class="fas fa-download me-1"></i>生成并下载报告</button></div><div id="report-preview" class="text-center p-4 border rounded mt-3"><div class="spinner-border text-primary" role="status"></div></div></div></div></div>
             </div>
         </div>
     </div>
 
-    <!-- 模态框略... (保持原有添加/编辑，增加阶级字段) 为节省篇幅保留必要模态框结构，添加阶级选择 -->
-    <div class="modal fade" id="addStudentModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>添加学生</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="text" id="student-name" class="form-control mb-2" placeholder="姓名"><input type="text" id="student-class" class="form-control mb-2" placeholder="班级"><input type="text" id="student-id" class="form-control mb-2" placeholder="学号"><select id="student-grade" class="form-select mb-2"><option value="0.5">0.5年</option><option value="1.0">1.0年</option><option value="1.5">1.5年</option><option value="2.0">2.0年</option><option value="2.5">2.5年</option><option value="3.0">3.0年</option><option value="3.5">3.5年</option><option value="4.0">4.0年</option></select><input type="text" id="study-group" placeholder="学习组" class="form-control mb-2"><input type="text" id="work-group" placeholder="工作组" class="form-control mb-2"></div><div class="modal-footer"><button class="btn btn-primary" id="save-student-btn">保存</button></div></div></div></div>
-    <div class="modal fade" id="editStudentModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>编辑学生</h5></div><div class="modal-body"><input type="hidden" id="edit-student-id-hidden"><input type="text" id="edit-student-name" class="form-control mb-2"><input type="text" id="edit-student-class" class="form-control mb-2"><input type="text" id="edit-student-id" class="form-control mb-2"><select id="edit-student-grade" class="form-select mb-2"><option value="0.5">0.5年</option><option value="1.0">1.0年</option><option value="1.5">1.5年</option><option value="2.0">2.0年</option><option value="2.5">2.5年</option><option value="3.0">3.0年</option><option value="3.5">3.5年</option><option value="4.0">4.0年</option></select><input type="text" id="edit-study-group" class="form-control mb-2"><input type="text" id="edit-work-group" class="form-control mb-2"></div><div class="modal-footer"><button id="update-student-btn" class="btn btn-primary">更新</button></div></div></div></div>
-    <div class="modal fade" id="addProjectModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>添加评分项目</h5></div><div class="modal-body"><input type="text" id="project-name" class="form-control mb-2" placeholder="项目名称"><input type="number" id="project-full-mark" class="form-control mb-2" placeholder="满分"><div class="input-group mb-2"><input type="number" id="project-weight" class="form-control" placeholder="占比(%)" step="0.1"><span class="input-group-text">%</span></div><select id="project-grade-level" class="form-select mb-2"><option value="0.5">0.5年</option><option value="1.0">1.0年</option><option value="1.5">1.5年</option><option value="2.0">2.0年</option><option value="2.5">2.5年</option><option value="3.0">3.0年</option><option value="3.5">3.5年</option><option value="4.0">4.0年</option></select><textarea id="project-description" class="form-control" placeholder="描述"></textarea></div><div class="modal-footer"><button id="save-project-btn" class="btn btn-primary">保存</button></div></div></div></div>
-    <div class="modal fade" id="confirmDeleteModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-danger"><h5>确认删除</h5></div><div class="modal-body"><p id="delete-message"></p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button id="confirm-delete-btn" class="btn btn-danger">删除</button></div></div></div></div>
+    <!-- 模态框: 添加学生,编辑学生,添加项目,编辑项目,添加年级 -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">添加学生</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="add-student-form"><input type="text" class="form-control mb-2" id="student-name" placeholder="姓名" required><input type="text" class="form-control mb-2" id="student-class" placeholder="班级" required><input type="text" class="form-control mb-2" id="student-id" placeholder="学号" required><select id="student-grade-level" class="form-select mb-2" required><option value="">选择年级阶段</option></select><input type="text" class="form-control mb-2" id="study-group" placeholder="学习组"><input type="text" class="form-control mb-2" id="work-group" placeholder="工作组"></form></div><div class="modal-footer"><button class="btn btn-primary" id="save-student-btn">保存</button></div></div></div></div>
+    <div class="modal fade" id="editStudentModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">编辑学生</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form><input type="hidden" id="edit-student-id"><input type="text" id="edit-student-name" class="form-control mb-2" placeholder="姓名"><input type="text" id="edit-student-class" class="form-control mb-2" placeholder="班级"><input type="text" id="edit-student-id-field" class="form-control mb-2" placeholder="学号"><select id="edit-student-grade" class="form-select mb-2"></select><input type="text" id="edit-study-group" class="form-control mb-2" placeholder="学习组"><input type="text" id="edit-work-group" class="form-control mb-2" placeholder="工作组"></form></div><div class="modal-footer"><button class="btn btn-primary" id="update-student-btn">更新</button></div></div></div></div>
+    <div class="modal fade" id="addProjectModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">添加评分项目</h5></div><div class="modal-body"><input type="text" id="project-name" class="form-control mb-2" placeholder="项目名称"><input type="number" id="project-full-mark" class="form-control mb-2" placeholder="满分"><div class="input-group mb-2"><input type="number" id="project-weight" class="form-control" placeholder="占比 %"><span class="input-group-text">%</span></div><select id="project-grade-id" class="form-select mb-2"><option value="all">适用于所有年级</option></select><textarea id="project-description" class="form-control" rows="2" placeholder="描述"></textarea></div><div class="modal-footer"><button id="save-project-btn" class="btn btn-primary">保存</button></div></div></div></div>
+    <div class="modal fade" id="editProjectModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>编辑项目</h5></div><div class="modal-body"><input type="hidden" id="edit-project-id"><input type="text" id="edit-project-name" class="form-control mb-2"><input type="number" id="edit-project-full-mark" class="form-control mb-2"><div class="input-group mb-2"><input type="number" id="edit-project-weight" class="form-control"><span class="input-group-text">%</span></div><select id="edit-project-grade" class="form-select mb-2"></select><textarea id="edit-project-description" class="form-control"></textarea></div><div class="modal-footer"><button id="update-project-btn" class="btn btn-primary">更新</button></div></div></div></div>
+    <div class="modal fade" id="addGradeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>新增年级阶段</h5></div><div class="modal-body"><input type="text" id="new-grade-value" class="form-control mb-2" placeholder="例如 2.5"><input type="text" id="new-grade-name" class="form-control mb-2" placeholder="显示名称 如 2.5年"></div><div class="modal-footer"><button id="save-grade-btn" class="btn btn-primary">创建</button></div></div></div></div>
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header bg-danger text-white"><h5>确认删除</h5></div><div class="modal-body"><p id="delete-message"></p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button id="confirm-delete-btn" class="btn btn-danger">删除</button></div></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -133,59 +241,71 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         const firebaseConfig = { apiKey: "AIzaSyA5E68ARL8svmrcjy0djUIInArlnxFQnhw", authDomain: "fymcsjb-marking-system.firebaseapp.com", projectId: "fymcsjb-marking-system", storageBucket: "fymcsjb-marking-system.appspot.com", messagingSenderId: "40020598030", appId: "1:40020598030:web:420e641e1c839dd709cb5f" };
-        firebase.initializeApp(firebaseConfig); const auth = firebase.auth(); const db = firebase.firestore();
-        let students = [], projects = [], scores = [], currentUser = null, deleteType, deleteId;
-        const gradeLevels = [0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0];
-        let studentRadarChart = null;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(), db = firebase.firestore();
+        let currentUser = null, students = [], projects = [], scores = [], grades = [];
+        let scoreChart, gradeAvgChart, deleteTarget = { type: '', id: '' };
 
         document.addEventListener('DOMContentLoaded', () => {
-            initEventListeners(); auth.onAuthStateChanged(user => { if(user && (user.email==="tanjunyuanfoonyew@gmail.com"||user.email==="jb220225@foonyew.edu.my")){ currentUser=user; document.getElementById('user-email').innerText=user.email; showMainSystem(); loadAllData(); } else showStudentPage(); });
+            initEvents();
+            auth.onAuthStateChanged(user => { if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my")) { currentUser = user; document.getElementById('user-email').textContent = user.email; showMainSystem(); loadAllMasterData(); } else showStudentQueryPage(); });
         });
-        function initEventListeners() {
+        function initEvents() {
             document.getElementById('student-query-form').addEventListener('submit', e => { e.preventDefault(); queryStudentScores(document.getElementById('student-id-query').value.trim()); });
-            document.getElementById('new-query-btn').onclick = () => { document.getElementById('query-results').style.display='none'; document.getElementById('student-query-form').reset(); };
-            document.getElementById('login-form').onsubmit = e => { e.preventDefault(); let email=document.getElementById('login-email').value; let pwd=document.getElementById('login-password').value; auth.signInWithEmailAndPassword(email,pwd).catch(err=>alert(err.message)); };
-            document.getElementById('google-login-btn').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(res=>{ if(res.user.email!=='tanjunyuanfoonyew@gmail.com'&&res.user.email!=='jb220225@foonyew.edu.my'){ auth.signOut(); alert('无权登录'); } });
+            document.getElementById('new-query-btn').onclick = () => { document.getElementById('query-results').style.display = 'none'; document.getElementById('student-query-form').reset(); };
+            document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); auth.signInWithEmailAndPassword(document.getElementById('login-email').value, document.getElementById('login-password').value).catch(err=>alert(err.message)); });
+            document.getElementById('google-login-btn').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(res=>{ if(!["tanjunyuanfoonyew@gmail.com","jb220225@foonyew.edu.my"].includes(res.user.email)) auth.signOut(); else location.reload(); });
             document.getElementById('logout-btn').onclick = () => auth.signOut().then(()=>location.reload());
             document.getElementById('save-student-btn').onclick = saveStudent; document.getElementById('update-student-btn').onclick = updateStudent;
-            document.getElementById('save-project-btn').onclick = saveProject; document.getElementById('save-score-btn').onclick = saveScore;
-            document.getElementById('generate-report-btn').onclick = generateReport; document.getElementById('confirm-delete-btn').onclick = confirmDelete;
-            document.getElementById('export-students-btn').onclick = exportStudents; document.getElementById('batch-grade-btn').onclick = batchSetGrade;
-            document.getElementById('student-search').addEventListener('input', filterStudents); document.getElementById('student-class-filter').addEventListener('change', filterStudents);
-            document.querySelectorAll('[data-tab]').forEach(btn => { btn.addEventListener('click', function(){ let tabId=this.getAttribute('data-tab'); document.querySelectorAll('#mainTabContent .tab-pane').forEach(p=>p.classList.remove('show','active')); document.getElementById(tabId).classList.add('show','active'); if(tabId==='grade-config-tab') renderGradeConfig(); if(tabId==='analytics-tab') loadAnalytics(); }); });
-            document.getElementById('score-student-select').addEventListener('change', function(){ let studentId=this.value; if(studentId){ let student=students.find(s=>s.id===studentId); if(student){ let grade=student.gradeLevel; let filtered=projects.filter(p=>p.gradeLevel==grade); let select=document.getElementById('score-project-select'); select.innerHTML='<option value="">--选择项目--</option>'; filtered.forEach(p=>{ let opt=document.createElement('option'); opt.value=p.id; opt.innerText=`${p.name} (满分${p.fullMark})`; select.appendChild(opt); }); } } });
-            document.getElementById('project-grade-filter').addEventListener('change', loadProjects);
-            document.getElementById('report-grade-select').addEventListener('change', ()=>loadReportPreview());
-            loadReportPreview();
+            document.getElementById('save-project-btn').onclick = saveProject; document.getElementById('update-project-btn').onclick = updateProject;
+            document.getElementById('save-score-btn').onclick = saveScore; document.getElementById('generate-report-btn').onclick = generateReport;
+            document.getElementById('confirm-delete-btn').onclick = () => { if(deleteTarget.type) db.collection(deleteTarget.type).doc(deleteTarget.id).delete().then(()=>{ loadAllMasterData(); }); bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide(); };
+            document.getElementById('import-excel-btn').onclick = () => { if(document.getElementById('import-excel').files[0]) importExcel(); else alert("请选择文件"); };
+            document.getElementById('export-students-btn').onclick = () => exportStudents();
+            document.getElementById('save-grade-btn').onclick = addGrade;
+            document.getElementById('assign-project-to-grade').onclick = assignProjectToGrade;
+            document.getElementById('remove-selected-project').onclick = removeProjectFromGrade;
+            document.getElementById('refresh-grade-projects').onclick = () => loadGradeProjectsConfig();
+            document.getElementById('score-student-select').addEventListener('change', filterProjectsByStudentGrade);
         }
-        async function loadAllData(){ await Promise.all([loadStudents(), loadProjects(), loadScores()]); updateDashboard(); loadAnalytics(); renderGradeConfig(); }
-        async function loadStudents(){ let snap=await db.collection('students').get(); students=snap.docs.map(d=>({id:d.id,...d.data(), gradeLevel: d.data().gradeLevel||'1.0'})); renderStudentTable(); let classSet=new Set(students.map(s=>s.class)); let classSelect=document.getElementById('student-class-filter'); classSelect.innerHTML='<option value="">所有班级</option>'; classSet.forEach(c=>{let opt=document.createElement('option');opt.value=c;opt.innerText=c;classSelect.appendChild(opt);}); let gradeSelect=document.getElementById('report-grade-select'); gradeSelect.innerHTML='<option value="">所有阶级</option>'; gradeLevels.forEach(g=>{let opt=document.createElement('option');opt.value=g;opt.innerText=g+'年';gradeSelect.appendChild(opt);}); }
-        function renderStudentTable(){ let tbody=document.getElementById('students-table-body'); tbody.innerHTML=''; let search=document.getElementById('student-search').value.toLowerCase(); let classFilter=document.getElementById('student-class-filter').value; students.filter(s=>(s.name.toLowerCase().includes(search)||s.studentId.includes(search))&&(classFilter===''||s.class===classFilter)).forEach(s=>{ let tr=document.createElement('tr'); tr.innerHTML=`<td>${s.studentId}</td><td>${s.name}</td><td>${s.class}</td><td><span class="badge bg-secondary">${s.gradeLevel}年</span></td><td>${s.studyGroup||'-'}</td><td>${s.workGroup||'-'}</td><td><button class="btn btn-sm btn-primary edit-student" data-id="${s.id}"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger delete-student" data-id="${s.id}"><i class="fas fa-trash"></i></button></td>`; tbody.appendChild(tr); }); document.querySelectorAll('.edit-student').forEach(btn=>btn.addEventListener('click',e=>editStudent(btn.getAttribute('data-id')))); document.querySelectorAll('.delete-student').forEach(btn=>btn.addEventListener('click',e=>showDeleteConfirm('student',btn.getAttribute('data-id'),'删除学生？'))); }
-        async function loadProjects(){ let snap=await db.collection('projects').get(); projects=snap.docs.map(d=>({id:d.id,...d.data()})); let filterGrade=document.getElementById('project-grade-filter').value; let filtered=filterGrade?projects.filter(p=>p.gradeLevel==filterGrade):projects; let tbody=document.getElementById('projects-table-body'); tbody.innerHTML=''; filtered.forEach(p=>{let tr=document.createElement('tr'); tr.innerHTML=`<td>${p.name}</td><td>${p.gradeLevel}年</td><td>${p.fullMark}</td><td>${(p.weight*100).toFixed(1)}%</td><td><button class="btn btn-sm btn-primary edit-project" data-id="${p.id}"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger delete-project" data-id="${p.id}"><i class="fas fa-trash"></i></button></td>`; tbody.appendChild(tr); }); let gradeFilterSelect=document.getElementById('project-grade-filter'); gradeFilterSelect.innerHTML='<option value="">全部</option>'; [...new Set(projects.map(p=>p.gradeLevel))].forEach(g=>{let opt=document.createElement('option');opt.value=g;opt.innerText=g+'年';gradeFilterSelect.appendChild(opt);}); }
-        async function loadScores(){ let snap=await db.collection('scores').get(); scores=snap.docs.map(d=>({id:d.id,...d.data()})); renderScoresTable(); updateDashboard(); }
-        function renderScoresTable(){ let tbody=document.getElementById('scores-table-body'); tbody.innerHTML=''; scores.forEach(score=>{ let student=students.find(s=>s.id===score.studentId); let project=projects.find(p=>p.id===score.projectId); if(student&&project){ let percentage=(score.score/project.fullMark*100).toFixed(1); let tr=document.createElement('tr'); tr.innerHTML=`<td>${student.name}</td><td>${project.name}</td><td>${score.score}/${project.fullMark} (${percentage}%)</td><td>${(project.weight*100).toFixed(1)}%</td><td><button class="btn btn-sm btn-danger delete-score" data-id="${score.id}"><i class="fas fa-trash"></i></button></td>`; tbody.appendChild(tr); } }); document.querySelectorAll('.delete-score').forEach(btn=>btn.addEventListener('click',e=>showDeleteConfirm('score',btn.getAttribute('data-id'),'删除分数？'))); }
-        function updateDashboard(){ document.getElementById('student-count').innerText=students.length; document.getElementById('project-count').innerText=projects.length; document.getElementById('score-count').innerText=scores.length; document.getElementById('grade-levels-count').innerText=new Set(students.map(s=>s.gradeLevel)).size; updateCharts(); }
-        function updateCharts(){ let ctx=document.getElementById('scoreDistributionChart')?.getContext('2d'); if(window.distChart) window.distChart.destroy(); let ranges=[0,60,70,80,90]; let counts=[0,0,0,0,0]; scores.forEach(s=>{let p=projects.find(p=>p.id===s.projectId); if(p){let per=s.score/p.fullMark*100; if(per<60)counts[0]++; else if(per<70)counts[1]++; else if(per<80)counts[2]++; else if(per<90)counts[3]++; else counts[4]++;}}); window.distChart=new Chart(ctx,{type:'doughnut',data:{labels:['<60','60-69','70-79','80-89','90-100'],datasets:[{data:counts,backgroundColor:['#e74c3c','#f39c12','#3498db','#2ecc71','#9b59b6']}]}}); }
-        async function saveStudent(){ let name=document.getElementById('student-name').value,cls=document.getElementById('student-class').value,stuId=document.getElementById('student-id').value,grade=document.getElementById('student-grade').value,study=document.getElementById('study-group').value,work=document.getElementById('work-group').value; await db.collection('students').add({name,class:cls,studentId:stuId,gradeLevel:grade,studyGroup:study,workGroup:work,createdAt:firebase.firestore.FieldValue.serverTimestamp()}); loadStudents(); bootstrap.Modal.getInstance(document.getElementById('addStudentModal')).hide(); }
-        async function updateStudent(){ let id=document.getElementById('edit-student-id-hidden').value; let data={name:document.getElementById('edit-student-name').value,class:document.getElementById('edit-student-class').value,studentId:document.getElementById('edit-student-id').value,gradeLevel:document.getElementById('edit-student-grade').value,studyGroup:document.getElementById('edit-study-group').value,workGroup:document.getElementById('edit-work-group').value}; await db.collection('students').doc(id).update(data); loadStudents(); }
-        function editStudent(id){ let s=students.find(s=>s.id===id); document.getElementById('edit-student-id-hidden').value=s.id; document.getElementById('edit-student-name').value=s.name; document.getElementById('edit-student-class').value=s.class; document.getElementById('edit-student-id').value=s.studentId; document.getElementById('edit-student-grade').value=s.gradeLevel; document.getElementById('edit-study-group').value=s.studyGroup||''; document.getElementById('edit-work-group').value=s.workGroup||''; new bootstrap.Modal(document.getElementById('editStudentModal')).show(); }
-        async function saveProject(){ let name=document.getElementById('project-name').value,fullMark=parseFloat(document.getElementById('project-full-mark').value),weight=parseFloat(document.getElementById('project-weight').value)/100,gradeLevel=document.getElementById('project-grade-level').value; await db.collection('projects').add({name,fullMark,weight,gradeLevel,description:document.getElementById('project-description').value,createdAt:firebase.firestore.FieldValue.serverTimestamp()}); loadProjects(); }
-        async function saveScore(){ let studentId=document.getElementById('score-student-select').value,projectId=document.getElementById('score-project-select').value,score=parseFloat(document.getElementById('score-input').value); if(!studentId||!projectId) return alert('请选择学生和项目'); await db.collection('scores').add({studentId,projectId,score,recordedAt:firebase.firestore.FieldValue.serverTimestamp()}); loadScores(); document.getElementById('score-input').value=''; }
-        async function queryStudentScores(studentId){ let student=students.find(s=>s.studentId===studentId); if(!student){ alert('学号不存在'); return; } let stuScores=scores.filter(s=>s.studentId===student.id); if(stuScores.length===0){ alert('暂无成绩'); return; } let total=0,totalWeight=0; stuScores.forEach(ss=>{let p=projects.find(p=>p.id===ss.projectId); if(p){total+=(ss.score/p.fullMark)*p.weight*100; totalWeight+=p.weight;}}); let avg=totalWeight?total/totalWeight:0; document.getElementById('student-avatar').innerText=student.name.charAt(0); document.getElementById('student-name-display').innerText=student.name; document.getElementById('student-id-display').innerText=student.studentId; document.getElementById('student-grade-display').innerText=student.gradeLevel+'年'; document.getElementById('average-score-display').innerText=avg.toFixed(2)+'%'; let container=document.getElementById('score-details'); container.innerHTML=''; let labels=[],radarData=[]; stuScores.forEach(ss=>{let p=projects.find(p=>p.id===ss.projectId); if(p){ let per=(ss.score/p.fullMark*100).toFixed(1); container.innerHTML+=`<div class="d-flex justify-content-between border-bottom p-2"><span>${p.name}</span><span>${ss.score}/${p.fullMark} (${per}%)</span></div>`; labels.push(p.name); radarData.push(per);}}); if(studentRadarChart) studentRadarChart.destroy(); let radarCtx=document.getElementById('studentRadarChart').getContext('2d'); studentRadarChart=new Chart(radarCtx,{type:'radar',data:{labels:labels,datasets:[{label:'成绩百分比',data:radarData,backgroundColor:'rgba(67,97,238,0.2)',borderColor:'#4361ee',pointBackgroundColor:'#4361ee'}]}}); document.getElementById('query-results').style.display='block'; }
-        function renderGradeConfig(){ let container=document.getElementById('grade-config-list'); container.innerHTML=''; gradeLevels.forEach(grade=>{ let gradeProjects=projects.filter(p=>p.gradeLevel==grade); let totalWeight=gradeProjects.reduce((sum,p)=>sum+p.weight*100,0); let div=document.createElement('div'); div.className='grade-section'; div.innerHTML=`<h5>${grade}年 阶级 <span class="badge bg-primary">总权重:${totalWeight.toFixed(1)}%</span></h5><ul class="list-group">${gradeProjects.map(p=>`<li class="list-group-item d-flex justify-content-between">${p.name} (满分${p.fullMark}) - 占比${(p.weight*100).toFixed(1)}% <button class="btn btn-sm btn-outline-danger delete-project-grade" data-id="${p.id}">删除</button></li>`).join('')||'<li class="list-group-item text-muted">暂无配置项目，请到"评分项目"添加</li>'}</ul>`; container.appendChild(div); }); document.querySelectorAll('.delete-project-grade').forEach(btn=>btn.addEventListener('click',async(e)=>{ let id=btn.getAttribute('data-id'); await db.collection('projects').doc(id).delete(); loadProjects(); renderGradeConfig(); })); }
-        async function generateReport(){ let cls=document.getElementById('report-class-select').value,grade=document.getElementById('report-grade-select').value,format=document.getElementById('report-format-select').value; let filteredStudents=students.filter(s=>(!cls||s.class===cls)&&(!grade||s.gradeLevel==grade)); let data=[]; for(let s of filteredStudents){ let stuScores=scores.filter(sc=>sc.studentId===s.id); let total=0,tw=0; stuScores.forEach(sc=>{let p=projects.find(pp=>pp.id===sc.projectId); if(p){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); let avg=tw?total/tw:0; data.push({name:s.name,id:s.studentId,class:s.class,grade:s.gradeLevel,average:avg}); } let html=`<h3>成绩报告</h3><table border=1><tr><th>学号</th><th>姓名</th><th>班级</th><th>阶级</th><th>平均分</th></tr>${data.map(d=>`<tr><td>${d.id}</td><td>${d.name}</td><td>${d.class}</td><td>${d.grade}</td><td>${d.average.toFixed(2)}%</td></tr>`).join('')}</table>`; document.getElementById('report-preview').innerHTML=html; if(format==='excel'){ let ws=XLSX.utils.json_to_sheet(data); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'成绩'); XLSX.writeFile(wb,'report.xlsx'); }else if(format==='pdf'){ let canvas=await html2canvas(document.getElementById('report-preview')); let pdf=new jspdf.jsPDF(); pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0); pdf.save('report.pdf'); } }
-        async function loadAnalytics(){ let classAvg={}; students.forEach(s=>{ let stuScores=scores.filter(sc=>sc.studentId===s.id); let total=0,tw=0; stuScores.forEach(sc=>{let p=projects.find(pp=>pp.id===sc.projectId); if(p){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); let avg=tw?total/tw:0; if(!classAvg[s.class])classAvg[s.class]={sum:0,count:0}; classAvg[s.class].sum+=avg; classAvg[s.class].count++; }); let labels=Object.keys(classAvg),avgs=labels.map(l=>classAvg[l].sum/classAvg[l].count); new Chart(document.getElementById('classBarChart'),{type:'bar',data:{labels,datasets:[{label:'平均分',data:avgs,backgroundColor:'#4361ee'}]}}); let gradeRate={}; gradeLevels.forEach(g=>{let stuGrade=students.filter(s=>s.gradeLevel==g); let highCount=0; stuGrade.forEach(s=>{let stuScores=scores.filter(sc=>sc.studentId===s.id); let total=0,tw=0; stuScores.forEach(sc=>{let p=projects.find(pp=>pp.id===sc.projectId); if(p){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); let avg=tw?total/tw:0; if(avg>=80)highCount++;}); gradeRate[g]=(highCount/(stuGrade.length||1))*100;}); new Chart(document.getElementById('gradePassRateChart'),{type:'line',data:{labels:gradeLevels,datasets:[{label:'优秀率%',data:gradeLevels.map(g=>gradeRate[g]||0),borderColor:'#2ecc71'}]}}); let warningStudents=students.filter(s=>{ let stuScores=scores.filter(sc=>sc.studentId===s.id); let total=0,tw=0; stuScores.forEach(sc=>{let p=projects.find(pp=>pp.id===sc.projectId); if(p){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); let avg=tw?total/tw:0; return avg<60; }); let warnDiv=document.getElementById('warning-student-list'); warnDiv.innerHTML=warningStudents.map(s=>`<a href="#" class="list-group-item list-group-item-action">${s.name} (${s.studentId}) 平均分低于60</a>`).join('')||'<div class="text-muted">无预警学生</div>'; }
-        function filterStudents(){ renderStudentTable(); }
-        function exportStudents(){ let ws=XLSX.utils.json_to_sheet(students.map(s=>({学号:s.studentId,姓名:s.name,班级:s.class,阶级:s.gradeLevel}))); XLSX.writeFile(XLSX.utils.book_new(),'students.xlsx'); }
-        function batchSetGrade(){ let newGrade=prompt('请输入要批量设置的阶级(0.5~4.0)','1.0'); if(newGrade&&gradeLevels.includes(parseFloat(newGrade))){ students.forEach(async s=>{ await db.collection('students').doc(s.id).update({gradeLevel:newGrade}); }); loadStudents(); } }
-        function showDeleteConfirm(type,id,msg){ deleteType=type; deleteId=id; document.getElementById('delete-message').innerText=msg; new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show(); }
-        async function confirmDelete(){ if(deleteType==='student') await db.collection('students').doc(deleteId).delete(); if(deleteType==='project') await db.collection('projects').doc(deleteId).delete(); if(deleteType==='score') await db.collection('scores').doc(deleteId).delete(); loadAllData(); }
-        function showMainSystem(){ document.getElementById('student-query-page').style.display='none'; document.getElementById('main-system').style.display='block'; loadAllData(); }
-        function showStudentPage(){ document.getElementById('student-query-page').style.display='block'; document.getElementById('main-system').style.display='none'; }
-        function loadReportPreview(){ let cls=document.getElementById('report-class-select').value,grade=document.getElementById('report-grade-select').value; let filtered=students.filter(s=>(!cls||s.class===cls)&&(!grade||s.gradeLevel==grade)); document.getElementById('report-preview').innerHTML=`<p>预览: ${filtered.length} 名学生</p>`; }
+        async function loadAllMasterData() { await Promise.all([loadGrades(), loadStudents(), loadProjects(), loadScores()]); updateDashboardCharts(); }
+        async function loadGrades() { const snap = await db.collection('grades').orderBy('sort').get(); if(snap.empty) { const defaults = ['0.5','1.0','1.5','2.0','2.5','3.0','3.5','4.0']; for(let g of defaults) await db.collection('grades').add({ value: g, name: g+'年', sort: parseFloat(g) }); return loadGrades(); } grades = snap.docs.map(d=>{let dta=d.data(); return {id:d.id, ...dta};}); renderGradesUI(); }
+        function renderGradesUI() { let html=''; grades.forEach(g=>{html+=`<tr><td>${g.value}</td><td>${g.name}</td><td>${g.sort}</td><td><button class="btn btn-sm btn-danger del-grade" data-id="${g.id}">删除</button></td></tr>`;}); document.getElementById('grades-table-body').innerHTML=html; document.querySelectorAll('.del-grade').forEach(btn=>btn.addEventListener('click',e=>{deleteTarget={type:'grades',id:btn.dataset.id}; document.getElementById('delete-message').innerText='删除年级将同时影响学生年级字段，确认？'; new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();})); populateGradeSelects(); document.getElementById('grade-count').innerText=grades.length; }
+        function populateGradeSelects() { let opts='<option value="">无</option>'; grades.forEach(g=>opts+=`<option value="${g.value}">${g.name}</option>`); document.getElementById('student-grade-level').innerHTML=opts; document.getElementById('edit-student-grade').innerHTML=opts; document.getElementById('project-grade-id').innerHTML='<option value="all">所有年级通用</option>'+opts; document.getElementById('edit-project-grade').innerHTML='<option value="all">所有年级通用</option>'+opts; let filterSel=document.getElementById('student-grade-filter'); filterSel.innerHTML='<option value="">所有年级</option>'; grades.forEach(g=>filterSel.innerHTML+=`<option value="${g.value}">${g.name}</option>`); let reportGrade=document.getElementById('report-grade-select'); reportGrade.innerHTML='<option value="">所有年级</option>'; grades.forEach(g=>reportGrade.innerHTML+=`<option value="${g.value}">${g.name}</option>`); let configSel=document.getElementById('config-grade-select'); configSel.innerHTML=''; grades.forEach(g=>configSel.innerHTML+=`<option value="${g.id}">${g.name}</option>`); }
+        async function loadStudents() { const snap = await db.collection('students').get(); students = snap.docs.map(d=>{let s=d.data(); return {id:d.id, ...s, gradeLevel: s.gradeLevel||'1.0'};}); renderStudentsTable(); populateStudentSelect(); updateClassSelect(); document.getElementById('student-count').innerText=students.length; }
+        function renderStudentsTable() { let tbody=document.getElementById('students-table-body'); tbody.innerHTML=''; let search=document.getElementById('student-search').value.toLowerCase(); let classFilter=document.getElementById('student-class-filter').value; let gradeFilter=document.getElementById('student-grade-filter').value; students.filter(s=>(!search||s.studentId.includes(search)||s.name.includes(search))&&(!classFilter||s.class===classFilter)&&(!gradeFilter||s.gradeLevel===gradeFilter)).forEach(s=>{ let row=tbody.insertRow(); row.innerHTML=`<td>${s.studentId}</td><td>${s.name}</td><td>${s.class}</td><td><span class="badge-grade">${s.gradeLevel}年</span></td><td>${s.studyGroup||'-'}</td><td>${s.workGroup||'-'}</td><td><button class="btn btn-sm btn-primary edit-student" data-id="${s.id}">编辑</button> <button class="btn btn-sm btn-danger del-student" data-id="${s.id}">删除</button></td>`; }); document.querySelectorAll('.edit-student').forEach(btn=>btn.addEventListener('click',()=>editStudent(btn.dataset.id))); document.querySelectorAll('.del-student').forEach(btn=>btn.addEventListener('click',()=>{deleteTarget={type:'students',id:btn.dataset.id}; document.getElementById('delete-message').innerText='删除学生将同时删除其分数记录'; new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();})); }
+        function editStudent(id){ let s=students.find(x=>x.id==id); document.getElementById('edit-student-id').value=s.id; document.getElementById('edit-student-name').value=s.name; document.getElementById('edit-student-class').value=s.class; document.getElementById('edit-student-id-field').value=s.studentId; document.getElementById('edit-study-group').value=s.studyGroup||''; document.getElementById('edit-work-group').value=s.workGroup||''; document.getElementById('edit-student-grade').value=s.gradeLevel||'1.0'; new bootstrap.Modal(document.getElementById('editStudentModal')).show(); }
+        async function updateStudent(){ let id=document.getElementById('edit-student-id').value; let data={ name:document.getElementById('edit-student-name').value, class:document.getElementById('edit-student-class').value, studentId:document.getElementById('edit-student-id-field').value, gradeLevel:document.getElementById('edit-student-grade').value, studyGroup:document.getElementById('edit-study-group').value, workGroup:document.getElementById('edit-work-group').value }; await db.collection('students').doc(id).update(data); loadStudents(); }
+        async function saveStudent(){ let data={ name:document.getElementById('student-name').value, class:document.getElementById('student-class').value, studentId:document.getElementById('student-id').value, gradeLevel:document.getElementById('student-grade-level').value, studyGroup:document.getElementById('study-group').value, workGroup:document.getElementById('work-group').value, createdAt:firebase.firestore.FieldValue.serverTimestamp() }; await db.collection('students').add(data); loadStudents(); bootstrap.Modal.getInstance(document.getElementById('addStudentModal')).hide(); }
+        async function loadProjects(){ const snap=await db.collection('projects').get(); projects=snap.docs.map(d=>{let p=d.data(); return {id:d.id, ...p, gradeId: p.gradeId||'all'};}); renderProjectsTable(); document.getElementById('project-count').innerText=projects.length; }
+        function renderProjectsTable(){ let tbody=document.getElementById('projects-table-body'); tbody.innerHTML=''; projects.forEach(p=>{ let gradeName= p.gradeId==='all'?'所有年级':(grades.find(g=>g.value===p.gradeId)?.name||p.gradeId); tbody.innerHTML+=`<tr><td>${p.name}</td><td>${p.fullMark}</td><td>${(p.weight*100).toFixed(1)}%</td><td>${gradeName}</td><td>${p.createdAt?.toDate?.().toLocaleString()||'-'}</td><td><button class="btn btn-sm btn-primary edit-proj" data-id="${p.id}">编辑</button> <button class="btn btn-sm btn-danger del-proj" data-id="${p.id}">删除</button></td></tr>`; }); document.querySelectorAll('.edit-proj').forEach(btn=>btn.addEventListener('click',()=>editProject(btn.dataset.id))); document.querySelectorAll('.del-proj').forEach(btn=>btn.addEventListener('click',()=>{deleteTarget={type:'projects',id:btn.dataset.id}; document.getElementById('delete-message').innerText='删除项目将删除所有相关分数'; new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();})); }
+        function editProject(id){ let p=projects.find(x=>x.id==id); document.getElementById('edit-project-id').value=p.id; document.getElementById('edit-project-name').value=p.name; document.getElementById('edit-project-full-mark').value=p.fullMark; document.getElementById('edit-project-weight').value=p.weight*100; document.getElementById('edit-project-grade').value=p.gradeId||'all'; document.getElementById('edit-project-description').value=p.description||''; new bootstrap.Modal(document.getElementById('editProjectModal')).show(); }
+        async function updateProject(){ let id=document.getElementById('edit-project-id').value; let weight=parseFloat(document.getElementById('edit-project-weight').value)/100; await db.collection('projects').doc(id).update({ name:document.getElementById('edit-project-name').value, fullMark:parseFloat(document.getElementById('edit-project-full-mark').value), weight, gradeId:document.getElementById('edit-project-grade').value, description:document.getElementById('edit-project-description').value }); loadProjects(); }
+        async function saveProject(){ let weight=parseFloat(document.getElementById('project-weight').value)/100; await db.collection('projects').add({ name:document.getElementById('project-name').value, fullMark:parseFloat(document.getElementById('project-full-mark').value), weight, gradeId:document.getElementById('project-grade-id').value, description:document.getElementById('project-description').value, createdAt:firebase.firestore.FieldValue.serverTimestamp() }); loadProjects(); bootstrap.Modal.getInstance(document.getElementById('addProjectModal')).hide(); }
+        async function loadScores(){ const snap=await db.collection('scores').get(); scores=snap.docs.map(d=>{let sc=d.data(); return {id:d.id, ...sc};}); renderScoresTable(); document.getElementById('score-count').innerText=scores.length; }
+        function renderScoresTable(){ let tbody=document.getElementById('scores-table-body'); tbody.innerHTML=''; scores.forEach(sc=>{ let stu=students.find(s=>s.id===sc.studentId); let proj=projects.find(p=>p.id===sc.projectId); if(!stu||!proj) return; let per=((sc.score/proj.fullMark)*100).toFixed(1); tbody.innerHTML+=`<tr><td>${stu.name}</td><td>${proj.name}</td><td>${sc.score} (${per}%)</td><td>${proj.fullMark}</td><td>${(proj.weight*100).toFixed(1)}%</td><td><button class="btn btn-sm btn-danger del-score" data-id="${sc.id}">删除</button></td></tr>`; }); document.querySelectorAll('.del-score').forEach(btn=>btn.addEventListener('click',()=>{deleteTarget={type:'scores',id:btn.dataset.id}; new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();})); }
+        async function saveScore(){ let studentId=document.getElementById('score-student-select').value; let projectId=document.getElementById('score-project-select').value; let scoreVal=parseFloat(document.getElementById('score-input').value); if(!studentId||!projectId||isNaN(scoreVal)) return alert("请填写完整"); let proj=projects.find(p=>p.id===projectId); if(scoreVal>proj.fullMark) return alert("分数超出满分"); await db.collection('scores').add({ studentId, projectId, score:scoreVal, recordedAt:firebase.firestore.FieldValue.serverTimestamp() }); loadScores(); document.getElementById('score-input').value=''; }
+        function filterProjectsByStudentGrade(){ let stuId=document.getElementById('score-student-select').value; let stu=students.find(s=>s.id===stuId); let select=document.getElementById('score-project-select'); select.innerHTML='<option value="">-- 选择项目 --</option>'; if(!stu) return; let applicable=projects.filter(p=>p.gradeId==='all'||p.gradeId===stu.gradeLevel); applicable.forEach(p=>{let opt=document.createElement('option'); opt.value=p.id; opt.textContent=`${p.name} (满分:${p.fullMark})`; select.appendChild(opt);}); }
+        function populateStudentSelect(){ let sel=document.getElementById('score-student-select'); sel.innerHTML='<option value="">-- 选择学生 --</option>'; students.forEach(s=>{let opt=document.createElement('option'); opt.value=s.id; opt.textContent=`${s.name} (${s.studentId}) 年级:${s.gradeLevel}年`; sel.appendChild(opt);}); }
+        function updateClassSelect(){ let classes=[...new Set(students.map(s=>s.class))]; let classSel=document.getElementById('report-class-select'); let filterClass=document.getElementById('student-class-filter'); classSel.innerHTML='<option value="">所有班级</option>'; filterClass.innerHTML='<option value="">所有班级</option>'; classes.forEach(c=>{classSel.innerHTML+=`<option value="${c}">${c}</option>`; filterClass.innerHTML+=`<option value="${c}">${c}</option>`;}); }
+        async function addGrade(){ let val=document.getElementById('new-grade-value').value.trim(); let name=document.getElementById('new-grade-name').value.trim(); if(!val||!name) return; await db.collection('grades').add({ value:val, name:name, sort:parseFloat(val) }); loadGrades(); bootstrap.Modal.getInstance(document.getElementById('addGradeModal')).hide(); }
+        async function loadGradeProjectsConfig(){ let gradeId=document.getElementById('config-grade-select').value; if(!gradeId) return; let grade=grades.find(g=>g.id===gradeId); let assigned=projects.filter(p=>p.gradeId===grade.value); let listDiv=document.getElementById('assigned-projects-list'); listDiv.innerHTML=''; assigned.forEach(p=>{let li=document.createElement('li'); li.className='list-group-item d-flex justify-content-between'; li.innerHTML=`${p.name} (权重${(p.weight*100).toFixed(0)}%) <button class="btn btn-sm btn-outline-danger remove-project-from-grade" data-pid="${p.id}">移除</button>`; listDiv.appendChild(li);}); document.querySelectorAll('.remove-project-from-grade').forEach(btn=>btn.addEventListener('click',async()=>{let pid=btn.dataset.pid; await db.collection('projects').doc(pid).update({gradeId:'all'}); loadProjects(); loadGradeProjectsConfig();})); let available=projects.filter(p=>p.gradeId!==grade.value && p.gradeId!=='all'); let availSel=document.getElementById('available-projects-select'); availSel.innerHTML=''; available.forEach(p=>availSel.innerHTML+=`<option value="${p.id}">${p.name}</option>`); }
+        async function assignProjectToGrade(){ let gradeId=document.getElementById('config-grade-select').value; let projectId=document.getElementById('available-projects-select').value; let grade=grades.find(g=>g.id===gradeId); if(!grade||!projectId) return; await db.collection('projects').doc(projectId).update({gradeId:grade.value}); loadProjects(); loadGradeProjectsConfig(); }
+        async function removeProjectFromGrade(){ let gradeId=document.getElementById('config-grade-select').value; let sel=document.getElementById('available-projects-select'); let pid=sel.value; if(pid) await db.collection('projects').doc(pid).update({gradeId:'all'}); loadProjects(); loadGradeProjectsConfig(); }
+        async function queryStudentScores(studentId){ let stu=students.find(s=>s.studentId===studentId); if(!stu){alert("学号不存在");return;} let stuScores=scores.filter(s=>s.studentId===stu.id); if(!stuScores.length){alert("暂无成绩");return;} let total=0,totalWeight=0; stuScores.forEach(sc=>{let p=projects.find(pr=>pr.id===sc.projectId); if(p){total+=(sc.score/p.fullMark)*p.weight*100; totalWeight+=p.weight;}}); let avg=totalWeight?total/totalWeight:0; document.getElementById('student-avatar').textContent=stu.name.charAt(0); document.getElementById('student-name-display').textContent=stu.name; document.getElementById('student-id-display').textContent=stu.studentId; document.getElementById('student-class-display').textContent=stu.class; document.getElementById('student-grade-display').textContent=stu.gradeLevel+'年'; document.getElementById('average-score-display').textContent=avg.toFixed(2)+'%'; let container=document.getElementById('score-details'); container.innerHTML=''; stuScores.forEach(sc=>{let p=projects.find(pr=>pr.id===sc.projectId); if(p){let per=(sc.score/p.fullMark*100).toFixed(1); container.innerHTML+=`<div class="score-item"><div><h6>${p.name}</h6><small>满分:${p.fullMark} 权重:${(p.weight*100).toFixed(0)}%</small></div><div>${sc.score}分 (${per}%)<div class="progress"><div class="progress-bar" style="width:${per}%"></div></div></div></div>`;}}); document.getElementById('query-results').style.display='block'; }
+        async function generateReport(){ let classFilter=document.getElementById('report-class-select').value; let gradeFilter=document.getElementById('report-grade-select').value; let filtered=students.filter(s=>(!classFilter||s.class===classFilter)&&(!gradeFilter||s.gradeLevel===gradeFilter)); let format=document.getElementById('report-format-select').value; let data=[]; for(let stu of filtered){ let stuSc=scores.filter(sc=>sc.studentId===stu.id); let total=0,tw=0; stuSc.forEach(sc=>{let p=projects.find(pr=>pr.id===sc.projectId); if(p&&(p.gradeId==='all'||p.gradeId===stu.gradeLevel)){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); let avg=tw?total/tw:0; data.push({student:stu,average:avg,scores:stuSc});} data.sort((a,b)=>b.average-a.average); let html=buildReportHTML(data,classFilter,gradeFilter); document.getElementById('report-preview').innerHTML=html; if(format==='pdf'){ let canvas=await html2canvas(document.getElementById('report-preview')); let imgData=canvas.toDataURL('image/png'); let pdf=new jspdf.jsPDF('p','mm','a4'); pdf.addImage(imgData,'PNG',0,0,210,canvas.height*210/canvas.width); pdf.save('report.pdf'); }else if(format==='excel'){ let wsData=data.map((item,idx)=>({排名:idx+1,学号:item.student.studentId,姓名:item.student.name,班级:item.student.class,年级:item.student.gradeLevel,平均分:item.average.toFixed(2)+'%'})); let ws=XLSX.utils.json_to_sheet(wsData); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'成绩报告'); XLSX.writeFile(wb,'成绩报告.xlsx'); }else{ let blob=new Blob([html],{type:'text/html'}); saveAs(blob,'report.html'); } }
+        function buildReportHTML(data,cls,grade){ return `<div style="padding:20px"><h2>成绩报告 ${cls?`班级:${cls}`:''} ${grade?`年级:${grade}`:''}</h2><table border="1" cellpadding="5"><tr><th>排名</th><th>学号</th><th>姓名</th><th>班级</th><th>年级</th><th>平均分</th></tr>${data.map((d,i)=>`<tr><td>${i+1}</td><td>${d.student.studentId}</td><td>${d.student.name}</td><td>${d.student.class}</td><td>${d.student.gradeLevel}</td><td>${d.average.toFixed(2)}%</td></tr>`).join('')}</table></div>`; }
+        function updateDashboardCharts(){ if(scoreChart) scoreChart.destroy(); let ctx=document.getElementById('scoreDistributionChart').getContext('2d'); let ranges=[0,60,70,80,90]; let counts=[0,0,0,0,0]; scores.forEach(sc=>{let p=projects.find(pr=>pr.id===sc.projectId); if(p){let per=(sc.score/p.fullMark)*100; if(per<60)counts[0]++; else if(per<70)counts[1]++; else if(per<80)counts[2]++; else if(per<90)counts[3]++; else counts[4]++;}}); scoreChart=new Chart(ctx,{type:'doughnut',data:{labels:['<60','60-69','70-79','80-89','≥90'],datasets:[{data:counts,backgroundColor:['#e74c3c','#f39c12','#3498db','#2ecc71','#9b59b6']}]}}); let gradeAvgs={}; grades.forEach(g=>{let stus=students.filter(s=>s.gradeLevel===g.value); let sum=0,cnt=0; stus.forEach(st=>{let stuSc=scores.filter(sc=>sc.studentId===st.id); let total=0,tw=0; stuSc.forEach(sc=>{let p=projects.find(pr=>pr.id===sc.projectId); if(p&&(p.gradeId==='all'||p.gradeId===st.gradeLevel)){total+=(sc.score/p.fullMark)*p.weight*100; tw+=p.weight;}}); if(tw){sum+=total/tw; cnt++;}}); gradeAvgs[g.value]=cnt?sum/cnt:0;}); if(gradeAvgChart) gradeAvgChart.destroy(); let ctx2=document.getElementById('gradeAvgChart').getContext('2d'); gradeAvgChart=new Chart(ctx2,{type:'bar',data:{labels:grades.map(g=>g.value),datasets:[{label:'平均分 (%)',data:grades.map(g=>gradeAvgs[g.value]||0),backgroundColor:'#4361ee'}]}}); }
+        function exportStudents(){ let wsData=students.map(s=>({学号:s.studentId,姓名:s.name,班级:s.class,年级阶段:s.gradeLevel,学习组:s.studyGroup,工作组:s.workGroup})); let ws=XLSX.utils.json_to_sheet(wsData); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'学生数据'); XLSX.writeFile(wb,'学生数据.xlsx'); }
+        function importExcel(){ let file=document.getElementById('import-excel').files[0]; let reader=new FileReader(); reader.onload=async function(e){ let data=new Uint8Array(e.target.result); let workbook=XLSX.read(data,{type:'array'}); let sheet=workbook.Sheets[workbook.SheetNames[0]]; let rows=XLSX.utils.sheet_to_json(sheet); for(let row of rows){ if(row['学号']&&row['姓名']&&row['班级']){ await db.collection('students').add({ studentId:row['学号'].toString(), name:row['姓名'].toString(), class:row['班级'].toString(), gradeLevel:row['年级阶段']?.toString()||'1.0', studyGroup:row['学习组']?.toString()||null, workGroup:row['工作组']?.toString()||null, createdAt:firebase.firestore.FieldValue.serverTimestamp() }); } } loadStudents(); alert("导入完成"); }; reader.readAsArrayBuffer(file); }
+        function showMainSystem(){ document.getElementById('student-query-page').style.display='none'; document.getElementById('main-system').style.display='block'; }
+        function showStudentQueryPage(){ document.getElementById('student-query-page').style.display='block'; document.getElementById('main-system').style.display='none'; }
     </script>
-    <footer class="text-center text-muted py-3">本系统由 <strong>陈俊源</strong> 开发 | 支持阶级评分标准 (0.5~4.0年)</footer>
+    <footer class="text-center text-muted py-3">本系统由 <strong>陈俊源</strong> 开发 | 支持多年级分级评分体系</footer>
 </body>
 </html>
