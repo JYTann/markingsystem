@@ -1055,10 +1055,10 @@
                             <label for="edit-student-class" class="form-label">班级 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="edit-student-class" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="edit-student-id" class="form-label">学号 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="edit-student-id" required>
-                        </div>
+                       <div class="mb-3">
+    <label for="edit-student-number" class="form-label">学号 <span class="text-danger">*</span></label>
+    <input type="text" class="form-control" id="edit-student-number" required>
+</div>
                         <div class="mb-3">
                             <label for="edit-study-group" class="form-label">学习组</label>
                             <input type="text" class="form-control" id="edit-study-group">
@@ -2248,10 +2248,10 @@ function editStudent(studentId) {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
     
-    document.getElementById('edit-student-id').value = student.id;
+    document.getElementById('edit-student-id').value = student.id;  // 这是隐藏的文档ID
     document.getElementById('edit-student-name').value = student.name;
     document.getElementById('edit-student-class').value = student.class;
-    document.getElementById('edit-student-id').value = student.studentId;
+    document.getElementById('edit-student-number').value = student.studentId;  // 改为 edit-student-number
     document.getElementById('edit-study-group').value = student.studyGroup || '';
     document.getElementById('edit-work-group').value = student.workGroup || '';
     document.getElementById('edit-student-level').value = student.levelId || '';
@@ -2262,10 +2262,10 @@ function editStudent(studentId) {
 
         // 更新学生 - 修改版本
 function updateStudent() {
-    const id = document.getElementById('edit-student-id').value;
+    const id = document.getElementById('edit-student-id').value;  // 这是隐藏的文档ID
     const name = document.getElementById('edit-student-name').value.trim();
     const studentClass = document.getElementById('edit-student-class').value.trim();
-    const studentId = document.getElementById('edit-student-id').value.trim();
+    const studentId = document.getElementById('edit-student-number').value.trim();  // 改为 edit-student-number
     const studyGroup = document.getElementById('edit-study-group').value.trim();
     const workGroup = document.getElementById('edit-work-group').value.trim();
     const levelId = document.getElementById('edit-student-level').value;
@@ -2303,7 +2303,7 @@ function updateStudent() {
     })
     .catch(error => {
         console.error("更新学生信息失败: ", error);
-        showAlert("更新学生信息失败", "danger");
+        showAlert("更新学生信息失败: " + error.message, "danger");
         addActivity("更新学生信息失败", "danger");
     })
     .finally(() => {
@@ -2311,7 +2311,6 @@ function updateStudent() {
         btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
     });
 }
-
         // 更新级别选择下拉框
 function updateLevelSelect() {
     const levelSelect = document.getElementById('student-level');
