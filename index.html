@@ -632,6 +632,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#levels-tab">
+        <i class="fas fa-layer-group me-1"></i>级别管理
+    </a>
+</li>
+                        <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">
                                 <i class="fas fa-edit me-1"></i>分数录入
                             </a>
@@ -818,6 +823,63 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 级别管理 -->
+<div class="tab-pane fade" id="levels-tab">
+    <div class="card fade-in">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-layer-group me-2"></i>级别管理</span>
+            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addLevelModal">
+                <i class="fas fa-plus me-1"></i>添加级别
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>级别名称</th>
+                            <th>默认年数</th>
+                            <th>创建时间</th>
+                            <th>评分项目数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="levels-table-body">
+                        <!-- 级别数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 级别详情卡片（点击级别后显示） -->
+    <div id="level-detail-card" class="card mt-4" style="display: none;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-list-check me-2"></i><span id="current-level-name">级别名称</span> - 评分项目</span>
+            <button class="btn btn-sm btn-success" id="add-level-project-btn">
+                <i class="fas fa-plus me-1"></i>添加评分项目
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>项目名称</th>
+                            <th>满分</th>
+                            <th>占比</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="level-projects-table-body">
+                        <!-- 级别关联的项目数据 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- 分数录入 -->
                 <div class="tab-pane fade" id="scores-tab">
@@ -1100,6 +1162,116 @@
         </div>
     </div>
 
+    <!-- 添加级别模态框 -->
+<div class="modal fade" id="addLevelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加级别</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-level-form">
+                    <div class="mb-3">
+                        <label for="level-name" class="form-label">级别名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="level-name" placeholder="例如：0.5年、1.0年、初级" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="level-default-year" class="form-label">默认年数</label>
+                        <select class="form-select" id="level-default-year">
+                            <option value="">-- 自定义名称 --</option>
+                            <option value="0.5">0.5年</option>
+                            <option value="1.0">1.0年</option>
+                            <option value="1.5">1.5年</option>
+                            <option value="2.0">2.0年</option>
+                            <option value="2.5">2.5年</option>
+                            <option value="3.0">3.0年</option>
+                            <option value="3.5">3.5年</option>
+                            <option value="4.0">4.0年</option>
+                            <option value="4.5">4.5年</option>
+                            <option value="5.0">5.0年</option>
+                            <option value="5.5">5.5年</option>
+                            <option value="6.0">6.0年</option>
+                        </select>
+                        <small class="text-muted">选择预设年数后会自动填充名称，也可自定义</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-level-btn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑级别模态框 -->
+<div class="modal fade" id="editLevelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑级别</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-level-form">
+                    <input type="hidden" id="edit-level-id">
+                    <div class="mb-3">
+                        <label for="edit-level-name" class="form-label">级别名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit-level-name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="update-level-btn">
+                    <i class="fas fa-sync-alt me-1"></i>更新
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 为级别添加评分项目模态框 -->
+<div class="modal fade" id="addLevelProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加评分项目到级别</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-level-project-form">
+                    <input type="hidden" id="current-level-id">
+                    <div class="mb-3">
+                        <label for="level-project-name" class="form-label">项目名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="level-project-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="level-project-full-mark" class="form-label">满分 <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="level-project-full-mark" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="level-project-weight" class="form-label">占总成绩比例 (0-100%) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="level-project-weight" min="0" max="100" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-level-project-btn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- 删除确认模态框 -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -1165,6 +1337,9 @@
         let deleteType = '';
         let deleteId = '';
         let scoreDistributionChart = null;
+        let levels = [];
+let levelProjects = [];
+let currentLevelId = null;
 
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
@@ -1250,6 +1425,28 @@
                     showLoginPage();
                 });
             });
+
+            // 级别管理相关事件
+document.getElementById('save-level-btn').addEventListener('click', saveLevel);
+document.getElementById('update-level-btn').addEventListener('click', updateLevel);
+document.getElementById('save-level-project-btn').addEventListener('click', saveLevelProject);
+document.getElementById('add-level-project-btn').addEventListener('click', function() {
+    if (currentLevelId) {
+        document.getElementById('current-level-id').value = currentLevelId;
+        const modal = new bootstrap.Modal(document.getElementById('addLevelProjectModal'));
+        modal.show();
+    } else {
+        showAlert("请先选择一个级别", "warning");
+    }
+});
+
+// 默认年数选择后自动填充名称
+document.getElementById('level-default-year').addEventListener('change', function() {
+    const nameInput = document.getElementById('level-name');
+    if (this.value && !nameInput.value) {
+        nameInput.value = this.value + '年';
+    }
+});
 
              // 显示登录页面
         function showLoginPage() {
@@ -1509,11 +1706,299 @@
 
         // 加载所有数据
         function loadAllData() {
+            loadLevels();
             loadStudents();
             loadProjects();
             loadScores();
             updateDashboard();
         }
+
+        // 加载级别数据
+function loadLevels() {
+    document.getElementById('levels-table-body').innerHTML = '';
+    showLoading('levels-table-body');
+    
+    db.collection('levels').orderBy('createdAt').get()
+        .then(querySnapshot => {
+            levels = [];
+            const tbody = document.getElementById('levels-table-body');
+            tbody.innerHTML = '';
+            
+            querySnapshot.forEach(doc => {
+                const level = { id: doc.id, ...doc.data() };
+                levels.push(level);
+                addLevelToTable(level);
+            });
+            
+            // 同时加载级别项目关联
+            loadLevelProjects();
+            
+            addActivity("加载级别数据完成", "info");
+        })
+        .catch(error => {
+            console.error("加载级别数据失败: ", error);
+            showAlert("加载级别数据失败", "danger");
+        });
+}
+
+// 添加级别到表格
+function addLevelToTable(level) {
+    const tbody = document.getElementById('levels-table-body');
+    const row = document.createElement('tr');
+    row.className = 'fade-in level-row';
+    row.dataset.levelId = level.id;
+    row.style.cursor = 'pointer';
+    
+    const projectCount = levelProjects.filter(lp => lp.levelId === level.id).length;
+    
+    row.innerHTML = `
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(level.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    ${level.name.charAt(0)}
+                </div>
+                <span class="fw-bold">${level.name}</span>
+            </div>
+        </td>
+        <td>${level.defaultYear || '-'}</td>
+        <td>${level.createdAt?.toDate().toLocaleString() || '未知'}</td>
+        <td><span class="badge bg-info">${projectCount}</span></td>
+        <td>
+            <button class="btn btn-sm btn-primary edit-level" data-id="${level.id}">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger delete-level" data-id="${level.id}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+    
+    // 点击行显示详情
+    row.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) {
+            showLevelDetail(level.id);
+        }
+    });
+    
+    // 添加编辑和删除事件
+    row.querySelector('.edit-level').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editLevel(level.id);
+    });
+    row.querySelector('.delete-level').addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDeleteConfirm('level', level.id, `确定要删除级别 ${level.name} 吗？`);
+    });
+}
+
+// 加载级别项目关联
+function loadLevelProjects() {
+    db.collection('levelProjects').get()
+        .then(querySnapshot => {
+            levelProjects = [];
+            querySnapshot.forEach(doc => {
+                levelProjects.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // 更新表格中的项目数量
+            levels.forEach(level => {
+                const row = document.querySelector(`.level-row[data-level-id="${level.id}"]`);
+                if (row) {
+                    const count = levelProjects.filter(lp => lp.levelId === level.id).length;
+                    row.querySelector('td:nth-child(4) .badge').textContent = count;
+                }
+            });
+            
+            // 如果当前有选中的级别，刷新详情
+            if (currentLevelId) {
+                showLevelDetail(currentLevelId);
+            }
+        })
+        .catch(error => {
+            console.error("加载级别项目失败: ", error);
+        });
+}
+
+// 显示级别详情
+function showLevelDetail(levelId) {
+    const level = levels.find(l => l.id === levelId);
+    if (!level) return;
+    
+    currentLevelId = levelId;
+    
+    document.getElementById('current-level-name').textContent = level.name;
+    document.getElementById('level-detail-card').style.display = 'block';
+    
+    // 高亮选中的行
+    document.querySelectorAll('.level-row').forEach(row => {
+        row.classList.remove('table-active');
+    });
+    document.querySelector(`.level-row[data-level-id="${levelId}"]`).classList.add('table-active');
+    
+    // 加载该级别的项目
+    const tbody = document.getElementById('level-projects-table-body');
+    tbody.innerHTML = '';
+    
+    const filteredProjects = levelProjects.filter(lp => lp.levelId === levelId);
+    
+    if (filteredProjects.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-4 text-muted">
+                    <i class="fas fa-info-circle me-2"></i>暂无评分项目，请点击"添加评分项目"按钮添加
+                </td>
+            </tr>
+        `;
+    } else {
+        filteredProjects.forEach(lp => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${lp.name}</td>
+                <td>${lp.fullMark}</td>
+                <td>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: ${lp.weight * 100}%"></div>
+                    </div>
+                    <small>${(lp.weight * 100).toFixed(1)}%</small>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger delete-level-project" data-id="${lp.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+            
+            row.querySelector('.delete-level-project').addEventListener('click', () => {
+                showDeleteConfirm('levelProject', lp.id, `确定要删除项目 ${lp.name} 吗？`);
+            });
+        });
+    }
+}
+
+// 保存级别
+function saveLevel() {
+    const name = document.getElementById('level-name').value.trim();
+    const defaultYear = document.getElementById('level-default-year').value;
+    
+    if (!name) {
+        showAlert("请输入级别名称", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-level-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    
+    db.collection('levels').add({
+        name,
+        defaultYear: defaultYear || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("级别添加成功", "success");
+        document.getElementById('addLevelModal').querySelector('.btn-close').click();
+        document.getElementById('add-level-form').reset();
+        loadLevels();
+        addActivity(`添加级别: ${name}`, "success");
+    })
+    .catch(error => {
+        console.error("添加级别失败: ", error);
+        showAlert("添加级别失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
+
+// 编辑级别
+function editLevel(levelId) {
+    const level = levels.find(l => l.id === levelId);
+    if (!level) return;
+    
+    document.getElementById('edit-level-id').value = level.id;
+    document.getElementById('edit-level-name').value = level.name;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editLevelModal'));
+    modal.show();
+}
+
+// 更新级别
+function updateLevel() {
+    const id = document.getElementById('edit-level-id').value;
+    const name = document.getElementById('edit-level-name').value.trim();
+    
+    if (!name) {
+        showAlert("请输入级别名称", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('update-level-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 更新中...';
+    
+    db.collection('levels').doc(id).update({ name })
+    .then(() => {
+        showAlert("级别更新成功", "success");
+        document.getElementById('editLevelModal').querySelector('.btn-close').click();
+        loadLevels();
+        addActivity(`更新级别: ${name}`, "info");
+    })
+    .catch(error => {
+        console.error("更新级别失败: ", error);
+        showAlert("更新级别失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
+    });
+}
+
+// 保存级别项目
+function saveLevelProject() {
+    const levelId = document.getElementById('current-level-id').value;
+    const name = document.getElementById('level-project-name').value.trim();
+    const fullMark = parseFloat(document.getElementById('level-project-full-mark').value);
+    let weight = parseFloat(document.getElementById('level-project-weight').value);
+    
+    if (!name || isNaN(fullMark) || isNaN(weight)) {
+        showAlert("请填写所有字段", "warning");
+        return;
+    }
+    
+    weight = weight / 100;
+    
+    const btn = document.getElementById('save-level-project-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    
+    db.collection('levelProjects').add({
+        levelId,
+        name,
+        fullMark,
+        weight,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("评分项目添加成功", "success");
+        document.getElementById('addLevelProjectModal').querySelector('.btn-close').click();
+        document.getElementById('add-level-project-form').reset();
+        loadLevelProjects();
+        
+        const level = levels.find(l => l.id === levelId);
+        addActivity(`为级别 ${level?.name} 添加项目: ${name}`, "success");
+    })
+    .catch(error => {
+        console.error("添加项目失败: ", error);
+        showAlert("添加项目失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
 
         // 加载学生数据
         function loadStudents() {
@@ -2228,6 +2713,16 @@ function updateScoreDistributionChart() {
                     collectionName = 'scores';
                     successMessage = '分数记录删除成功';
                     break;
+                    // 在 switch (deleteType) 中添加
+case 'level':
+    collectionName = 'levels';
+    const level = levels.find(l => l.id === deleteId);
+    successMessage = `级别 ${level?.name} 删除成功`;
+    break;
+case 'levelProject':
+    collectionName = 'levelProjects';
+    successMessage = '评分项目删除成功';
+    break;
                 default:
                     return;
             }
@@ -2253,7 +2748,13 @@ function updateScoreDistributionChart() {
                     } else if (deleteType === 'score') {
                         loadScores();
                         addActivity(successMessage, "info");
-                    }
+                    }else if (deleteType === 'level') {
+    loadLevels();
+    addActivity(successMessage, "info");
+} else if (deleteType === 'levelProject') {
+    loadLevelProjects();
+    addActivity(successMessage, "info");
+}
                 })
                 .catch(error => {
                     console.error("删除失败: ", error);
@@ -2636,6 +3137,7 @@ function updateScoreDistributionChart() {
                                 <th>学号</th>
                                 <th>姓名</th>
                                 <th>班级</th>
+                                <th>级别</th>
                                 ${projects.map(p => `
                                     <th>
                                         ${p.name}<br>
