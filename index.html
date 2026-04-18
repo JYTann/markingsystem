@@ -2086,27 +2086,35 @@ function loadAllProjectsToSelect() {
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
             
         // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
-document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]').forEach(btn => {
-    btn.addEventListener('click', function(e) {
+// 管理员系统 tab 切换（修复版本）
+const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
+const tabContents = document.querySelectorAll('.tab-pane');
+
+tabButtons.forEach(btn => {
+    btn.addEventListener('click', function (e) {
         e.preventDefault();
-        try {
-            const tab = new bootstrap.Tab(this);
-            tab.show();
-        } catch (error) {
-            console.warn('Tab 切换失败，使用降级方案', error);
-            // 降级方案：手动切换
-            const targetId = this.getAttribute('data-bs-target');
-            if (targetId) {
-                document.querySelectorAll('.tab-pane').forEach(p => {
-                    p.classList.remove('show', 'active');
-                });
-                document.querySelector(targetId)?.classList.add('show', 'active');
-                document.querySelectorAll('.navbar-nav .nav-link').forEach(l => {
-                    l.classList.remove('active');
-                });
-                this.classList.add('active');
+        
+        // 获取目标 tab
+        const targetSelector = this.getAttribute('data-bs-target');
+        if (!targetSelector) return;
+        
+        const target = document.querySelector(targetSelector);
+        if (!target) return;
+        
+        // 移除所有按钮的 active 类
+        tabButtons.forEach(b => b.classList.remove('active'));
+        // 添加当前按钮 active 类
+        this.classList.add('active');
+        
+        // 隐藏所有内容页
+        tabContents.forEach(tab => {
+            if (tab) {
+                tab.classList.remove('show', 'active');
             }
-        }
+        });
+        
+        // 显示目标 tab
+        target.classList.add('show', 'active');
     });
 });
         }
@@ -3152,46 +3160,32 @@ function updateLevelSelect() {
 
         // 添加分数到表格
         // 添加分数到表格 - 修复版本
-// 添加分数到表格（修复版）
 function addScoreToTable(score) {
-    const tbody = document.getElementById('scores-table-body');
-    if (!tbody) return;
-    
     const student = students.find(s => s.id === score.studentId);
     
-    // 增强项目查找：先从 levelProjects 找，再从 projects 找
+    // 先从 levelProjects 中查找项目，如果找不到再从 projects 中查找
     let project = levelProjects.find(p => p.id === score.projectId);
     if (!project) {
         project = projects.find(p => p.id === score.projectId);
     }
     
-    // 如果都找不到，但有 projectName，构造一个临时项目对象
-    if (!project && score.projectName) {
-        project = {
-            id: score.projectId,
-            name: score.projectName,
-            fullMark: score.fullMark || 100,
-            weight: score.weight || 0
-        };
-    }
-    
-    if (!student) {
-        console.warn('找不到学生:', score.studentId);
+    if (!student || !project) {
+        console.warn("找不到学生或项目:", { studentId: score.studentId, projectId: score.projectId });
         return;
     }
     
-    if (!project) {
-        console.warn('找不到项目:', score.projectId);
-        return;
-    }
+    // 使用分数中存储的满分和权重（如果没有则从项目中获取）
+    const fullMark = score.fullMark || project.fullMark;
+    const weight = score.weight !== undefined ? score.weight : project.weight;
     
-    const fullMark = score.fullMark || project.fullMark || 100;
-    const weight = score.weight !== undefined ? score.weight : (project.weight || 0);
-    const projectName = score.projectName || project.name || '未知项目';
     const percentage = (score.score / fullMark * 100).toFixed(1);
-    
+    const tbody = document.getElementById('scores-table-body');
     const row = document.createElement('tr');
     row.className = 'fade-in';
+    
+    // 获取项目名称
+    const projectName = score.projectName || project.name;
+    
     row.innerHTML = `
         <td>
             <div class="d-flex align-items-center">
@@ -3204,8 +3198,8 @@ function addScoreToTable(score) {
         <td>${projectName}</td>
         <td>
             <div class="progress" style="height: 10px;">
-                <div class="progress-bar ${percentage < 60 ? 'bg-danger' : percentage < 80 ? 'bg-warning' : 'bg-success'}" 
-                     role="progressbar" style="width: ${percentage}%"></div>
+                <div class="progress-bar" role="progressbar" style="width: ${percentage}%" 
+                     aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <small>${score.score} (${percentage}%)</small>
         </td>
@@ -3219,10 +3213,20 @@ function addScoreToTable(score) {
     `;
     tbody.appendChild(row);
     
-    row.querySelector('.delete-score')?.addEventListener('click', () => 
-        showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？')
-    );
+    // 根据分数百分比设置进度条颜色
+    const progressBar = row.querySelector('.progress-bar');
+    if (percentage < 60) {
+        progressBar.classList.add('bg-danger');
+    } else if (percentage < 80) {
+        progressBar.classList.add('bg-warning');
+    } else {
+        progressBar.classList.add('bg-success');
+    }
+    
+    // 添加删除事件
+    row.querySelector('.delete-score').addEventListener('click', () => showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？'));
 }
+
         // 保存分数
         // 保存分数 - 修改版本
 function saveScore() {
@@ -3313,83 +3317,83 @@ function saveScore() {
             document.getElementById('score-count').textContent = scores.length;
         }
 
-        // 更新分数分布图表（修复版）
+        // 修改后的更新分数分布图表函数
+// 更新分数分布图表
 function updateScoreDistributionChart() {
-    // 确保容器存在
-    let canvas = document.getElementById('scoreDistributionChart');
+    const canvas = document.getElementById('scoreDistributionChart');
     
+    // 如果 canvas 不存在，先尝试重新创建
     if (!canvas) {
-        const chartContainer = document.querySelector('#dashboard-tab .col-md-6:first-child .card-body .chart-container');
-        if (chartContainer) {
-            chartContainer.innerHTML = '<canvas id="scoreDistributionChart"></canvas>';
-            canvas = document.getElementById('scoreDistributionChart');
-        }
-    }
-    
-    if (!canvas) {
-        console.warn('无法创建 Canvas 元素');
+        console.warn("找不到 canvas 元素: scoreDistributionChart，尝试重新创建");
+        createChartContainer();
         return;
     }
 
     const ctx = canvas.getContext('2d');
     
-    // 销毁旧图表
+    // 如果图表已存在，先销毁
     if (scoreDistributionChart) {
         scoreDistributionChart.destroy();
         scoreDistributionChart = null;
     }
     
-    // 计算分数分布
-    const activeStudentScores = scores.filter(score => 
-        students.some(student => student.id === score.studentId)
-    );
+    // 获取当前活跃学生的分数
+    const activeStudentScores = scores.filter(score => {
+        return students.some(student => student.id === score.studentId);
+    });
     
+    // 如果没有分数数据，显示空状态
     if (activeStudentScores.length === 0) {
-        // 显示空状态（不替换 canvas，只在父级显示提示）
-        const parent = canvas.parentElement;
-        if (parent && !parent.querySelector('.chart-empty-state')) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'chart-empty-state text-center py-4';
-            emptyDiv.innerHTML = `
-                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
-                <p class="mt-2 text-muted">暂无学生成绩数据</p>
+        const container = canvas.parentElement;
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="mt-2 text-muted">暂无学生成绩数据</p>
+                </div>
             `;
-            canvas.style.display = 'none';
-            parent.appendChild(emptyDiv);
         }
         return;
     }
     
-    // 确保 canvas 可见
-    canvas.style.display = 'block';
-    const emptyState = canvas.parentElement?.querySelector('.chart-empty-state');
-    if (emptyState) emptyState.remove();
-    
-    // 计算各分数段数量
-    const ranges = [
-        { min: 0, max: 59, label: '不及格 (<60)', color: 'rgba(231, 76, 60, 0.7)' },
-        { min: 60, max: 69, label: '及格 (60-69)', color: 'rgba(241, 196, 15, 0.7)' },
-        { min: 70, max: 79, label: '中等 (70-79)', color: 'rgba(52, 152, 219, 0.7)' },
-        { min: 80, max: 89, label: '良好 (80-89)', color: 'rgba(46, 204, 113, 0.7)' },
-        { min: 90, max: 100, label: '优秀 (90-100)', color: 'rgba(155, 89, 182, 0.7)' }
+    // 计算分数分布
+    const scoreRanges = [
+        { min: 0, max: 59, label: '不及格 (<60)' },
+        { min: 60, max: 69, label: '及格 (60-69)' },
+        { min: 70, max: 79, label: '中等 (70-79)' },
+        { min: 80, max: 89, label: '良好 (80-89)' },
+        { min: 90, max: 100, label: '优秀 (90-100)' }
     ];
     
-    const data = ranges.map(range => {
-        return activeStudentScores.reduce((count, score) => {
-            const fullMark = score.fullMark || 100;
-            const percentage = (score.score / fullMark) * 100;
-            return (percentage >= range.min && percentage <= range.max) ? count + 1 : count;
+    const data = scoreRanges.map(range => {
+        const count = activeStudentScores.reduce((sum, score) => {
+            const project = projects.find(p => p.id === score.projectId);
+            if (!project) return sum;
+            
+            const percentage = (score.score / project.fullMark) * 100;
+            return percentage >= range.min && percentage <= range.max ? sum + 1 : sum;
         }, 0);
+        
+        return count;
     });
+    
+    const labels = scoreRanges.map(range => range.label);
+    const backgroundColors = [
+        'rgba(231, 76, 60, 0.7)',
+        'rgba(241, 196, 15, 0.7)',
+        'rgba(52, 152, 219, 0.7)',
+        'rgba(46, 204, 113, 0.7)',
+        'rgba(155, 89, 182, 0.7)'
+    ];
     
     try {
         scoreDistributionChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ranges.map(r => r.label),
+                labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: ranges.map(r => r.color),
+                    backgroundColor: backgroundColors,
                     borderWidth: 1
                 }]
             },
@@ -3397,14 +3401,16 @@ function updateScoreDistributionChart() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right' },
+                    legend: {
+                        position: 'right',
+                    },
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => {
-                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                const val = ctx.raw;
-                                const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                                return `${ctx.label}: ${val} (${pct}%)`;
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${context.label}: ${value} (${percentage}%)`;
                             }
                         }
                     }
@@ -3412,7 +3418,9 @@ function updateScoreDistributionChart() {
             }
         });
     } catch (error) {
-        console.error('创建图表失败:', error);
+        console.error("创建图表失败: ", error);
+        // 如果创建失败，重新创建容器
+        createChartContainer();
     }
 }
 
