@@ -1430,11 +1430,27 @@ let currentLevelId = null;
 document.getElementById('save-level-btn').addEventListener('click', saveLevel);
 document.getElementById('update-level-btn').addEventListener('click', updateLevel);
 document.getElementById('save-level-project-btn').addEventListener('click', saveLevelProject);
+// 在 initUIEvents() 中找到这段代码并替换
 document.getElementById('add-level-project-btn').addEventListener('click', function() {
     if (currentLevelId) {
-        document.getElementById('current-level-id').value = currentLevelId;
-        const modal = new bootstrap.Modal(document.getElementById('addLevelProjectModal'));
-        modal.show();
+        const levelIdInput = document.getElementById('current-level-id');
+        if (levelIdInput) {
+            levelIdInput.value = currentLevelId;
+        }
+        
+        const modalElement = document.getElementById('addLevelProjectModal');
+        if (modalElement) {
+            try {
+                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+                modal.show();
+            } catch (error) {
+                console.error("显示模态框失败: ", error);
+                // 降级处理：直接使用 style 显示
+                modalElement.style.display = 'block';
+                modalElement.classList.add('show');
+                document.body.classList.add('modal-open');
+            }
+        }
     } else {
         showAlert("请先选择一个级别", "warning");
     }
@@ -1715,6 +1731,14 @@ document.getElementById('level-default-year').addEventListener('change', functio
 
         // 加载级别数据
 function loadLevels() {
+        const tbody = document.getElementById('levels-table-body');
+    if (!tbody) {
+        console.warn("levels-table-body 元素不存在，可能标签页未激活");
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    showLoading('levels-table-body');
     document.getElementById('levels-table-body').innerHTML = '';
     showLoading('levels-table-body');
     
@@ -1821,23 +1845,38 @@ function loadLevelProjects() {
 }
 
 // 显示级别详情
+// 显示级别详情 - 修复版本
 function showLevelDetail(levelId) {
     const level = levels.find(l => l.id === levelId);
     if (!level) return;
     
     currentLevelId = levelId;
     
-    document.getElementById('current-level-name').textContent = level.name;
-    document.getElementById('level-detail-card').style.display = 'block';
+    const levelNameSpan = document.getElementById('current-level-name');
+    const detailCard = document.getElementById('level-detail-card');
+    
+    if (!levelNameSpan || !detailCard) {
+        console.warn("级别详情元素不存在");
+        return;
+    }
+    
+    levelNameSpan.textContent = level.name;
+    detailCard.style.display = 'block';
     
     // 高亮选中的行
     document.querySelectorAll('.level-row').forEach(row => {
         row.classList.remove('table-active');
     });
-    document.querySelector(`.level-row[data-level-id="${levelId}"]`).classList.add('table-active');
+    
+    const selectedRow = document.querySelector(`.level-row[data-level-id="${levelId}"]`);
+    if (selectedRow) {
+        selectedRow.classList.add('table-active');
+    }
     
     // 加载该级别的项目
     const tbody = document.getElementById('level-projects-table-body');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
     const filteredProjects = levelProjects.filter(lp => lp.levelId === levelId);
@@ -1870,9 +1909,12 @@ function showLevelDetail(levelId) {
             `;
             tbody.appendChild(row);
             
-            row.querySelector('.delete-level-project').addEventListener('click', () => {
-                showDeleteConfirm('levelProject', lp.id, `确定要删除项目 ${lp.name} 吗？`);
-            });
+            const deleteBtn = row.querySelector('.delete-level-project');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    showDeleteConfirm('levelProject', lp.id, `确定要删除项目 ${lp.name} 吗？`);
+                });
+            }
         });
     }
 }
@@ -2591,10 +2633,14 @@ function saveLevelProject() {
         }
 
         // 修改后的更新分数分布图表函数
+// 更新分数分布图表
 function updateScoreDistributionChart() {
     const canvas = document.getElementById('scoreDistributionChart');
+    
+    // 如果 canvas 不存在，先尝试重新创建
     if (!canvas) {
-        console.warn("找不到 canvas 元素: scoreDistributionChart");
+        console.warn("找不到 canvas 元素: scoreDistributionChart，尝试重新创建");
+        createChartContainer();
         return;
     }
 
@@ -2603,6 +2649,7 @@ function updateScoreDistributionChart() {
     // 如果图表已存在，先销毁
     if (scoreDistributionChart) {
         scoreDistributionChart.destroy();
+        scoreDistributionChart = null;
     }
     
     // 获取当前活跃学生的分数
@@ -2612,12 +2659,15 @@ function updateScoreDistributionChart() {
     
     // 如果没有分数数据，显示空状态
     if (activeStudentScores.length === 0) {
-        document.getElementById('scoreDistributionChart').parentElement.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
-                <p class="mt-2 text-muted">暂无学生成绩数据</p>
-            </div>
-        `;
+        const container = canvas.parentElement;
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="mt-2 text-muted">暂无学生成绩数据</p>
+                </div>
+            `;
+        }
         return;
     }
     
@@ -2651,36 +2701,60 @@ function updateScoreDistributionChart() {
         'rgba(155, 89, 182, 0.7)'
     ];
     
-    scoreDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: backgroundColors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const value = context.raw;
-                            const percentage = Math.round((value / total) * 100);
-                            return `${context.label}: ${value} (${percentage}%)`;
+    try {
+        scoreDistributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error("创建图表失败: ", error);
+        // 如果创建失败，重新创建容器
+        createChartContainer();
+    }
+}
+
+// 新增：重新创建图表容器
+function createChartContainer() {
+    const chartContainer = document.querySelector('#dashboard-tab .col-md-6:first-child .card-body');
+    if (chartContainer) {
+        chartContainer.innerHTML = `
+            <div class="chart-container">
+                <canvas id="scoreDistributionChart"></canvas>
+            </div>
+        `;
+        // 延迟一下再尝试更新图表
+        setTimeout(() => {
+            if (scores.length > 0 || projects.length > 0) {
+                updateScoreDistributionChart();
+            }
+        }, 100);
+    }
 }
 
         // 显示删除确认
@@ -2766,6 +2840,82 @@ case 'levelProject':
                     btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>删除';
                 });
         }
+
+        // 安全关闭模态框
+function safeHideModal(modalId) {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) return;
+    
+    try {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        } else {
+            // 如果没有 Bootstrap 实例，手动隐藏
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            // 移除 backdrop
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
+    } catch (error) {
+        console.error(`关闭模态框 ${modalId} 失败:`, error);
+        // 强制隐藏
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+// 修改保存级别函数中的关闭操作
+function saveLevel() {
+    const nameInput = document.getElementById('level-name');
+    const defaultYearSelect = document.getElementById('level-default-year');
+    
+    if (!nameInput) return;
+    
+    const name = nameInput.value.trim();
+    const defaultYear = defaultYearSelect ? defaultYearSelect.value : '';
+    
+    if (!name) {
+        showAlert("请输入级别名称", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-level-btn');
+    if (!btn) return;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    
+    db.collection('levels').add({
+        name,
+        defaultYear: defaultYear || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("级别添加成功", "success");
+        safeHideModal('addLevelModal');
+        
+        const form = document.getElementById('add-level-form');
+        if (form) form.reset();
+        
+        loadLevels();
+        addActivity(`添加级别: ${name}`, "success");
+    })
+    .catch(error => {
+        console.error("添加级别失败: ", error);
+        showAlert("添加级别失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
 
         // 导入Excel
         function importExcel(event) {
