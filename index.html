@@ -2087,27 +2087,34 @@ function loadAllProjectsToSelect() {
             
         // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
 // 管理员系统 tab 切换（修复版本）
-// 管理员系统 tab 切换（修复版 - 使用 Bootstrap 原生 API）
-document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]').forEach(btn => {
-    btn.addEventListener('click', function(e) {
+const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
+const tabContents = document.querySelectorAll('.tab-pane');
+
+tabButtons.forEach(btn => {
+    btn.addEventListener('click', function (e) {
         e.preventDefault();
-        try {
-            const tab = new bootstrap.Tab(this);
-            tab.show();
-        } catch (error) {
-            console.warn('Tab 切换失败，使用降级方案');
-            const targetId = this.getAttribute('data-bs-target');
-            if (targetId) {
-                document.querySelectorAll('.tab-pane').forEach(p => {
-                    p.classList.remove('show', 'active');
-                });
-                document.querySelector(targetId)?.classList.add('show', 'active');
-                document.querySelectorAll('.navbar-nav .nav-link').forEach(l => {
-                    l.classList.remove('active');
-                });
-                this.classList.add('active');
+        
+        // 获取目标 tab
+        const targetSelector = this.getAttribute('data-bs-target');
+        if (!targetSelector) return;
+        
+        const target = document.querySelector(targetSelector);
+        if (!target) return;
+        
+        // 移除所有按钮的 active 类
+        tabButtons.forEach(b => b.classList.remove('active'));
+        // 添加当前按钮 active 类
+        this.classList.add('active');
+        
+        // 隐藏所有内容页
+        tabContents.forEach(tab => {
+            if (tab) {
+                tab.classList.remove('show', 'active');
             }
-        }
+        });
+        
+        // 显示目标 tab
+        target.classList.add('show', 'active');
     });
 });
         }
@@ -2313,21 +2320,15 @@ async function loadAllDataForQuery() {
             }, 5000);
         }
 
-        // 加载所有数据（修复版 - 强制顺序）
-async function loadAllData() {
-    try {
-        await loadLevelsAsync();
-        await loadLevelProjectsAsync();
-        await loadStudentsAsync();
-        await loadProjectsAsync();
-        await loadScoresAsync();
-        updateDashboard();
-        addActivity("数据加载完成", "success");
-    } catch (error) {
-        console.error("加载数据失败:", error);
-        showAlert("数据加载失败", "danger");
-    }
-}
+        // 加载所有数据
+        function loadAllData() {
+            loadLevels();
+            loadStudents();
+            loadProjects();
+            loadScores();
+            updateDashboard();
+        }
+
         // 加载级别数据
 function loadLevels() {
         const tbody = document.getElementById('levels-table-body');
@@ -2365,113 +2366,6 @@ function loadLevels() {
         });
 }
 
-
-        // ========== 异步加载函数（保证顺序） ==========
-async function loadLevelsAsync() {
-    return new Promise((resolve, reject) => {
-        db.collection('levels').orderBy('createdAt').get()
-            .then(querySnapshot => {
-                levels = [];
-                querySnapshot.forEach(doc => {
-                    levels.push({ id: doc.id, ...doc.data() });
-                });
-                updateLevelSelect();
-                resolve();
-            })
-            .catch(error => {
-                console.error("加载级别失败:", error);
-                reject(error);
-            });
-    });
-}
-
-async function loadLevelProjectsAsync() {
-    return new Promise((resolve, reject) => {
-        db.collection('levelProjects').get()
-            .then(querySnapshot => {
-                levelProjects = [];
-                querySnapshot.forEach(doc => {
-                    levelProjects.push({ id: doc.id, ...doc.data() });
-                });
-                resolve();
-            })
-            .catch(error => {
-                console.error("加载级别项目失败:", error);
-                reject(error);
-            });
-    });
-}
-
-async function loadStudentsAsync() {
-    return new Promise((resolve, reject) => {
-        db.collection('students').orderBy('studentId').get()
-            .then(querySnapshot => {
-                students = [];
-                querySnapshot.forEach(doc => {
-                    students.push({ id: doc.id, ...doc.data() });
-                });
-                updateClassSelect();
-                resolve();
-            })
-            .catch(error => {
-                console.error("加载学生失败:", error);
-                reject(error);
-            });
-    });
-}
-
-async function loadProjectsAsync() {
-    return new Promise((resolve, reject) => {
-        db.collection('projects').orderBy('createdAt').get()
-            .then(querySnapshot => {
-                projects = [];
-                querySnapshot.forEach(doc => {
-                    projects.push({ id: doc.id, ...doc.data() });
-                });
-                resolve();
-            })
-            .catch(error => {
-                console.error("加载项目失败:", error);
-                reject(error);
-            });
-    });
-}
-
-async function loadScoresAsync() {
-    return new Promise((resolve, reject) => {
-        db.collection('scores').get()
-            .then(querySnapshot => {
-                scores = [];
-                const validScores = [];
-                
-                querySnapshot.forEach(doc => {
-                    const score = { id: doc.id, ...doc.data() };
-                    scores.push(score);
-                    
-                    const studentExists = students.some(s => s.id === score.studentId);
-                    const projectExists = levelProjects.some(p => p.id === score.projectId) 
-                                       || projects.some(p => p.id === score.projectId);
-                    
-                    if (studentExists && projectExists) {
-                        validScores.push(score);
-                    } else {
-                        console.warn('发现无效分数记录，已跳过:', score.id);
-                    }
-                });
-                
-                const tbody = document.getElementById('scores-table-body');
-                if (tbody) tbody.innerHTML = '';
-                
-                validScores.forEach(score => addScoreToTable(score));
-                updateScoreDistributionChart();
-                resolve();
-            })
-            .catch(error => {
-                console.error("加载分数失败:", error);
-                reject(error);
-            });
-    });
-}
 // 添加级别到表格
 function addLevelToTable(level) {
     const tbody = document.getElementById('levels-table-body');
@@ -2750,62 +2644,43 @@ function saveLevelProject() {
 }
 
         // 加载学生数据
-        // 加载学生数据（调用异步版本）
-function loadStudents() {
-    loadStudentsAsync().then(() => {
-        const tbody = document.getElementById('students-table-body');
-        const studentSelect = document.getElementById('score-student-select');
-        
-        if (tbody) {
-            tbody.innerHTML = '';
-            students.forEach(student => addStudentToTable(student));
+        function loadStudents() {
+            document.getElementById('students-table-body').innerHTML = '';
+            showLoading('students-table-body');
+            
+            db.collection('students').orderBy('studentId').get()
+                .then(querySnapshot => {
+                    students = [];
+                    const studentSelect = document.getElementById('score-student-select');
+                    studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
+                    
+                    querySnapshot.forEach(doc => {
+                        const student = { id: doc.id, ...doc.data() };
+                        students.push(student);
+                        
+                        // 添加到学生表格
+                        addStudentToTable(student);
+                        
+                        // 添加到学生选择下拉框
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${student.name} (${student.studentId})`;
+                        studentSelect.appendChild(option);
+                    });
+                    
+                    // 更新班级选择下拉框
+                    updateClassSelect();
+                    updateDashboard();
+                    
+                    addActivity("加载学生数据完成", "info");
+                })
+                .catch(error => {
+                    console.error("加载学生数据失败: ", error);
+                    showAlert("加载学生数据失败", "danger");
+                    addActivity("加载学生数据失败", "danger");
+                });
         }
-        
-        if (studentSelect) {
-            studentSelect.innerHTML = '<option value="">-- 选择学生 --</option>';
-            students.forEach(student => {
-                const option = document.createElement('option');
-                option.value = student.id;
-                option.textContent = `${student.name} (${student.studentId})`;
-                studentSelect.appendChild(option);
-            });
-        }
-        
-        addActivity("加载学生数据完成", "info");
-    }).catch(error => {
-        showAlert("加载学生数据失败", "danger");
-    });
-}
 
-// 加载项目数据（调用异步版本）
-function loadProjects() {
-    loadProjectsAsync().then(() => {
-        const tbody = document.getElementById('projects-table-body');
-        const projectSelect = document.getElementById('score-project-select');
-        
-        if (tbody) {
-            tbody.innerHTML = '';
-            projects.forEach(project => addProjectToTable(project));
-        }
-        
-        if (projectSelect) {
-            projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>';
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project.id;
-                option.textContent = `${project.name} (满分: ${project.fullMark})`;
-                projectSelect.appendChild(option);
-            });
-        }
-        
-        updateWeightProgress();
-        addActivity("加载项目数据完成", "info");
-    }).catch(error => {
-        showAlert("加载项目数据失败", "danger");
-    });
-}
-
-// 删除原来的 loadScores 函数（已经不需要了）
         // 添加学生到表格
         // 添加学生到表格 - 修改版本
 function addStudentToTable(student) {
