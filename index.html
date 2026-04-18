@@ -551,7 +551,8 @@
                                     <h4 id="student-name-display">学生姓名</h4>
                                     <div class="d-flex align-items-center">
                                         <span class="me-3"><i class="fas fa-id-card me-1"></i> <span id="student-id-display">学号</span></span>
-                                        <span><i class="fas fa-users me-1"></i> <span id="student-class-display">班级</span></span>
+                                        <span class="me-3"><i class="fas fa-users me-1"></i> <span id="student-class-display">班级</span></span>
+                                        <span><i class="fas fa-layer-group me-1"></i> <span id="student-level-display">级别</span></span>
                                     </div>
                                 </div>
                                 <div class="ms-auto text-end">
@@ -773,6 +774,7 @@
                                             <th>学号</th>
                                             <th>姓名</th>
                                             <th>班级</th>
+                                            <th>级别</th>
                                             <th>学习组</th>
                                             <th>工作组</th>
                                             <th>操作</th>
@@ -1016,6 +1018,12 @@
                             <label for="work-group" class="form-label">工作组</label>
                             <input type="text" class="form-control" id="work-group">
                         </div>
+                        <div class="mb-3">
+    <label for="student-level" class="form-label">级别 <span class="text-danger">*</span></label>
+    <select class="form-select" id="student-level" required>
+        <option value="">-- 请选择级别 --</option>
+    </select>
+</div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1059,6 +1067,12 @@
                             <label for="edit-work-group" class="form-label">工作组</label>
                             <input type="text" class="form-control" id="edit-work-group">
                         </div>
+                        <div class="mb-3">
+    <label for="edit-student-level" class="form-label">级别 <span class="text-danger">*</span></label>
+    <select class="form-select" id="edit-student-level" required>
+        <option value="">-- 请选择级别 --</option>
+    </select>
+</div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1463,6 +1477,55 @@ document.getElementById('level-default-year').addEventListener('change', functio
         nameInput.value = this.value + '年';
     }
 });
+            document.getElementById('score-student-select').addEventListener('change', function() {
+    const studentId = this.value;
+    if (studentId) {
+        const student = students.find(s => s.id === studentId);
+        if (student && student.levelId) {
+            // 根据学生级别加载对应的评分项目
+            loadProjectsByLevel(student.levelId);
+        } else {
+            // 如果没有级别，加载所有项目
+            loadAllProjectsToSelect();
+        }
+    }
+});
+
+            function loadProjectsByLevel(levelId) {
+    const projectSelect = document.getElementById('score-project-select');
+    projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>';
+    
+    // 获取该级别的所有项目
+    const levelProjectsList = levelProjects.filter(lp => lp.levelId === levelId);
+    
+    if (levelProjectsList.length === 0) {
+        // 如果没有级别项目，显示提示
+        projectSelect.innerHTML = '<option value="">该级别暂无评分项目</option>';
+        return;
+    }
+    
+    levelProjectsList.forEach(lp => {
+        const option = document.createElement('option');
+        option.value = lp.id;
+        option.dataset.fullMark = lp.fullMark;
+        option.dataset.weight = lp.weight;
+        option.textContent = `${lp.name} (满分: ${lp.fullMark})`;
+        projectSelect.appendChild(option);
+    });
+}
+
+// 新增函数：加载所有项目到下拉框（备用）
+function loadAllProjectsToSelect() {
+    const projectSelect = document.getElementById('score-project-select');
+    projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>';
+    
+    projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.name} (满分: ${project.fullMark})`;
+        projectSelect.appendChild(option);
+    });
+}
 
              // 显示登录页面
         function showLoginPage() {
@@ -1583,6 +1646,7 @@ document.getElementById('level-default-year').addEventListener('change', functio
                 document.getElementById('student-name-display').textContent = student.name;
                 document.getElementById('student-id-display').textContent = student.studentId;
                 document.getElementById('student-class-display').textContent = student.class;
+                document.getElementById('student-level-display').textContent = student.levelName || '未设置';
                 document.getElementById('average-score-display').textContent = average.toFixed(2) + '%';
                 
                 // 显示成绩详情
@@ -1647,6 +1711,9 @@ document.getElementById('level-default-year').addEventListener('change', functio
                 // 加载分数数据
                 const scoresSnapshot = await db.collection('scores').get();
                 scores = scoresSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // ===== 新增：加载级别数据 =====
+        const levelsSnapshot = await db.collection('levels').get();
+        levels = levelsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
             } catch (error) {
                 console.error("加载数据失败: ", error);
@@ -1756,6 +1823,7 @@ function loadLevels() {
             
             // 同时加载级别项目关联
             loadLevelProjects();
+            updateLevelSelect();
             
             addActivity("加载级别数据完成", "info");
         })
@@ -2081,139 +2149,194 @@ function saveLevelProject() {
         }
 
         // 添加学生到表格
-        function addStudentToTable(student) {
-            const tbody = document.getElementById('students-table-body');
-            const row = document.createElement('tr');
-            row.className = 'fade-in';
-            row.innerHTML = `
-                <td>${student.studentId}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                            ${student.name.charAt(0)}
-                        </div>
-                        ${student.name}
-                    </div>
-                </td>
-                <td><span class="badge bg-primary">${student.class}</span></td>
-                <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
-                <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-            
-            // 添加编辑和删除事件
-            row.querySelector('.edit-student').addEventListener('click', () => editStudent(student.id));
-            row.querySelector('.delete-student').addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
-        }
+        // 添加学生到表格 - 修改版本
+function addStudentToTable(student) {
+    const tbody = document.getElementById('students-table-body');
+    const row = document.createElement('tr');
+    row.className = 'fade-in';
+    
+    // 获取级别名称
+    const level = levels.find(l => l.id === student.levelId);
+    const levelName = level ? level.name : '-';
+    
+    row.innerHTML = `
+        <td>${student.studentId}</td>
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(student.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    ${student.name.charAt(0)}
+                </div>
+                ${student.name}
+            </div>
+        </td>
+        <td><span class="badge bg-primary">${student.class}</span></td>
+        <td><span class="badge bg-success">${levelName}</span></td>
+        <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
+        <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
+        <td>
+            <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+    
+    // 添加编辑和删除事件
+    row.querySelector('.edit-student').addEventListener('click', () => editStudent(student.id));
+    row.querySelector('.delete-student').addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
+}
 
         // 保存学生
-        function saveStudent() {
-            const name = document.getElementById('student-name').value.trim();
-            const studentClass = document.getElementById('student-class').value.trim();
-            const studentId = document.getElementById('student-id').value.trim();
-            const studyGroup = document.getElementById('study-group').value.trim();
-            const workGroup = document.getElementById('work-group').value.trim();
-            
-            if (!name || !studentClass || !studentId) {
-                showAlert("请填写必填字段", "warning");
-                return;
-            }
-            
-            const btn = document.getElementById('save-student-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
-            
-            db.collection('students').add({
-                name,
-                class: studentClass,
-                studentId,
-                studyGroup: studyGroup || null,
-                workGroup: workGroup || null,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                showAlert("学生添加成功", "success");
-                document.getElementById('addStudentModal').querySelector('.btn-close').click();
-                document.getElementById('add-student-form').reset();
-                loadStudents();
-                addActivity(`添加学生: ${name} (${studentId})`, "success");
-            })
-            .catch(error => {
-                console.error("添加学生失败: ", error);
-                showAlert("添加学生失败", "danger");
-                addActivity("添加学生失败", "danger");
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-            });
-        }
+        // 保存学生 - 修改版本
+function saveStudent() {
+    const name = document.getElementById('student-name').value.trim();
+    const studentClass = document.getElementById('student-class').value.trim();
+    const studentId = document.getElementById('student-id').value.trim();
+    const studyGroup = document.getElementById('study-group').value.trim();
+    const workGroup = document.getElementById('work-group').value.trim();
+    const levelId = document.getElementById('student-level').value;
+    
+    if (!name || !studentClass || !studentId) {
+        showAlert("请填写必填字段", "warning");
+        return;
+    }
+    
+    if (!levelId) {
+        showAlert("请选择级别", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-student-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+    
+    const level = levels.find(l => l.id === levelId);
+    
+    db.collection('students').add({
+        name,
+        class: studentClass,
+        studentId,
+        levelId,
+        levelName: level ? level.name : null,  // 冗余存储级别名称，方便查询
+        studyGroup: studyGroup || null,
+        workGroup: workGroup || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("学生添加成功", "success");
+        document.getElementById('addStudentModal').querySelector('.btn-close').click();
+        document.getElementById('add-student-form').reset();
+        loadStudents();
+        addActivity(`添加学生: ${name} (${studentId})`, "success");
+    })
+    .catch(error => {
+        console.error("添加学生失败: ", error);
+        showAlert("添加学生失败", "danger");
+        addActivity("添加学生失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
 
-        // 编辑学生
-        function editStudent(studentId) {
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-            
-            document.getElementById('edit-student-id').value = student.id;
-            document.getElementById('edit-student-name').value = student.name;
-            document.getElementById('edit-student-class').value = student.class;
-            document.getElementById('edit-student-id').value = student.studentId;
-            document.getElementById('edit-study-group').value = student.studyGroup || '';
-            document.getElementById('edit-work-group').value = student.workGroup || '';
-            
-            const modal = new bootstrap.Modal(document.getElementById('editStudentModal'));
-            modal.show();
-        }
+        // 编辑学生 - 修改版本
+function editStudent(studentId) {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+    
+    document.getElementById('edit-student-id').value = student.id;
+    document.getElementById('edit-student-name').value = student.name;
+    document.getElementById('edit-student-class').value = student.class;
+    document.getElementById('edit-student-id').value = student.studentId;
+    document.getElementById('edit-study-group').value = student.studyGroup || '';
+    document.getElementById('edit-work-group').value = student.workGroup || '';
+    document.getElementById('edit-student-level').value = student.levelId || '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+    modal.show();
+}
 
-        // 更新学生
-        function updateStudent() {
-            const id = document.getElementById('edit-student-id').value;
-            const name = document.getElementById('edit-student-name').value.trim();
-            const studentClass = document.getElementById('edit-student-class').value.trim();
-            const studentId = document.getElementById('edit-student-id').value.trim();
-            const studyGroup = document.getElementById('edit-study-group').value.trim();
-            const workGroup = document.getElementById('edit-work-group').value.trim();
-            
-            if (!name || !studentClass || !studentId) {
-                showAlert("请填写必填字段", "warning");
-                return;
-            }
-            
-            const btn = document.getElementById('update-student-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
-            
-            db.collection('students').doc(id).update({
-                name,
-                class: studentClass,
-                studentId,
-                studyGroup: studyGroup || null,
-                workGroup: workGroup || null
-            })
-            .then(() => {
-                showAlert("学生信息更新成功", "success");
-                document.getElementById('editStudentModal').querySelector('.btn-close').click();
-                loadStudents();
-                addActivity(`更新学生信息: ${name} (${studentId})`, "info");
-            })
-            .catch(error => {
-                console.error("更新学生信息失败: ", error);
-                showAlert("更新学生信息失败", "danger");
-                addActivity("更新学生信息失败", "danger");
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
-            });
-        }
+        // 更新学生 - 修改版本
+function updateStudent() {
+    const id = document.getElementById('edit-student-id').value;
+    const name = document.getElementById('edit-student-name').value.trim();
+    const studentClass = document.getElementById('edit-student-class').value.trim();
+    const studentId = document.getElementById('edit-student-id').value.trim();
+    const studyGroup = document.getElementById('edit-study-group').value.trim();
+    const workGroup = document.getElementById('edit-work-group').value.trim();
+    const levelId = document.getElementById('edit-student-level').value;
+    
+    if (!name || !studentClass || !studentId) {
+        showAlert("请填写必填字段", "warning");
+        return;
+    }
+    
+    if (!levelId) {
+        showAlert("请选择级别", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('update-student-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
+    
+    const level = levels.find(l => l.id === levelId);
+    
+    db.collection('students').doc(id).update({
+        name,
+        class: studentClass,
+        studentId,
+        levelId,
+        levelName: level ? level.name : null,
+        studyGroup: studyGroup || null,
+        workGroup: workGroup || null
+    })
+    .then(() => {
+        showAlert("学生信息更新成功", "success");
+        document.getElementById('editStudentModal').querySelector('.btn-close').click();
+        loadStudents();
+        addActivity(`更新学生信息: ${name} (${studentId})`, "info");
+    })
+    .catch(error => {
+        console.error("更新学生信息失败: ", error);
+        showAlert("更新学生信息失败", "danger");
+        addActivity("更新学生信息失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新';
+    });
+}
+
+        // 更新级别选择下拉框
+function updateLevelSelect() {
+    const levelSelect = document.getElementById('student-level');
+    const editLevelSelect = document.getElementById('edit-student-level');
+    
+    if (levelSelect) {
+        levelSelect.innerHTML = '<option value="">-- 请选择级别 --</option>';
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level.id;
+            option.textContent = level.name;
+            levelSelect.appendChild(option);
+        });
+    }
+    
+    if (editLevelSelect) {
+        editLevelSelect.innerHTML = '<option value="">-- 请选择级别 --</option>';
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level.id;
+            option.textContent = level.name;
+            editLevelSelect.appendChild(option);
+        });
+    }
+}
 
         // 加载项目数据
         function loadProjects() {
@@ -2556,50 +2679,59 @@ function saveLevelProject() {
         }
 
         // 保存分数
-        function saveScore() {
-            const studentId = document.getElementById('score-student-select').value;
-            const projectId = document.getElementById('score-project-select').value;
-            const scoreValue = parseFloat(document.getElementById('score-input').value);
-            
-            if (!studentId || !projectId || isNaN(scoreValue)) {
-                showAlert("请选择学生、项目并输入分数", "warning");
-                return;
-            }
-            
-            const project = projects.find(p => p.id === projectId);
-            if (scoreValue > project.fullMark) {
-                showAlert("分数不能超过项目满分", "warning");
-                return;
-            }
-            
-            const btn = document.getElementById('save-score-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
-            
-            db.collection('scores').add({
-                studentId,
-                projectId,
-                score: scoreValue,
-                recordedAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-                showAlert("分数保存成功", "success");
-                document.getElementById('score-input').value = '';
-                loadScores();
-                
-                const student = students.find(s => s.id === studentId);
-                addActivity(`为 ${student.name} 录入 ${project.name} 分数: ${scoreValue}/${project.fullMark}`, "info");
-            })
-            .catch(error => {
-                console.error("保存分数失败: ", error);
-                showAlert("保存分数失败", "danger");
-                addActivity("保存分数失败", "danger");
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-            });
-        }
+        // 保存分数 - 修改版本
+function saveScore() {
+    const studentId = document.getElementById('score-student-select').value;
+    const projectId = document.getElementById('score-project-select').value;
+    const scoreValue = parseFloat(document.getElementById('score-input').value);
+    
+    if (!studentId || !projectId || isNaN(scoreValue)) {
+        showAlert("请选择学生、项目并输入分数", "warning");
+        return;
+    }
+    
+    // 从级别项目中获取满分信息
+    const selectedOption = document.getElementById('score-project-select').selectedOptions[0];
+    const fullMark = parseFloat(selectedOption.dataset.fullMark);
+    const weight = parseFloat(selectedOption.dataset.weight);
+    
+    if (scoreValue > fullMark) {
+        showAlert(`分数不能超过项目满分 ${fullMark}`, "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-score-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+    
+    const student = students.find(s => s.id === studentId);
+    const projectName = selectedOption.textContent.split(' (满分:')[0];
+    
+    db.collection('scores').add({
+        studentId,
+        projectId,
+        projectName: projectName,  // 冗余存储项目名称
+        score: scoreValue,
+        fullMark: fullMark,
+        weight: weight,
+        recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("分数保存成功", "success");
+        document.getElementById('score-input').value = '';
+        loadScores();
+        addActivity(`为 ${student.name} 录入 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
+    })
+    .catch(error => {
+        console.error("保存分数失败: ", error);
+        showAlert("保存分数失败", "danger");
+        addActivity("保存分数失败", "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
 
         // 更新班级选择下拉框
         function updateClassSelect() {
