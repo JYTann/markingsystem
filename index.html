@@ -1867,16 +1867,17 @@ let currentLevelId = null;
             
             // 检查登录状态
 auth.onAuthStateChanged(user => {
-    if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "fymcsjbmaker@gmail.com")) {
-        currentUser = user;
-        document.getElementById('user-email').textContent = user.email;
-        showMainSystem();
-        loadAllData();
-        addActivity("用户登录系统", "success");
-    } else {
-        showStudentQueryPage();
-    }
-});
+        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "fymcsjbmaker@gmail.com")) {
+            currentUser = user;
+            document.getElementById('user-email').textContent = user.email;
+            showMainSystem();
+            loadAllData();
+            addActivity("用户登录系统", "success");
+        } else {
+            showStudentQueryPage();
+        }
+    });
+});  
 
         // 初始化UI事件
         function initUIEvents() {
