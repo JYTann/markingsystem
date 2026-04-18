@@ -1581,28 +1581,38 @@ function loadAllProjectsToSelect() {
             // 班级筛选
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
             
-             // 管理员系统 tab 切换（手动绑定）
-    const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
-    const tabContents = document.querySelectorAll('.tab-pane');
+        // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
+// 管理员系统 tab 切换（修复版本）
+const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
+const tabContents = document.querySelectorAll('.tab-pane');
 
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
-            // 移除所有按钮的 active 类
-            tabButtons.forEach(b => b.classList.remove('active'));
-            // 添加当前按钮 active 类
-            btn.classList.add('active');
-
-            // 隐藏所有内容页
-            tabContents.forEach(tab => tab.classList.remove('show', 'active'));
-
-            // 获取要显示的目标 tab
-            const targetSelector = btn.getAttribute('data-bs-target');
-            const target = document.querySelector(targetSelector);
-            if (target) {
-                target.classList.add('show', 'active');
+tabButtons.forEach(btn => {
+    btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        
+        // 获取目标 tab
+        const targetSelector = this.getAttribute('data-bs-target');
+        if (!targetSelector) return;
+        
+        const target = document.querySelector(targetSelector);
+        if (!target) return;
+        
+        // 移除所有按钮的 active 类
+        tabButtons.forEach(b => b.classList.remove('active'));
+        // 添加当前按钮 active 类
+        this.classList.add('active');
+        
+        // 隐藏所有内容页
+        tabContents.forEach(tab => {
+            if (tab) {
+                tab.classList.remove('show', 'active');
             }
         });
+        
+        // 显示目标 tab
+        target.classList.add('show', 'active');
     });
+});
         }
 
         // 查询学生成绩
@@ -2727,6 +2737,10 @@ function saveScore() {
     
     // 从级别项目中获取满分信息
     const selectedOption = document.getElementById('score-project-select').selectedOptions[0];
+    if (!selectedOption) {
+    showAlert("请选择项目", "warning");
+    return;
+}
     const fullMark = parseFloat(selectedOption.dataset.fullMark);
     const weight = parseFloat(selectedOption.dataset.weight);
     
@@ -3227,7 +3241,6 @@ function saveLevel() {
             }
         }
 
-        // 生成报告
         // 生成报告 - 完整修复版本
 async function generateReport() {
     const selectedClass = document.getElementById('report-class-select').value;
@@ -3266,10 +3279,22 @@ async function generateReport() {
                 project = projects.find(p => p.id === score.projectId);
             }
             
+            // 如果找不到项目，跳过这个分数
+            if (!project && !score.projectName) {
+                console.warn("找不到项目，跳过分数:", score);
+                continue;
+            }
+            
             // 使用分数中存储的值，如果没有则从项目中获取
             const fullMark = score.fullMark || (project ? project.fullMark : 100);
             const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
-            const projectName = score.projectName || (project ? project.name : '未知项目');
+            const projectName = score.projectName || (project ? project.name : null);
+            
+            // 如果连项目名称都没有，跳过这个分数
+            if (!projectName) {
+                console.warn("无法获取项目名称，跳过分数:", score);
+                continue;
+            }
             
             // 添加到项目映射中（用于生成表头）
             if (!allProjectsMap.has(projectName)) {
