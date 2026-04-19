@@ -1009,6 +1009,60 @@
         transform: translateY(-3px);
         box-shadow: 0 12px 24px rgba(91, 134, 229, 0.35);
     }
+        /* 成绩表格增强样式 */
+.score-detail-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.score-detail-table tr {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    transition: var(--transition-smooth);
+}
+
+.score-detail-table tr:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(240, 147, 251, 0.06));
+    transform: translateX(5px);
+}
+
+.score-detail-table td {
+    padding: 12px 16px;
+    border: none;
+}
+
+.score-rank-badge {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; }
+.rank-2 { background: linear-gradient(135deg, #C0C0C0, #A9A9A9); color: white; }
+.rank-3 { background: linear-gradient(135deg, #CD7F32, #8B6914); color: white; }
+
+.score-trend-up { color: #11998e; }
+.score-trend-down { color: #eb3349; }
+.score-trend-stable { color: #f5af19; }
+
+/* 成绩分析卡片 */
+.analysis-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+    border-radius: 20px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.analysis-card.strong { border-left-color: #11998e; }
+.analysis-card.weak { border-left-color: #eb3349; }
+.analysis-card.suggestion { border-left-color: #667eea; }
 </style>
 </head>
     
@@ -1069,6 +1123,15 @@
                                 <div id="score-details">
                                     <!-- 成绩详情将通过JavaScript动态加载 -->
                                 </div>
+                                <!-- 放在 <div id="score-details"> 的 </div> 后面 -->
+<div class="text-end mt-3">
+    <button id="export-student-report-btn" class="btn btn-sm btn-outline-success">
+        <i class="fas fa-download me-1"></i>导出成绩单
+    </button>
+    <button id="print-student-report-btn" class="btn btn-sm btn-outline-primary ms-2">
+        <i class="fas fa-print me-1"></i>打印
+    </button>
+</div>
                             </div>
                         </div>
                         
@@ -1227,6 +1290,21 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>各项目平均分对比
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="projectComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- 学生管理 -->
                 <div class="tab-pane fade" id="students-tab">
@@ -1418,6 +1496,28 @@
                             
                             <div class="row mb-3">
                                 <div class="col-md-12 d-flex justify-content-end">
+                                    <!-- 放在 <button id="save-score-btn" class="btn btn-primary"> 上方 -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-upload me-2"></i>批量导入成绩
+                </h6>
+                <div class="input-group">
+                    <input class="form-control" type="file" id="import-scores-excel" accept=".xlsx, .xls">
+                    <button class="btn btn-outline-primary" type="button" id="import-scores-btn">
+                        <i class="fas fa-file-import me-1"></i>导入
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" id="download-score-template-btn">
+                        <i class="fas fa-download me-1"></i>下载模板
+                    </button>
+                </div>
+                <small class="text-muted">支持Excel批量导入，请先下载模板填写</small>
+            </div>
+        </div>
+    </div>
+</div>
                                     <button id="save-score-btn" class="btn btn-primary">
                                         <i class="fas fa-save me-1"></i>保存分数
                                     </button>
@@ -2117,6 +2217,122 @@ tabButtons.forEach(btn => {
         target.classList.add('show', 'active');
     });
 });
+// --- 在 initUIEvents 函数末尾的 } 前添加 ---
+
+// 下载成绩导入模板
+document.getElementById('download-score-template-btn').addEventListener('click', function() {
+    const templateData = [
+        ['学号', '学生姓名', '项目名称', '分数'],
+        ['2024001', '张三', '编程基础', '85'],
+        ['2024001', '张三', '团队协作', '90'],
+        ['2024002', '李四', '编程基础', '78']
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "成绩导入模板");
+    XLSX.writeFile(wb, "成绩导入模板.xlsx");
+    showAlert("模板下载成功", "success");
+});
+
+// 批量导入成绩
+document.getElementById('import-scores-btn').addEventListener('click', function() {
+    const fileInput = document.getElementById('import-scores-excel');
+    if (!fileInput.files.length) {
+        showAlert("请先选择Excel文件", "warning");
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 导入中...';
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+            
+            let successCount = 0;
+            let errorCount = 0;
+            const batch = db.batch();
+            
+            jsonData.forEach(row => {
+                const studentId = row['学号']?.toString().trim();
+                const projectName = row['项目名称']?.toString().trim();
+                const scoreValue = parseFloat(row['分数']);
+                
+                if (!studentId || !projectName || isNaN(scoreValue)) {
+                    errorCount++;
+                    return;
+                }
+                
+                const student = students.find(s => s.studentId === studentId);
+                if (!student) {
+                    errorCount++;
+                    return;
+                }
+                
+                let project = levelProjects.find(p => p.name === projectName && p.levelId === student.levelId);
+                if (!project) {
+                    project = projects.find(p => p.name === projectName);
+                }
+                
+                if (!project) {
+                    errorCount++;
+                    return;
+                }
+                
+                if (scoreValue > project.fullMark) {
+                    errorCount++;
+                    return;
+                }
+                
+                const docRef = db.collection('scores').doc();
+                batch.set(docRef, {
+                    studentId: student.id,
+                    projectId: project.id,
+                    projectName: project.name,
+                    score: scoreValue,
+                    fullMark: project.fullMark,
+                    weight: project.weight,
+                    recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                successCount++;
+            });
+            
+            if (successCount > 0) {
+                batch.commit().then(() => {
+                    showAlert(`成功导入 ${successCount} 条记录${errorCount > 0 ? `，${errorCount} 条失败` : ''}`, "success");
+                    fileInput.value = '';
+                    loadScores();
+                    addActivity(`批量导入成绩: ${successCount} 条成功`, "success");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-file-import me-1"></i>导入';
+                }).catch(error => {
+                    console.error("导入失败:", error);
+                    showAlert("导入失败", "danger");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-file-import me-1"></i>导入';
+                });
+            } else {
+                showAlert("没有有效的数据可导入", "warning");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-file-import me-1"></i>导入';
+            }
+        } catch (error) {
+            console.error("处理文件失败:", error);
+            showAlert("处理文件失败", "danger");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-import me-1"></i>导入';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
+            
         }
 
         // 查询学生成绩
@@ -2174,7 +2390,95 @@ async function queryStudentScores(studentId) {
         // 显示成绩详情
         const scoreDetailsContainer = document.getElementById('score-details');
         scoreDetailsContainer.innerHTML = '';
-        
+        // --- 在 scoreDetailsContainer.innerHTML = ''; 下方添加 ---
+
+// 计算排名（相对于同级别学生）
+const sameLevelStudents = students.filter(s => s.levelId === student.levelId);
+const levelRankings = [];
+for (const s of sameLevelStudents) {
+    const sScores = scores.filter(sc => sc.studentId === s.id);
+    let sTotal = 0, sTotalWeight = 0;
+    sScores.forEach(sc => {
+        let project = levelProjects.find(p => p.id === sc.projectId) || projects.find(p => p.id === sc.projectId);
+        if (project) {
+            const fullMark = sc.fullMark || project.fullMark;
+            const weight = sc.weight !== undefined ? sc.weight : project.weight;
+            sTotal += (sc.score / fullMark) * weight * 100;
+            sTotalWeight += weight;
+        }
+    });
+    const sAvg = sTotalWeight > 0 ? (sTotal / sTotalWeight) : 0;
+    levelRankings.push({ studentId: s.id, name: s.name, average: sAvg });
+}
+levelRankings.sort((a, b) => b.average - a.average);
+const studentRank = levelRankings.findIndex(r => r.studentId === student.id) + 1;
+const totalInLevel = levelRankings.length;
+const percentile = ((totalInLevel - studentRank) / totalInLevel * 100).toFixed(1);
+
+// 添加排名和百分位显示
+const rankInfo = document.createElement('div');
+rankInfo.className = 'analysis-card suggestion';
+rankInfo.innerHTML = `
+    <div class="d-flex align-items-center justify-content-between">
+        <div>
+            <i class="fas fa-trophy me-2" style="color: #FFD700;"></i>
+            <strong>级别排名</strong>
+        </div>
+        <div>
+            <span class="badge bg-primary me-2">第 ${studentRank} 名</span>
+            <span class="badge bg-info">超过 ${percentile}% 的同学</span>
+        </div>
+    </div>
+`;
+scoreDetailsContainer.appendChild(rankInfo);
+
+// 分析强弱项
+const scorePercentages = studentScores.map(score => {
+    let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
+    const fullMark = score.fullMark || (project ? project.fullMark : 100);
+    const percentage = (score.score / fullMark) * 100;
+    const projectName = score.projectName || (project ? project.name : '未知项目');
+    return { name: projectName, percentage };
+});
+
+scorePercentages.sort((a, b) => b.percentage - a.percentage);
+const strongItems = scorePercentages.slice(0, 2);
+const weakItems = scorePercentages.slice(-2).reverse();
+
+// 添加强弱项分析
+const analysisDiv = document.createElement('div');
+analysisDiv.className = 'row mt-3';
+analysisDiv.innerHTML = `
+    <div class="col-md-6">
+        <div class="analysis-card strong">
+            <i class="fas fa-arrow-up me-2" style="color: #11998e;"></i>
+            <strong>优势项目</strong>
+            <div class="mt-2">
+                ${strongItems.map(item => `
+                    <div class="d-flex justify-content-between">
+                        <span>${item.name}</span>
+                        <span class="text-success fw-bold">${item.percentage.toFixed(1)}%</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="analysis-card weak">
+            <i class="fas fa-arrow-down me-2" style="color: #eb3349;"></i>
+            <strong>待提升项目</strong>
+            <div class="mt-2">
+                ${weakItems.map(item => `
+                    <div class="d-flex justify-content-between">
+                        <span>${item.name}</span>
+                        <span class="text-danger fw-bold">${item.percentage.toFixed(1)}%</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    </div>
+`;
+scoreDetailsContainer.appendChild(analysisDiv);
         studentScores.forEach(score => {
             // 先从 levelProjects 查找，再从 projects 查找
             let project = levelProjects.find(p => p.id === score.projectId);
@@ -2214,6 +2518,62 @@ async function queryStudentScores(studentId) {
         
         // 显示查询结果
         document.getElementById('query-results').style.display = 'block';
+
+        // --- 在 queryStudentScores 函数末尾，showAlert 之前添加 ---
+
+// 导出成绩单按钮
+document.getElementById('export-student-report-btn').onclick = function() {
+    const studentName = document.getElementById('student-name-display').textContent;
+    const studentId = document.getElementById('student-id-display').textContent;
+    const average = document.getElementById('average-score-display').textContent;
+    
+    let csvContent = "项目名称,分数,满分,得分率,权重\n";
+    studentScores.forEach(score => {
+        let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
+        const fullMark = score.fullMark || (project ? project.fullMark : 100);
+        const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
+        const projectName = score.projectName || (project ? project.name : '未知项目');
+        const percentage = ((score.score / fullMark) * 100).toFixed(1);
+        csvContent += `"${projectName}",${score.score},${fullMark},${percentage}%,${(weight*100).toFixed(1)}%\n`;
+    });
+    csvContent += `\n"总平均",,,${average},`;
+    
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${studentName}_${studentId}_成绩单.csv`;
+    link.click();
+    
+    showAlert("成绩单导出成功", "success");
+};
+
+// 打印成绩单按钮
+document.getElementById('print-student-report-btn').onclick = function() {
+    const printContent = document.querySelector('.student-score-card').cloneNode(true);
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>成绩单</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    body { padding: 30px; font-family: 'Noto Sans SC', sans-serif; }
+                    .print-header { text-align: center; margin-bottom: 30px; }
+                </style>
+            </head>
+            <body>
+                <div class="print-header">
+                    <h2>新山宽柔中学电脑协会</h2>
+                    <h3>学生成绩单</h3>
+                    <p>打印日期: ${new Date().toLocaleDateString()}</p>
+                </div>
+                ${printContent.outerHTML}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+};
         
     } catch (error) {
         console.error("查询成绩失败: ", error);
@@ -3147,6 +3507,7 @@ function updateLevelSelect() {
                     });
                     
                     updateDashboard();
+                    updateProjectComparisonChart();
                     updateScoreDistributionChart();
                     
                     addActivity("加载分数数据完成", "info");
@@ -3422,6 +3783,82 @@ function updateScoreDistributionChart() {
         // 如果创建失败，重新创建容器
         createChartContainer();
     }
+}
+
+        // --- 在 updateScoreDistributionChart 函数后面添加 ---
+
+let projectComparisonChart = null;
+
+// 更新项目对比图表
+function updateProjectComparisonChart() {
+    const canvas = document.getElementById('projectComparisonChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    if (projectComparisonChart) {
+        projectComparisonChart.destroy();
+    }
+    
+    // 获取所有项目（包括级别项目）
+    const allProjects = [...projects, ...levelProjects];
+    const projectStats = [];
+    
+    allProjects.forEach(project => {
+        const projectScores = scores.filter(s => s.projectId === project.id);
+        if (projectScores.length > 0) {
+            const avgScore = projectScores.reduce((sum, s) => sum + s.score, 0) / projectScores.length;
+            const avgPercentage = (avgScore / project.fullMark) * 100;
+            projectStats.push({
+                name: project.name,
+                average: avgPercentage,
+                count: projectScores.length
+            });
+        }
+    });
+    
+    // 按平均分排序，取前8个
+    projectStats.sort((a, b) => b.average - a.average);
+    const topProjects = projectStats.slice(0, 8);
+    
+    projectComparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: topProjects.map(p => p.name),
+            datasets: [{
+                label: '平均得分率 (%)',
+                data: topProjects.map(p => p.average),
+                backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                borderColor: 'rgba(102, 126, 234, 1)',
+                borderWidth: 1,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `平均得分率: ${context.raw.toFixed(1)}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 // 新增：重新创建图表容器
