@@ -1066,8 +1066,41 @@
                             </div>
                             <div class="card-body">
                                 <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>各项目成绩</h5>
+                                <!-- 切换视图按钮 -->
+<div class="btn-group btn-group-sm mb-3" role="group">
+    <button type="button" class="btn btn-outline-primary active" id="view-card-btn">
+        <i class="fas fa-th-large me-1"></i>卡片视图
+    </button>
+    <button type="button" class="btn btn-outline-primary" id="view-table-btn">
+        <i class="fas fa-table me-1"></i>表格视图
+    </button>
+</div>
                                 <div id="score-details">
                                     <!-- 成绩详情将通过JavaScript动态加载 -->
+                                    <!-- 成绩表格微调：添加表格式成绩展示 -->
+<div class="table-responsive mt-3">
+    <table class="table table-sm table-hover" id="student-score-table" style="display: none;">
+        <thead class="table-light">
+            <tr>
+                <th>项目</th>
+                <th>满分</th>
+                <th>得分</th>
+                <th>百分比</th>
+                <th>权重</th>
+                <th>加权得分</th>
+            </tr>
+        </thead>
+        <tbody id="score-table-body">
+            <!-- 动态填充 -->
+        </tbody>
+        <tfoot class="table-light fw-bold">
+            <tr>
+                <td colspan="5" class="text-end">总平均分：</td>
+                <td id="table-average-display">0%</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
                                 </div>
                             </div>
                         </div>
@@ -1907,6 +1940,20 @@ auth.onAuthStateChanged(user => {
                 document.getElementById('student-id-query').value = '';
                 document.getElementById('query-results').style.display = 'none';
                 document.getElementById('student-query-form').reset();
+                // 重置为卡片视图
+const cardView = document.getElementById('score-details');
+const tableView = document.getElementById('student-score-table');
+const cardBtn = document.getElementById('view-card-btn');
+const tableBtn = document.getElementById('view-table-btn');
+
+if (cardView && tableView) {
+    cardView.style.display = 'block';
+    tableView.style.display = 'none';
+}
+if (cardBtn && tableBtn) {
+    cardBtn.classList.add('active');
+    tableBtn.classList.remove('active');
+}
             });
             
             // 登录表单提交
@@ -2170,8 +2217,115 @@ async function queryStudentScores(studentId) {
         document.getElementById('student-class-display').textContent = student.class;
         document.getElementById('student-level-display').textContent = student.levelName || '未设置';
         document.getElementById('average-score-display').textContent = average.toFixed(2) + '%';
+        // 同步表格底部的总平均分（如果表格视图被激活）
+const tableAvgElement = document.getElementById('table-average-display');
+if (tableAvgElement) {
+    tableAvgElement.textContent = average.toFixed(2) + '%';
+}
         
         // 显示成绩详情
+                // 显示成绩详情
+        const scoreDetailsContainer = document.getElementById('score-details');
+        const scoreTableBody = document.getElementById('score-table-body');
+        const studentScoreTable = document.getElementById('student-score-table');
+        
+        // 清空容器
+        scoreDetailsContainer.innerHTML = '';
+        scoreTableBody.innerHTML = '';
+        
+        // 存储表格行数据用于计算总平均
+        let tableTotalWeightedScore = 0;
+        let tableTotalWeight = 0;
+        
+        studentScores.forEach(score => {
+            // 先从 levelProjects 查找，再从 projects 查找
+            let project = levelProjects.find(p => p.id === score.projectId);
+            if (!project) {
+                project = projects.find(p => p.id === score.projectId);
+            }
+            
+            const fullMark = score.fullMark || (project ? project.fullMark : 100);
+            const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
+            const projectName = score.projectName || (project ? project.name : '未知项目');
+            
+            const percentage = (score.score / fullMark * 100).toFixed(1);
+            const weightedScore = (score.score / fullMark) * weight * 100;
+            
+            // 累加表格总平均数据
+            if (fullMark > 0 && weight > 0) {
+                tableTotalWeightedScore += weightedScore;
+                tableTotalWeight += weight;
+            }
+            
+            // === 1. 构建卡片视图 ===
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'score-item';
+            scoreItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${projectName}</h6>
+                        <small class="text-muted">满分: ${fullMark}分 | 权重: ${(weight * 100).toFixed(1)}%</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold ${percentage < 60 ? 'text-danger' : percentage < 80 ? 'text-warning' : 'text-success'}">
+                            ${score.score}分 (${percentage}%)
+                        </div>
+                        <div class="progress score-progress" style="width: 150px;">
+                            <div class="progress-bar ${percentage < 60 ? 'bg-danger' : percentage < 80 ? 'bg-warning' : 'bg-success'}" 
+                                 role="progressbar" style="width: ${percentage}%" 
+                                 aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            scoreDetailsContainer.appendChild(scoreItem);
+            
+            // === 2. 构建表格视图 ===
+            const tableRow = document.createElement('tr');
+            tableRow.innerHTML = `
+                <td>${projectName}</td>
+                <td>${fullMark}</td>
+                <td>${score.score}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2 ${percentage < 60 ? 'text-danger' : percentage < 80 ? 'text-warning' : 'text-success'}">${percentage}%</span>
+                        <div class="progress flex-grow-1" style="height: 6px; width: 80px;">
+                            <div class="progress-bar ${percentage < 60 ? 'bg-danger' : percentage < 80 ? 'bg-warning' : 'bg-success'}" 
+                                 style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${(weight * 100).toFixed(1)}%</td>
+                <td>${weightedScore.toFixed(2)}%</td>
+            `;
+            scoreTableBody.appendChild(tableRow);
+        });
+        
+        // 更新表格底部总平均
+        const tableAverage = tableTotalWeight > 0 ? (tableTotalWeightedScore / tableTotalWeight) : 0;
+        document.getElementById('table-average-display').textContent = tableAverage.toFixed(2) + '%';
+        
+        // 默认显示卡片视图
+        scoreDetailsContainer.style.display = 'block';
+        studentScoreTable.style.display = 'none';
+        
+        // 视图切换按钮事件（只绑定一次）
+        if (!window._viewSwitcherBound) {
+            document.getElementById('view-card-btn').addEventListener('click', function() {
+                scoreDetailsContainer.style.display = 'block';
+                studentScoreTable.style.display = 'none';
+                document.getElementById('view-card-btn').classList.add('active');
+                document.getElementById('view-table-btn').classList.remove('active');
+            });
+            
+            document.getElementById('view-table-btn').addEventListener('click', function() {
+                scoreDetailsContainer.style.display = 'none';
+                studentScoreTable.style.display = 'table';
+                document.getElementById('view-card-btn').classList.remove('active');
+                document.getElementById('view-table-btn').classList.add('active');
+            });
+            window._viewSwitcherBound = true;
+        }
         const scoreDetailsContainer = document.getElementById('score-details');
         scoreDetailsContainer.innerHTML = '';
         
