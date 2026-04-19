@@ -1867,7 +1867,7 @@ let currentLevelId = null;
             
             // 检查登录状态
 auth.onAuthStateChanged(user => {
-        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "fymcsjbmaker@gmail.com")) {
+        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com")) {
             currentUser = user;
             document.getElementById('user-email').textContent = user.email;
             showMainSystem();
@@ -1914,7 +1914,7 @@ auth.onAuthStateChanged(user => {
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
-                const allowedEmails = ["tanjunyuanfoonyew@gmail.com", "jb220225@foonyew.edu.my", "fymcsjbmaker@gmail.com"];
+                const allowedEmails = ["tanjunyuanfoonyew@gmail.com", "jb220225@foonyew.edu.my", "maker.fymcsjb@gmail.com"];
                 
                 if (!allowedEmails.includes(email)) {
                     showAlert("只有授权账户可以登录系统", "danger");
@@ -2262,7 +2262,7 @@ async function loadAllDataForQuery() {
     auth.signInWithPopup(googleProvider)
         .then((result) => {
             const user = result.user;
-            const allowedEmails = ["tanjunyuanfoonyew@gmail.com", "jb220225@foonyew.edu.my", "fymcsjbmaker@gmail.com"];
+            const allowedEmails = ["tanjunyuanfoonyew@gmail.com", "jb220225@foonyew.edu.my", "maker.fymcsjb@gmail.com"];
             if (allowedEmails.includes(user.email)) {
                 showAlert("Google登录成功", "success");
                 document.getElementById('user-email').textContent = user.email;
