@@ -805,6 +805,46 @@
         background: linear-gradient(90deg, rgba(102, 126, 234, 0.04), transparent);
         padding-left: 2rem;
     }
+
+            /* 成绩表格百分比/分数列样式 */
+    .score-value-cell {
+        font-weight: 600;
+        transition: var(--transition-smooth);
+    }
+    .score-value-cell.percentage {
+        color: #2ecc71;
+    }
+    .score-value-cell.raw {
+        color: #3498db;
+    }
+    
+    /* 视图切换开关样式 */
+    .view-toggle-switch {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 40px;
+        padding: 4px;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    .view-toggle-option {
+        padding: 0.3rem 1rem;
+        border-radius: 40px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        color: var(--text-secondary);
+    }
+    .view-toggle-option.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.25);
+    }
+    .view-toggle-option i {
+        margin-right: 4px;
+        font-size: 0.8rem;
+    }
     
     /* 滚动条 */
     ::-webkit-scrollbar {
@@ -1065,7 +1105,17 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                <h5 class="mb-3"><i class="fas fa-tasks me-2"></i>各项目成绩</h5>
+                                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>各项目成绩</h5>
+                                <div class="view-toggle-switch" id="score-view-toggle">
+                                    <span class="view-toggle-option active" data-view="percentage">
+                                        <i class="fas fa-percent"></i>百分比
+                                    </span>
+                                    <span class="view-toggle-option" data-view="raw">
+                                        <i class="fas fa-hashtag"></i>原始分
+                                    </span>
+                                </div>
+                            </div>
                                 <div id="score-details">
                                     <!-- 成绩详情将通过JavaScript动态加载 -->
                                 </div>
@@ -2188,22 +2238,29 @@ async function queryStudentScores(studentId) {
             
             const percentage = (score.score / fullMark * 100).toFixed(1);
             
+                        const percentageValue = (score.score / fullMark * 100).toFixed(1);
             const scoreItem = document.createElement('div');
             scoreItem.className = 'score-item';
+            scoreItem.setAttribute('data-percentage', percentageValue);
+            scoreItem.setAttribute('data-raw-score', score.score);
+            scoreItem.setAttribute('data-full-mark', fullMark);
+            
             scoreItem.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="mb-1">${projectName}</h6>
                         <small class="text-muted">满分: ${fullMark}分 | 权重: ${(weight * 100).toFixed(1)}%</small>
                     </div>
-                    <div class="text-end">
-                        <div class="fw-bold ${percentage < 60 ? 'text-danger' : percentage < 80 ? 'text-warning' : 'text-success'}">
-                            ${score.score}分 (${percentage}%)
+                    <div class="text-end d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="fw-bold score-value-cell percentage" data-score-type="display">
+                                ${percentageValue}%
+                            </div>
                         </div>
                         <div class="progress score-progress" style="width: 150px;">
-                            <div class="progress-bar ${percentage < 60 ? 'bg-danger' : percentage < 80 ? 'bg-warning' : 'bg-success'}" 
-                                 role="progressbar" style="width: ${percentage}%" 
-                                 aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="progress-bar ${percentageValue < 60 ? 'bg-danger' : percentageValue < 80 ? 'bg-warning' : 'bg-success'}" 
+                                 role="progressbar" style="width: ${percentageValue}%" 
+                                 aria-valuenow="${percentageValue}" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                     </div>
                 </div>
@@ -2214,12 +2271,60 @@ async function queryStudentScores(studentId) {
         
         // 显示查询结果
         document.getElementById('query-results').style.display = 'block';
+                // 初始化视图切换开关
+        initScoreViewToggle();
         
     } catch (error) {
         console.error("查询成绩失败: ", error);
         showAlert("查询成绩失败: " + error.message, "danger");
     }
 }
+
+                // 初始化成绩视图切换功能
+        function initScoreViewToggle() {
+            const toggleOptions = document.querySelectorAll('#score-view-toggle .view-toggle-option');
+            const scoreItems = document.querySelectorAll('.score-item');
+            
+            // 切换视图的函数
+            const switchView = (viewType) => {
+                scoreItems.forEach(item => {
+                    const displayElement = item.querySelector('.score-value-cell');
+                    if (!displayElement) return;
+                    
+                    const percentage = item.dataset.percentage;
+                    const rawScore = item.dataset.rawScore;
+                    const fullMark = item.dataset.fullMark;
+                    
+                    if (viewType === 'percentage') {
+                        displayElement.textContent = `${percentage}%`;
+                        displayElement.classList.add('percentage');
+                        displayElement.classList.remove('raw');
+                    } else {
+                        displayElement.textContent = `${rawScore}/${fullMark}`;
+                        displayElement.classList.add('raw');
+                        displayElement.classList.remove('percentage');
+                    }
+                });
+                
+                // 更新激活状态
+                toggleOptions.forEach(opt => {
+                    if (opt.dataset.view === viewType) {
+                        opt.classList.add('active');
+                    } else {
+                        opt.classList.remove('active');
+                    }
+                });
+            };
+            
+            // 绑定点击事件
+            toggleOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const viewType = this.dataset.view;
+                    switchView(viewType);
+                });
+            });
+        }
         // 为查询加载所有必要数据
 async function loadAllDataForQuery() {
     try {
