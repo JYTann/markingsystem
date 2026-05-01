@@ -5315,6 +5315,104 @@ document.addEventListener('click', function(e) {
         setTimeout(cleanupAllModals, 300);
     }
 });
+
+        // ========== 彻底修复模态框遮罩层问题 ==========
+
+// 方案1：监听所有模态框的关闭事件
+document.addEventListener('hidden.bs.modal', function() {
+    removeAllBackdrops();
+});
+
+document.addEventListener('hide.bs.modal', function() {
+    removeAllBackdrops();
+});
+
+// 方案2：监听所有点击事件
+document.addEventListener('click', function(e) {
+    // 延迟检查，确保Bootstrap动画完成
+    setTimeout(removeAllBackdrops, 200);
+});
+
+// 方案3：定时清理（备用方案，每2秒检查一次）
+let backdropCleanerInterval = setInterval(function() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    const modals = document.querySelectorAll('.modal.show');
+    
+    // 如果没有显示的模态框，但有遮罩层，就清理掉
+    if (modals.length === 0 && backdrops.length > 0) {
+        removeAllBackdrops();
+    }
+}, 2000);
+
+// 核心清理函数
+function removeAllBackdrops() {
+    // 获取所有遮罩层
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(function(backdrop) {
+        if (backdrop && backdrop.parentNode) {
+            backdrop.parentNode.removeChild(backdrop);
+        }
+    });
+    
+    // 强制移除body上的modal-open类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // 强制隐藏所有可能残留的模态框
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(function(modal) {
+        if (!modal.classList.contains('show')) {
+            modal.style.display = 'none';
+        }
+    });
+}
+
+// 方案4：重写Bootstrap的Modal.hide方法
+const originalModal = bootstrap.Modal;
+if (originalModal) {
+    const originalHide = originalModal.prototype.hide;
+    originalModal.prototype.hide = function() {
+        originalHide.apply(this, arguments);
+        setTimeout(removeAllBackdrops, 300);
+    };
+}
+
+// 方案5：页面加载后立即清理
+window.addEventListener('load', function() {
+    removeAllBackdrops();
+    // 多次清理，确保彻底清除
+    setTimeout(removeAllBackdrops, 500);
+    setTimeout(removeAllBackdrops, 1000);
+});
+
+// 方案6：为所有模态框关闭按钮添加直接事件
+document.addEventListener('click', function(e) {
+    // 查找是否点击了关闭按钮或取消按钮
+    if (e.target.matches('.btn-close, .btn-secondary[data-bs-dismiss="modal"], [data-bs-dismiss="modal"]') ||
+        e.target.closest('.btn-close, .btn-secondary[data-bs-dismiss="modal"], [data-bs-dismiss="modal"]')) {
+        
+        // 找到对应的模态框
+        const modal = e.target.closest('.modal');
+        if (modal) {
+            try {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) {
+                    bsModal.hide();
+                } else {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                }
+            } catch (err) {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+            }
+            setTimeout(removeAllBackdrops, 300);
+        }
+    }
+});
+
+// ========== 修复结束 ==========
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
