@@ -2947,7 +2947,7 @@ function saveLevel() {
     })
     .then(() => {
         showAlert("级别添加成功", "success");
-        safeHideModal('addLevelModal');
+        document.getElementById('addLevelModal').querySelector('.btn-close').click();
         document.getElementById('add-level-form').reset();
         loadLevels();
         addActivity(`添加级别: ${name}`, "success");
@@ -4098,18 +4098,30 @@ case 'levelProject':
 function safeHideModal(modalId) {
     const modalElement = document.getElementById(modalId);
     if (!modalElement) return;
-
+    
     try {
-        const modal = bootstrap.Modal.getInstance(modalElement) 
-                   || new bootstrap.Modal(modalElement);
-        modal.hide();
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        } else {
+            // 如果没有 Bootstrap 实例，手动隐藏
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            
+            // 移除 backdrop
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+        }
     } catch (error) {
         console.error(`关闭模态框 ${modalId} 失败:`, error);
+        // 强制隐藏
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+        document.body.classList.remove('modal-open');
     }
-
-    // 强制清理残留的遮罩层
-    document.querySelectorAll('.modal-backdrop').forEach(e => e.remove());
-    document.body.classList.remove('modal-open');
 }
 
 // 修改保存级别函数中的关闭操作
@@ -5257,12 +5269,6 @@ function createReportHTML(selectedClass, studentAverages, projects) {
             const hue = Math.abs(hash % 360);
             return `hsl(${hue}, 70%, 60%)`;
         }
-
-        // 防止 modal 遮罩层残留
-document.addEventListener('hidden.bs.modal', () => {
-    document.querySelectorAll('.modal-backdrop').forEach(e => e.remove());
-    document.body.classList.remove('modal-open');
-});
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
