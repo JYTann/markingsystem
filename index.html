@@ -1064,6 +1064,70 @@
 .analysis-card.strong { border-left-color: #11998e; }
 .analysis-card.weak { border-left-color: #eb3349; }
 .analysis-card.suggestion { border-left-color: #667eea; }
+        /* 修复模态框位置 - 始终在屏幕中央 */
+.modal {
+    display: none;
+}
+
+.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-dialog {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 500px;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+/* 模态框滑入动画 */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 确保模态框body在遮罩层之上 */
+.modal {
+    z-index: 1055 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+/* 确保模态框内容可见 */
+.modal-content {
+    position: relative;
+    z-index: 1060;
+}
+
+        /* 确认删除弹窗 - 特殊样式 */
+#confirmDeleteModal .modal-content {
+    border: 2px solid #eb3349;
+    box-shadow: 0 20px 60px rgba(235, 51, 73, 0.4);
+}
+
+#confirmDeleteModal .modal-header {
+    background: linear-gradient(135deg, #eb3349, #f45c43);
+}
+
+#confirmDeleteModal .fa-exclamation-triangle {
+    animation: warningPulse 1.5s ease-in-out infinite;
+}
+
+/* 警告图标脉冲动画 */
+@keyframes warningPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+}
 </style>
 </head>
     
@@ -4137,88 +4201,172 @@ function createChartContainer() {
 }
 
         // 显示删除确认
-        function showDeleteConfirm(type, id, message) {
-            deleteType = type;
-            deleteId = id;
-            document.getElementById('delete-message').textContent = message;
-            
-            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-            modal.show();
+function showDeleteConfirm(type, id, message) {
+    deleteType = type;
+    deleteId = id;
+    
+    // 设置删除消息
+    const deleteMessageEl = document.getElementById('delete-message');
+    if (deleteMessageEl) {
+        deleteMessageEl.textContent = message;
+    }
+    
+    // 先清理所有残留的模态框状态
+    cleanupAllModals();
+    
+    // 获取模态框元素
+    const modalElement = document.getElementById('confirmDeleteModal');
+    if (!modalElement) {
+        console.error('找不到确认删除模态框');
+        return;
+    }
+    
+    // 显示模态框
+    try {
+        // 尝试使用 Bootstrap modal
+        let modal = bootstrap.Modal.getInstance(modalElement);
+        if (!modal) {
+            modal = new bootstrap.Modal(modalElement, {
+                backdrop: 'static',
+                keyboard: false
+            });
         }
+        modal.show();
+        
+        // 手动确保模态框居中
+        setTimeout(() => {
+            modalElement.style.display = 'flex';
+            modalElement.style.alignItems = 'center';
+            modalElement.style.justifyContent = 'center';
+        }, 50);
+        
+    } catch (error) {
+        console.error('显示模态框失败:', error);
+        // 降级处理：手动显示
+        modalElement.style.display = 'flex';
+        modalElement.style.alignItems = 'center';
+        modalElement.style.justifyContent = 'center';
+        modalElement.classList.add('show');
+        modalElement.setAttribute('aria-modal', 'true');
+        modalElement.setAttribute('role', 'dialog');
+        modalElement.removeAttribute('aria-hidden');
+        
+        // 添加遮罩层
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            backdrop.style.zIndex = '1050';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+    }
+}
 
-        // 确认删除
-        function confirmDelete() {
-            let collectionName = '';
-            let successMessage = '';
+// 确认删除
+function confirmDelete() {
+    let collectionName = '';
+    let successMessage = '';
+    
+    switch (deleteType) {
+        case 'student':
+            collectionName = 'students';
+            const student = students.find(s => s.id === deleteId);
+            successMessage = `学生 ${student?.name || ''} (${student?.studentId || ''}) 删除成功`;
+            break;
+        case 'project':
+            collectionName = 'projects';
+            const project = projects.find(p => p.id === deleteId);
+            successMessage = `项目 ${project?.name || ''} 删除成功`;
+            break;
+        case 'score':
+            collectionName = 'scores';
+            successMessage = '分数记录删除成功';
+            break;
+        case 'level':
+            collectionName = 'levels';
+            const level = levels.find(l => l.id === deleteId);
+            successMessage = `级别 ${level?.name || ''} 删除成功`;
+            break;
+        case 'levelProject':
+            collectionName = 'levelProjects';
+            successMessage = '评分项目删除成功';
+            break;
+        default:
+            return;
+    }
+    
+    const btn = document.getElementById('confirm-delete-btn');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 删除中...';
+    
+    db.collection(collectionName).doc(deleteId).delete()
+        .then(() => {
+            showAlert(successMessage, "success");
             
-            switch (deleteType) {
-                case 'student':
-                    collectionName = 'students';
-                    const student = students.find(s => s.id === deleteId);
-                    successMessage = `学生 ${student.name} (${student.studentId}) 删除成功`;
-                    break;
-                case 'project':
-                    collectionName = 'projects';
-                    const project = projects.find(p => p.id === deleteId);
-                    successMessage = `项目 ${project.name} 删除成功`;
-                    break;
-                case 'score':
-                    collectionName = 'scores';
-                    successMessage = '分数记录删除成功';
-                    break;
-                    // 在 switch (deleteType) 中添加
-case 'level':
-    collectionName = 'levels';
-    const level = levels.find(l => l.id === deleteId);
-    successMessage = `级别 ${level?.name} 删除成功`;
-    break;
-case 'levelProject':
-    collectionName = 'levelProjects';
-    successMessage = '评分项目删除成功';
-    break;
-                default:
-                    return;
+            // 正确关闭模态框
+            const modalElement = document.getElementById('confirmDeleteModal');
+            if (modalElement) {
+                try {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                } catch (e) {
+                    console.error('关闭模态框失败:', e);
+                }
             }
             
-            const btn = document.getElementById('confirm-delete-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 删除中...';
+            // 手动清理遮罩层
+            setTimeout(() => {
+                cleanupAllModals();
+            }, 300);
             
-            db.collection(collectionName).doc(deleteId).delete()
-                .then(() => {
-                    showAlert(successMessage, "success");
-                    document.getElementById('confirmDeleteModal').querySelector('.btn-close').click();
-                    
-                    // 重新加载相关数据
-                    if (deleteType === 'student') {
-                        loadStudents();
-                        loadScores();
-                        addActivity(successMessage, "info");
-                    } else if (deleteType === 'project') {
-                        loadProjects();
-                        loadScores();
-                        addActivity(successMessage, "info");
-                    } else if (deleteType === 'score') {
-                        loadScores();
-                        addActivity(successMessage, "info");
-                    }else if (deleteType === 'level') {
-    loadLevels();
-    addActivity(successMessage, "info");
-} else if (deleteType === 'levelProject') {
-    loadLevelProjects();
-    addActivity(successMessage, "info");
+            // 重新加载相关数据
+            if (deleteType === 'student') {
+                loadStudents();
+                loadScores();
+                addActivity(successMessage, "info");
+            } else if (deleteType === 'project') {
+                loadProjects();
+                loadScores();
+                addActivity(successMessage, "info");
+            } else if (deleteType === 'score') {
+                loadScores();
+                addActivity(successMessage, "info");
+            } else if (deleteType === 'level') {
+                loadLevels();
+                addActivity(successMessage, "info");
+            } else if (deleteType === 'levelProject') {
+                loadLevelProjects();
+                addActivity(successMessage, "info");
+            }
+        })
+        .catch(error => {
+            console.error("删除失败: ", error);
+            showAlert("删除失败", "danger");
+            addActivity("删除操作失败", "danger");
+            
+            // 错误时也关闭模态框
+            const modalElement = document.getElementById('confirmDeleteModal');
+            if (modalElement) {
+                try {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                } catch (e) {}
+                setTimeout(() => {
+                    cleanupAllModals();
+                }, 300);
+            }
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>删除';
+        });
 }
-                })
-                .catch(error => {
-                    console.error("删除失败: ", error);
-                    showAlert("删除失败", "danger");
-                    addActivity("删除操作失败", "danger");
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-trash-alt me-1"></i>删除';
-                });
-        }
 
         // 安全关闭模态框
 // 安全关闭模态框 - 增强版
@@ -5408,12 +5556,13 @@ document.addEventListener('hidden.bs.modal', function (event) {
     document.body.style.paddingRight = '';
 });
 
-// 额外的安全措施：手动关闭所有模态框
+// 清理所有模态框函数
 function cleanupAllModals() {
     // 隐藏所有模态框
     document.querySelectorAll('.modal.show').forEach(modal => {
         modal.classList.remove('show');
         modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
     });
     
     // 移除所有遮罩层
