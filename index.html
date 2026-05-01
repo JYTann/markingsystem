@@ -4095,6 +4095,7 @@ case 'levelProject':
         }
 
         // 安全关闭模态框
+// 安全关闭模态框 - 增强版
 function safeHideModal(modalId) {
     const modalElement = document.getElementById(modalId);
     if (!modalElement) return;
@@ -4107,21 +4108,20 @@ function safeHideModal(modalId) {
             // 如果没有 Bootstrap 实例，手动隐藏
             modalElement.style.display = 'none';
             modalElement.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            
-            // 移除 backdrop
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
+            modalElement.setAttribute('aria-hidden', 'true');
         }
     } catch (error) {
         console.error(`关闭模态框 ${modalId} 失败:`, error);
-        // 强制隐藏
         modalElement.style.display = 'none';
         modalElement.classList.remove('show');
-        document.body.classList.remove('modal-open');
     }
+    
+    // 强制清理遮罩层
+    setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+    }, 150);
 }
 
 // 修改保存级别函数中的关闭操作
@@ -5269,6 +5269,52 @@ function createReportHTML(selectedClass, studentAverages, projects) {
             const hue = Math.abs(hash % 360);
             return `hsl(${hue}, 70%, 60%)`;
         }
+
+        // 修复模态框关闭后遮罩层残留问题
+document.addEventListener('hidden.bs.modal', function (event) {
+    // 移除所有残留的 backdrop
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // 移除 body 上的 modal-open 类
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// 额外的安全措施：手动关闭所有模态框
+function cleanupAllModals() {
+    // 隐藏所有模态框
+    document.querySelectorAll('.modal.show').forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    });
+    
+    // 移除所有遮罩层
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // 恢复 body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
+// 在页面加载时清理可能残留的遮罩层
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(cleanupAllModals, 500);
+});
+
+// 为所有关闭按钮添加额外的清理逻辑
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.btn-close') || 
+        e.target.closest('[data-bs-dismiss="modal"]') ||
+        e.target.closest('.btn-secondary[data-bs-dismiss="modal"]')) {
+        // 延迟清理，等 Bootstrap 动画完成
+        setTimeout(cleanupAllModals, 300);
+    }
+});
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
