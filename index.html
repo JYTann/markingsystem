@@ -3701,54 +3701,66 @@ if (generateBtn) {
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
             
         // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
+// 找到 initUIEvents 函数中的 tab 切换代码，替换为：
 const tabButtons = document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]');
-const tabContents = document.querySelectorAll('.tab-pane');
 
 tabButtons.forEach(btn => {
     btn.addEventListener('click', function (e) {
         e.preventDefault();
         
-        // 获取目标 tab 选择器
         const targetSelector = this.getAttribute('data-bs-target');
         if (!targetSelector) return;
         
-        // 使用正确的选择器方式获取目标元素
         const target = document.querySelector(targetSelector);
         if (!target) {
             console.warn("找不到目标 tab:", targetSelector);
             return;
         }
         
-        // 移除所有按钮的 active 类
+        // 安全地移除所有按钮的 active 类
         tabButtons.forEach(b => {
-            if (b) b.classList.remove('active');
+            if (b && b.classList) {
+                b.classList.remove('active');
+            }
         });
-        // 添加当前按钮 active 类
-        this.classList.add('active');
         
-        // 隐藏所有内容页
+        // 安全地添加当前按钮 active 类
+        if (this.classList) {
+            this.classList.add('active');
+        }
+        
+        // 安全地隐藏所有内容页
+        const tabContents = document.querySelectorAll('.tab-pane');
         tabContents.forEach(tab => {
-            if (tab) {
+            if (tab && tab.classList) {
                 tab.classList.remove('show', 'active');
             }
         });
         
-        // 显示目标 tab
-        target.classList.add('show', 'active');
+        // 安全地显示目标 tab
+        if (target.classList) {
+            target.classList.add('show', 'active');
+        }
         
         // 如果切换到仪表盘，更新图表
         if (targetSelector === '#dashboard-tab') {
             setTimeout(() => {
-                updateScoreDistributionChart();
-                updateProjectComparisonChart();
-            }, 100);
+                if (typeof updateScoreDistributionChart === 'function') {
+                    updateScoreDistributionChart();
+                }
+                if (typeof updateProjectComparisonChart === 'function') {
+                    updateProjectComparisonChart();
+                }
+            }, 300);
         }
         
         // 如果切换到分数录入，刷新分数列表
         if (targetSelector === '#scores-tab') {
             setTimeout(() => {
-                loadScores();
-            }, 100);
+                if (typeof loadScores === 'function') {
+                    loadScores();
+                }
+            }, 300);
         }
     });
 });
@@ -4146,10 +4158,15 @@ async function loadAllDataForQuery() {
     }
 }
 
-        function signInWithGoogle() {
+       function signInWithGoogle() {
     const btn = document.getElementById('google-login-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 登录中...';
+    
+    // 添加这些设置来减少 COOP 警告
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
     
     auth.signInWithPopup(googleProvider)
         .then((result) => {
@@ -4169,12 +4186,14 @@ async function loadAllDataForQuery() {
         })
         .catch((error) => {
             console.error("Google登录失败:", error);
-            showAlert("Google登录失败: " + error.message, "danger");
+            // 忽略 popup closed 错误
+            if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                showAlert("Google登录失败: " + error.message, "danger");
+            }
             btn.disabled = false;
             btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
         });
 }
-
 
         // 显示学生查询页面
         function showStudentQueryPage() {
