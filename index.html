@@ -1921,6 +1921,36 @@
         </div>
     </div>
 
+<!-- 成绩报告模态框 - 最简单版本 -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>成绩报告预览
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-light me-2" id="download-pdf-btn">
+                        <i class="fas fa-file-pdf me-1"></i>下载PDF
+                    </button>
+                    <button class="btn btn-sm btn-outline-light me-2" id="download-excel-btn">
+                        <i class="fas fa-file-excel me-1"></i>下载Excel
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body" id="report-modal-body" style="background: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2 text-muted">正在生成报告...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
     <!-- 引入必要的JS库 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -4316,7 +4346,6 @@ function saveLevel() {
 let reportModalInstance = null;
 
 // 完整替换 generateReport 函数
-// 完整替换 generateReport 函数 - 使用新窗口代替模态框
 async function generateReport() {
     const selectedClass = document.getElementById('report-class-select')?.value || '';
     const selectedLevel = document.getElementById('report-level-select')?.value || '';
@@ -4425,43 +4454,104 @@ async function generateReport() {
             });
         }
         
-        // 生成报告HTML
-        const reportHTML = createReportWindowHTML(selectedClass, studentAverages, reportProjects, groupByLevel);
-        
-        // 打开新窗口显示报告
-        const reportWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-        if (!reportWindow) {
-            showAlert("请允许弹出窗口以查看报告", "warning");
-            return;
-        }
-        
-        reportWindow.document.write(reportHTML);
-        reportWindow.document.close();
-        
-        // 存储数据供下载使用
-        reportWindow._reportData = {
+        // 存储到全局变量
+        currentReportData = {
             studentAverages,
             reportProjects,
             selectedClass,
             groupByLevel
         };
         
-        // 在新窗口中添加下载功能
-        reportWindow.downloadPDF = function() {
-            const data = reportWindow._reportData;
-            if (data) {
-                downloadReportAsPDF(data.studentAverages, data.reportProjects, data.selectedClass, data.groupByLevel);
-            }
-        };
+        // 生成报告HTML
+        const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects, groupByLevel);
         
-        reportWindow.downloadExcel = function() {
-            const data = reportWindow._reportData;
-            if (data) {
-                downloadReportAsExcel(data.studentAverages, data.reportProjects, data.selectedClass, data.groupByLevel);
-            }
-        };
+        // 获取模态框元素
+        const modalElement = document.getElementById('reportModal');
+        if (!modalElement) {
+            showAlert("系统错误：找不到报告模态框", "danger");
+            return;
+        }
         
-        showAlert("报告已在新窗口打开", "success");
+        // 设置报告内容
+        document.getElementById('report-modal-body').innerHTML = reportHTML;
+        
+        // 先销毁旧实例
+        if (reportModalInstance) {
+            try {
+                reportModalInstance.dispose();
+            } catch(e) {}
+            reportModalInstance = null;
+        }
+        
+        // 创建新实例
+        reportModalInstance = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // 最重要的修复：隐藏时正确恢复body状态
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            // 不手动清理，让Bootstrap自己处理
+            // 只检查并修复可能出现的问题
+            setTimeout(() => {
+                // 检查是否有其他模态框打开
+                const otherModals = document.querySelectorAll('.modal.show');
+                if (otherModals.length === 0) {
+                    // 没有其他模态框，确保body状态正确
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length > 0) {
+                        // 有残留遮罩层，清理掉
+                        backdrops.forEach(b => b.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }
+                }
+                // 如果有其他模态框打开，不做任何事，让Bootstrap管理
+            }, 200);
+        });
+        
+        // 显示模态框
+        reportModalInstance.show();
+        
+        // 绑定下载按钮
+        setTimeout(() => {
+            const pdfBtn = document.getElementById('download-pdf-btn');
+            const excelBtn = document.getElementById('download-excel-btn');
+            
+            if (pdfBtn) {
+                const newPdfBtn = pdfBtn.cloneNode(true);
+                pdfBtn.parentNode.replaceChild(newPdfBtn, pdfBtn);
+                newPdfBtn.addEventListener('click', function() {
+                    if (currentReportData) {
+                        downloadReportAsPDF(
+                            currentReportData.studentAverages,
+                            currentReportData.reportProjects,
+                            currentReportData.selectedClass,
+                            currentReportData.groupByLevel
+                        );
+                    }
+                });
+            }
+            
+            if (excelBtn) {
+                const newExcelBtn = excelBtn.cloneNode(true);
+                excelBtn.parentNode.replaceChild(newExcelBtn, excelBtn);
+                newExcelBtn.addEventListener('click', function() {
+                    if (currentReportData) {
+                        downloadReportAsExcel(
+                            currentReportData.studentAverages,
+                            currentReportData.reportProjects,
+                            currentReportData.selectedClass,
+                            currentReportData.groupByLevel
+                        );
+                    }
+                });
+            }
+        }, 300);
+        
+        showAlert("报告生成成功", "success");
         
     } catch (error) {
         console.error("生成报告失败:", error);
@@ -4476,179 +4566,6 @@ async function generateReport() {
 
 // 全局变量存储报告数据
 let currentReportData = null;
-
-// 新窗口版报告HTML
-function createReportWindowHTML(selectedClass, studentAverages, projects, groupByLevel) {
-    const totalStudents = studentAverages.length;
-    const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
-    const passRate = totalStudents > 0 ? ((studentAverages.filter(s => s.average >= 60).length / totalStudents) * 100).toFixed(1) : 0;
-    
-    const reportTitle = selectedClass ? `${selectedClass} 成绩报告` : '杂家——MAKER 成绩报告';
-    
-    // 生成表格HTML的函数
-    function buildTable(students, showLevelRank, showLevelColumn) {
-        if (students.length === 0) return '<p style="text-align:center;color:#999;">暂无数据</p>';
-        
-        const rankLabel = showLevelRank ? '级别排名' : '排名';
-        
-        let html = `
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:900px;">
-                    <thead>
-                        <tr style="background:#f0f4ff;">
-                            <th style="padding:8px; border:1px solid #ddd; text-align:center;">${rankLabel}</th>
-                            <th style="padding:8px; border:1px solid #ddd;">学号</th>
-                            <th style="padding:8px; border:1px solid #ddd;">姓名</th>
-                            <th style="padding:8px; border:1px solid #ddd; text-align:center;">班级</th>
-                            ${showLevelColumn ? '<th style="padding:8px; border:1px solid #ddd; text-align:center;">级别</th>' : ''}
-                            ${projects.map(p => `
-                                <th style="padding:8px; border:1px solid #ddd; text-align:center;">
-                                    ${p.name}<br>
-                                    <small style="font-weight:normal;">满分:${p.fullMark} 权重:${(p.weight*100).toFixed(0)}%</small>
-                                </th>
-                            `).join('')}
-                            <th style="padding:8px; border:1px solid #ddd; text-align:center;">总平均</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-        
-        students.forEach((item, index) => {
-            const rank = showLevelRank ? item.levelRank : item.globalRank;
-            const rankStyle = rank <= 3 ? `style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:50%;font-weight:700;font-size:12px;color:white;background:${rank===1?'linear-gradient(135deg,#FFD700,#FFA500)':rank===2?'linear-gradient(135deg,#C0C0C0,#A9A9A9)':'linear-gradient(135deg,#CD7F32,#8B6914)'};"` : '';
-            
-            html += `
-                <tr style="${index%2===0?'background:#fafafa;':''}">
-                    <td style="padding:8px; border:1px solid #ddd; text-align:center;">
-                        ${rank <= 3 ? `<span ${rankStyle}>${rank}</span>` : rank}
-                    </td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.student.studentId}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.student.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd; text-align:center;">
-                        <span style="background:#667eea;color:white;padding:2px 8px;border-radius:12px;font-size:12px;">${item.student.class}</span>
-                    </td>
-                    ${showLevelColumn ? `<td style="padding:8px; border:1px solid #ddd; text-align:center;">${item.levelName||'-'}</td>` : ''}
-                    ${projects.map(p => {
-                        const score = item.scores.find(s => s.projectName === p.name);
-                        const pct = score ? (score.score/score.fullMark*100) : 0;
-                        const color = pct>=80?'#11998e':pct>=60?'#f5af19':'#eb3349';
-                        return `<td style="padding:8px; border:1px solid #ddd; text-align:center; color:${color};">
-                            ${score?`${score.score}/${score.fullMark} (${pct.toFixed(0)}%)`:'<span style="color:#999;">-</span>'}
-                        </td>`;
-                    }).join('')}
-                    <td style="padding:8px; border:1px solid #ddd; text-align:center; font-weight:700; color:${item.average>=80?'#11998e':item.average>=60?'#f5af19':'#eb3349'};">
-                        ${item.average.toFixed(1)}%
-                    </td>
-                </tr>`;
-        });
-        
-        html += '</tbody></table></div>';
-        return html;
-    }
-    
-    // 构建内容
-    let contentHTML = '';
-    
-    if (groupByLevel) {
-        const levelGroups = {};
-        studentAverages.forEach(item => {
-            const key = item.levelName || '未设置级别';
-            if (!levelGroups[key]) levelGroups[key] = [];
-            levelGroups[key].push(item);
-        });
-        
-        for (const [levelName, students] of Object.entries(levelGroups)) {
-            const lvlAvg = students.reduce((s,i) => s+i.average,0)/students.length;
-            const lvlPass = ((students.filter(s=>s.average>=60).length/students.length)*100).toFixed(1);
-            
-            contentHTML += `
-                <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:15px 20px;border-radius:12px;margin:25px 0 15px 0;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <h3 style="margin:0;">📊 ${levelName} <small>(${students.length}人)</small></h3>
-                        <div>
-                            <span style="background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;margin-right:10px;">平均:${lvlAvg.toFixed(1)}%</span>
-                            <span style="background:rgba(255,255,255,0.2);padding:5px 12px;border-radius:20px;">及格率:${lvlPass}%</span>
-                        </div>
-                    </div>
-                </div>
-                ${buildTable(students, true, false)}
-            `;
-        }
-    } else {
-        contentHTML = buildTable(studentAverages, false, true);
-    }
-    
-    return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${reportTitle}</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Noto Sans SC',sans-serif; background:#f5f7fa; padding:20px; }
-        .container { max-width:1300px; margin:0 auto; background:white; border-radius:16px; padding:30px; box-shadow:0 4px 20px rgba(0,0,0,0.08); }
-        .header { text-align:center; margin-bottom:25px; }
-        .header h1 { color:#1a1a2e; font-size:24px; margin-bottom:5px; }
-        .header .date { color:#999; font-size:14px; }
-        .stats { display:flex; flex-wrap:wrap; gap:15px; margin-bottom:25px; }
-        .stat-card { flex:1; min-width:140px; padding:20px; border-radius:16px; color:white; text-align:center; }
-        .stat-card .value { font-size:28px; font-weight:800; }
-        .stat-card .label { font-size:13px; opacity:0.9; }
-        .btn { display:inline-block; padding:10px 20px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; margin:5px; text-decoration:none; }
-        .btn-pdf { background:#eb3349; color:white; }
-        .btn-excel { background:#11998e; color:white; }
-        .btn-print { background:#667eea; color:white; }
-        .toolbar { text-align:right; margin-bottom:20px; }
-        .footer { text-align:center; margin-top:25px; color:#999; font-size:13px; }
-        @media print {
-            .toolbar { display:none; }
-            body { background:white; }
-            .container { box-shadow:none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="toolbar">
-            <button class="btn btn-pdf" onclick="window.downloadPDF()">📥 下载PDF</button>
-            <button class="btn btn-excel" onclick="window.downloadExcel()">📥 下载Excel</button>
-            <button class="btn btn-print" onclick="window.print()">🖨️ 打印</button>
-        </div>
-        
-        <div class="header">
-            <h1>${reportTitle}</h1>
-            <p class="date">生成日期: ${new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})}</p>
-        </div>
-        
-        <div class="stats">
-            <div class="stat-card" style="background:linear-gradient(135deg,#667eea,#764ba2);">
-                <div class="value">${totalStudents}</div>
-                <div class="label">学生总人数</div>
-            </div>
-            <div class="stat-card" style="background:linear-gradient(135deg,#11998e,#38ef7d);">
-                <div class="value">${avgScore.toFixed(1)}%</div>
-                <div class="label">平均成绩</div>
-            </div>
-            <div class="stat-card" style="background:linear-gradient(135deg,#f5af19,#f12711);">
-                <div class="value">${passRate}%</div>
-                <div class="label">及格率</div>
-            </div>
-            <div class="stat-card" style="background:linear-gradient(135deg,#36d1dc,#5b86e5);">
-                <div class="value">${projects.length}</div>
-                <div class="label">评分项目数</div>
-            </div>
-        </div>
-        
-        ${contentHTML}
-        
-        <div class="footer">
-            <p>本报告由智能评分系统自动生成 | 杂家——MAKER</p>
-            <p>© ${new Date().getFullYear()} 新山宽柔中学电脑协会</p>
-        </div>
-    </div>
-</body>
-</html>`;
-}
 // 绑定下载按钮函数
 function bindDownloadButtons() {
     const pdfBtn = document.getElementById('download-pdf-btn');
