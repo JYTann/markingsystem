@@ -1915,6 +1915,31 @@
         </div>
     </div>
 
+    <!-- 成绩报告模态框 -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>成绩报告预览
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-light me-2" id="download-pdf-btn">
+                        <i class="fas fa-file-pdf me-1"></i>下载PDF
+                    </button>
+                    <button class="btn btn-sm btn-outline-light me-2" id="download-excel-btn">
+                        <i class="fas fa-file-excel me-1"></i>下载Excel
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body" id="report-modal-body" style="background: #f8f9fa; max-height: 70vh; overflow-y: auto;">
+                <!-- 报告内容将动态加载到这里 -->
+            </div>
+        </div>
+    </div>
+</div>
+
 
     <!-- 引入必要的JS库 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -4281,9 +4306,9 @@ function saveLevel() {
         }
 
         // 生成报告 - 完整修复版本
+// 替换原有的 generateReport 函数
 async function generateReport() {
     const selectedClass = document.getElementById('report-class-select').value;
-    const format = document.getElementById('report-format-select').value;
     let filteredStudents = students;
     
     if (selectedClass) {
@@ -4299,10 +4324,11 @@ async function generateReport() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
     
+    // 延迟一下以显示加载状态
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     // 计算每个学生的平均分
     const studentAverages = [];
-    
-    // 收集所有用到的项目（从 levelProjects 和 scores 中）
     const allProjectsMap = new Map();
     
     for (const student of filteredStudents) {
@@ -4312,36 +4338,17 @@ async function generateReport() {
         const scoreDetails = [];
         
         for (const score of studentScores) {
-            // 查找项目信息 - 先从 levelProjects 查找，再从 projects 查找
             let project = levelProjects.find(p => p.id === score.projectId);
-            if (!project) {
-                project = projects.find(p => p.id === score.projectId);
-            }
+            if (!project) project = projects.find(p => p.id === score.projectId);
             
-            // 如果找不到项目，跳过这个分数
-            if (!project && !score.projectName) {
-                console.warn("找不到项目，跳过分数:", score);
-                continue;
-            }
-            
-            // 使用分数中存储的值，如果没有则从项目中获取
             const fullMark = score.fullMark || (project ? project.fullMark : 100);
             const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
             const projectName = score.projectName || (project ? project.name : null);
             
-            // 如果连项目名称都没有，跳过这个分数
-            if (!projectName) {
-                console.warn("无法获取项目名称，跳过分数:", score);
-                continue;
-            }
+            if (!projectName) continue;
             
-            // 添加到项目映射中（用于生成表头）
             if (!allProjectsMap.has(projectName)) {
-                allProjectsMap.set(projectName, { 
-                    name: projectName, 
-                    fullMark: fullMark, 
-                    weight: weight 
-                });
+                allProjectsMap.set(projectName, { name: projectName, fullMark: fullMark, weight: weight });
             }
             
             if (fullMark > 0 && weight > 0) {
@@ -4349,134 +4356,221 @@ async function generateReport() {
                 totalWeight += weight;
             }
             
-            scoreDetails.push({
-                projectName: projectName,
-                score: score.score,
-                fullMark: fullMark,
-                weight: weight
-            });
+            scoreDetails.push({ projectName, score: score.score, fullMark, weight });
         }
         
         const average = totalWeight > 0 ? (total / totalWeight) : 0;
-        studentAverages.push({
-            student,
-            average,
-            scores: scoreDetails
-        });
+        studentAverages.push({ student, average, scores: scoreDetails });
     }
     
-    // 将项目映射转换为数组
     const reportProjects = Array.from(allProjectsMap.values());
-    
-    // 按平均分排序
     studentAverages.sort((a, b) => b.average - a.average);
     
-    // 生成报告HTML
-    const reportHTML = createReportHTML(selectedClass, studentAverages, reportProjects);
+    // 生成精致的报告HTML
+    const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects);
     
-    // 显示预览
-    document.getElementById('report-preview').innerHTML = reportHTML;
+    // 显示在模态框中
+    document.getElementById('report-modal-body').innerHTML = reportHTML;
     
-    // 根据选择的格式生成报告
+    const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+    reportModal.show();
+    
+    // 绑定下载按钮事件
+    document.getElementById('download-pdf-btn').onclick = () => downloadReportAsPDF(studentAverages, reportProjects, selectedClass);
+    document.getElementById('download-excel-btn').onclick = () => downloadReportAsExcel(studentAverages, reportProjects, selectedClass);
+    
+    showAlert("报告生成成功", "success");
+    addActivity("生成成绩报告", "success");
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
+}
+
+        // 新增增强版报告HTML
+function createEnhancedReportHTML(selectedClass, studentAverages, projects) {
+    const totalStudents = studentAverages.length;
+    const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
+    const passRate = totalStudents > 0 ? ((studentAverages.filter(s => s.average >= 60).length / totalStudents) * 100).toFixed(1) : 0;
+    const maxAvg = totalStudents > 0 ? studentAverages[0].average : 0;
+    const minAvg = totalStudents > 0 ? studentAverages[totalStudents - 1].average : 0;
+    
+    return `
+        <div class="report-container" style="font-family: 'Noto Sans SC', sans-serif; padding: 20px;">
+            <!-- 报告头部 -->
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #1a1a2e; margin-bottom: 5px; font-weight: 800;">
+                    <i class="fas fa-file-alt me-2" style="color: #4361ee;"></i>${selectedClass || '全校'} 成绩报告
+                </h2>
+                <p style="color: #666;">生成日期: ${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
+            
+            <!-- 统计概览卡片 -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="stat-card-small" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 800;">${totalStudents}</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">学生总人数</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="stat-card-small" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 800;">${avgScore.toFixed(1)}%</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">平均成绩</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="stat-card-small" style="background: linear-gradient(135deg, #f5af19, #f12711); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 800;">${passRate}%</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">及格率</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="stat-card-small" style="background: linear-gradient(135deg, #36d1dc, #5b86e5); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 800;">${projects.length}</div>
+                        <div style="font-size: 0.85rem; opacity: 0.9;">评分项目数</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 成绩表格 -->
+            <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto;">
+                <h5 style="margin-bottom: 20px; color: #1a1a2e; font-weight: 700;">
+                    <i class="fas fa-list me-2" style="color: #4361ee;"></i>成绩明细
+                </h5>
+                <table class="table table-hover" style="font-size: 0.85rem;">
+                    <thead>
+                        <tr style="background: #f0f4ff;">
+                            <th style="width: 40px; text-align: center;">
+                                <span class="badge bg-dark">排名</span>
+                            </th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th style="text-align: center;">班级</th>
+                            ${projects.map(p => `
+                                <th style="text-align: center;">
+                                    ${p.name}
+                                    <br><small style="font-weight: normal; font-size: 0.7rem;">(${p.fullMark}分, ${(p.weight * 100).toFixed(0)}%)</small>
+                                </th>
+                            `).join('')}
+                            <th style="text-align: center; font-weight: 700;">总平均</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${studentAverages.map((item, index) => {
+                            const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
+                            return `
+                                <tr>
+                                    <td style="text-align: center;">
+                                        ${index < 3 ? `<span class="score-rank-badge ${rankClass}">${index + 1}</span>` : index + 1}
+                                    </td>
+                                    <td>${item.student.studentId}</td>
+                                    <td>${item.student.name}</td>
+                                    <td style="text-align: center;"><span class="badge bg-primary">${item.student.class}</span></td>
+                                    ${projects.map(p => {
+                                        const score = item.scores.find(s => s.projectName === p.name);
+                                        const percentage = score ? (score.score / p.fullMark * 100) : 0;
+                                        const colorClass = percentage >= 80 ? 'text-success' : percentage >= 60 ? 'text-warning' : 'text-danger';
+                                        return `
+                                            <td style="text-align: center;" class="${colorClass}">
+                                                ${score ? `${score.score} <small>(${percentage.toFixed(0)}%)</small>` : '<span class="text-muted">-</span>'}
+                                            </td>
+                                        `;
+                                    }).join('')}
+                                    <td style="text-align: center; font-weight: 700; 
+                                        ${item.average >= 80 ? 'color: #11998e;' : item.average >= 60 ? 'color: #f5af19;' : 'color: #eb3349;'}">
+                                        ${item.average.toFixed(1)}%
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 页脚 -->
+            <div style="text-align: center; margin-top: 30px; color: #999; font-size: 0.8rem;">
+                <p>本报告由智能评分系统自动生成</p>
+            </div>
+        </div>
+    `;
+}
+
+        // PDF下载函数
+async function downloadReportAsPDF(studentAverages, reportProjects, selectedClass) {
+    const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects);
+    
+    // 创建一个临时容器来渲染报告
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = reportHTML;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = '1100px'; // 设置固定宽度以便截图
+    document.body.appendChild(tempDiv);
+    
     try {
-        const date = new Date().toISOString().split('T')[0];
-        let fileName = `${selectedClass || '全校'}_成绩报告_${date}`;
+        const canvas = await html2canvas(tempDiv, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
         
-        if (format === 'pdf') {
-            // 使用html2canvas+jsPDF生成PDF
-            const element = document.getElementById('report-preview');
-            
-            // 设置更高的缩放比例以获得更好的质量
-            const scale = 2;
-            const options = {
-                scale: scale,
-                logging: false,
-                useCORS: true,
-                allowTaint: true
-            };
-            
-            html2canvas(element, options).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-                
-                // 计算PDF页面尺寸
-                const imgWidth = 210; // A4宽度 (mm)
-                const pageHeight = 295; // A4高度 (mm)
-                const imgHeight = canvas.height * imgWidth / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
-                
-                // 第一页
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-                
-                // 如果有剩余内容，添加新页
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-                
-                pdf.save(`${fileName}.pdf`);
-                
-                showAlert("PDF报告生成成功", "success");
-                addActivity("生成PDF成绩报告", "success");
-            }).catch(error => {
-                console.error("生成PDF失败: ", error);
-                showAlert("生成PDF报告失败", "danger");
-                addActivity("生成PDF成绩报告失败", "danger");
-            });
-        } else if (format === 'excel') {
-            // 准备Excel数据
-            const excelData = studentAverages.map((item, index) => {
-                const row = {
-                    '排名': index + 1,
-                    '学号': item.student.studentId,
-                    '姓名': item.student.name,
-                    '班级': item.student.class,
-                    '级别': item.student.levelName || '-'
-                };
-                
-                reportProjects.forEach(p => {
-                    const score = item.scores.find(s => s.projectName === p.name);
-                    row[p.name] = score ? score.score : '-';
-                });
-                
-                row['总平均'] = item.average.toFixed(2) + '%';
-                return row;
-            });
-            
-            // 创建工作表
-            const ws = XLSX.utils.json_to_sheet(excelData);
-            
-            // 创建工作簿
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "成绩报告");
-            
-            // 导出Excel文件
-            XLSX.writeFile(wb, `${fileName}.xlsx`);
-            
-            showAlert("Excel报告生成成功", "success");
-            addActivity("生成Excel成绩报告", "success");
-        } else {
-            // HTML格式 - 直接下载HTML文件
-            const blob = new Blob([reportHTML], { type: 'text/html' });
-            saveAs(blob, `${fileName}.html`);
-            
-            showAlert("HTML报告生成成功", "success");
-            addActivity("生成HTML成绩报告", "success");
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 295;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
         }
+        
+        const date = new Date().toISOString().split('T')[0];
+        pdf.save(`${selectedClass || '全校'}_成绩报告_${date}.pdf`);
+        showAlert("PDF报告下载成功", "success");
     } catch (error) {
-        console.error("生成报告失败: ", error);
-        showAlert("生成报告失败", "danger");
-        addActivity("生成成绩报告失败", "danger");
+        console.error("PDF生成失败:", error);
+        showAlert("PDF生成失败，请重试", "danger");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
+        document.body.removeChild(tempDiv);
     }
 }
 
+// Excel下载函数
+function downloadReportAsExcel(studentAverages, reportProjects, selectedClass) {
+    const excelData = studentAverages.map((item, index) => {
+        const row = {
+            '排名': index + 1,
+            '学号': item.student.studentId,
+            '姓名': item.student.name,
+            '班级': item.student.class,
+            '级别': item.student.levelName || '-'
+        };
+        
+        reportProjects.forEach(p => {
+            const score = item.scores.find(s => s.projectName === p.name);
+            row[p.name] = score ? score.score : '-';
+        });
+        
+        row['总平均'] = item.average.toFixed(2) + '%';
+        return row;
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "成绩报告");
+    
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `${selectedClass || '全校'}_成绩报告_${date}.xlsx`);
+    showAlert("Excel报告下载成功", "success");
+}
         // 创建报告HTML - 修复版本
 function createReportHTML(selectedClass, studentAverages, projects) {
     // 计算表格列数
