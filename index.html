@@ -2493,6 +2493,38 @@ body.modal-open #student-query-page {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
+
+        /* 导出成绩单按钮 */
+#export-student-report-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#export-student-report-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+
+#print-student-report-btn {
+    background: white;
+    color: #6366f1;
+    border: 2px solid #6366f1;
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#print-student-report-btn:hover {
+    background: #6366f1;
+    color: white;
+    transform: translateY(-2px);
+}
 </style>
 </head>
     
@@ -3882,207 +3914,420 @@ async function queryStudentScores(studentId) {
         
         const average = totalWeight > 0 ? (total / totalWeight) : 0;
         
-        // 显示学生信息
+                // 显示学生信息 - 美化版
         document.getElementById('student-avatar').textContent = student.name.charAt(0);
-        document.getElementById('student-avatar').style.backgroundColor = stringToColor(student.name);
+        document.getElementById('student-avatar').style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)';
+        document.getElementById('student-avatar').style.backgroundSize = '200% 200%';
         document.getElementById('student-name-display').textContent = student.name;
         document.getElementById('student-id-display').textContent = student.studentId;
         document.getElementById('student-class-display').textContent = student.class;
         document.getElementById('student-level-display').textContent = student.levelName || '未设置';
         document.getElementById('average-score-display').textContent = average.toFixed(2) + '%';
         
-        // 显示成绩详情
+        // 根据平均分设置颜色
+        const avgEl = document.getElementById('average-score-display');
+        if (average >= 80) avgEl.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+        else if (average >= 60) avgEl.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+        else avgEl.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+        avgEl.style.webkitBackgroundClip = 'text';
+        avgEl.style.webkitTextFillColor = 'transparent';
+        avgEl.style.backgroundClip = 'text';
+        
+                // ==================== 显示成绩详情 - 美化版 ====================
         const scoreDetailsContainer = document.getElementById('score-details');
         scoreDetailsContainer.innerHTML = '';
-        // --- 在 scoreDetailsContainer.innerHTML = ''; 下方添加 ---
-
-// 计算排名（相对于同级别学生）
-const sameLevelStudents = students.filter(s => s.levelId === student.levelId);
-const levelRankings = [];
-for (const s of sameLevelStudents) {
-    const sScores = scores.filter(sc => sc.studentId === s.id);
-    let sTotal = 0, sTotalWeight = 0;
-    sScores.forEach(sc => {
-        let project = levelProjects.find(p => p.id === sc.projectId) || projects.find(p => p.id === sc.projectId);
-        if (project) {
-            const fullMark = sc.fullMark || project.fullMark;
-            const weight = sc.weight !== undefined ? sc.weight : project.weight;
-            sTotal += (sc.score / fullMark) * weight * 100;
-            sTotalWeight += weight;
+        
+        // 计算排名
+        const sameLevelStudents = students.filter(s => s.levelId === student.levelId);
+        const levelRankings = [];
+        for (const s of sameLevelStudents) {
+            const sScores = scores.filter(sc => sc.studentId === s.id);
+            let sTotal = 0, sTotalWeight = 0;
+            sScores.forEach(sc => {
+                let project = levelProjects.find(p => p.id === sc.projectId) || projects.find(p => p.id === sc.projectId);
+                if (project) {
+                    const fullMark = sc.fullMark || project.fullMark;
+                    const weight = sc.weight !== undefined ? sc.weight : project.weight;
+                    sTotal += (sc.score / fullMark) * weight * 100;
+                    sTotalWeight += weight;
+                }
+            });
+            const sAvg = sTotalWeight > 0 ? (sTotal / sTotalWeight) : 0;
+            levelRankings.push({ studentId: s.id, name: s.name, average: sAvg });
         }
-    });
-    const sAvg = sTotalWeight > 0 ? (sTotal / sTotalWeight) : 0;
-    levelRankings.push({ studentId: s.id, name: s.name, average: sAvg });
-}
-levelRankings.sort((a, b) => b.average - a.average);
-const studentRank = levelRankings.findIndex(r => r.studentId === student.id) + 1;
-const totalInLevel = levelRankings.length;
-const percentile = ((totalInLevel - studentRank) / totalInLevel * 100).toFixed(1);
-
-// 添加排名和百分位显示
-const rankInfo = document.createElement('div');
-rankInfo.className = 'analysis-card suggestion';
-rankInfo.innerHTML = `
-    <div class="d-flex align-items-center justify-content-between">
-        <div>
-            <i class="fas fa-trophy me-2" style="color: #FFD700;"></i>
-            <strong>级别排名</strong>
-        </div>
-        <div>
-            <span class="badge bg-primary me-2">第 ${studentRank} 名</span>
-            <span class="badge bg-info">超过 ${percentile}% 的同学</span>
-        </div>
-    </div>
-`;
-scoreDetailsContainer.appendChild(rankInfo);
-
-// 分析强弱项
-const scorePercentages = studentScores.map(score => {
-    let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
-    const fullMark = score.fullMark || (project ? project.fullMark : 100);
-    const percentage = (score.score / fullMark) * 100;
-    const projectName = score.projectName || (project ? project.name : '未知项目');
-    return { name: projectName, percentage };
-});
-
-scorePercentages.sort((a, b) => b.percentage - a.percentage);
-const strongItems = scorePercentages.slice(0, 2);
-const weakItems = scorePercentages.slice(-2).reverse();
-
-// 添加强弱项分析
-const analysisDiv = document.createElement('div');
-analysisDiv.className = 'row mt-3';
-analysisDiv.innerHTML = `
-    <div class="col-md-6">
-        <div class="analysis-card strong">
-            <i class="fas fa-arrow-up me-2" style="color: #11998e;"></i>
-            <strong>优势项目</strong>
-            <div class="mt-2">
-                ${strongItems.map(item => `
-                    <div class="d-flex justify-content-between">
-                        <span>${item.name}</span>
-                        <span class="text-success fw-bold">${item.percentage.toFixed(1)}%</span>
-                    </div>
-                `).join('')}
+        levelRankings.sort((a, b) => b.average - a.average);
+        const studentRank = levelRankings.findIndex(r => r.studentId === student.id) + 1;
+        const totalInLevel = levelRankings.length;
+        const percentile = totalInLevel > 1 ? ((totalInLevel - studentRank) / (totalInLevel - 1) * 100).toFixed(1) : 100;
+        
+        // 成绩等级
+        let gradeLevel, gradeColor, gradeEmoji;
+        if (average >= 90) { gradeLevel = '优秀'; gradeColor = '#10b981'; gradeEmoji = '🏆'; }
+        else if (average >= 80) { gradeLevel = '良好'; gradeColor = '#6366f1'; gradeEmoji = '🌟'; }
+        else if (average >= 70) { gradeLevel = '中等'; gradeColor = '#f59e0b'; gradeEmoji = '👍'; }
+        else if (average >= 60) { gradeLevel = '及格'; gradeColor = '#f97316'; gradeEmoji = '📚'; }
+        else { gradeLevel = '需努力'; gradeColor = '#ef4444'; gradeEmoji = '💪'; }
+        
+        // 强弱项分析
+        const scorePercentages = studentScores.map(score => {
+            let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
+            const fullMark = score.fullMark || (project ? project.fullMark : 100);
+            const percentage = (score.score / fullMark) * 100;
+            const projectName = score.projectName || (project ? project.name : '未知项目');
+            return { name: projectName, percentage, score: score.score, fullMark: fullMark };
+        });
+        scorePercentages.sort((a, b) => b.percentage - a.percentage);
+        const strongItems = scorePercentages.slice(0, 2);
+        const weakItems = scorePercentages.slice(-2).reverse();
+        
+        // 构建美化成绩卡片 HTML
+        let detailsHTML = '';
+        
+        // 等级徽章卡片
+        detailsHTML += `
+            <div style="text-align:center; margin-bottom: 1.5rem; padding: 1.5rem; background: linear-gradient(135deg, ${gradeColor}15, ${gradeColor}05); border-radius: 20px; border: 2px solid ${gradeColor}30;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">${gradeEmoji}</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: ${gradeColor}; margin-bottom: 0.3rem;">${gradeLevel}</div>
+                <div style="font-size: 0.85rem; color: #64748b;">
+                    级别排名 <strong style="color: #6366f1;">第 ${studentRank} 名</strong> / 共 ${totalInLevel} 人
+                    <span style="margin-left: 8px;">|</span>
+                    <span style="margin-left: 8px;">超过 <strong style="color: #10b981;">${percentile}%</strong> 的同学</span>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="analysis-card weak">
-            <i class="fas fa-arrow-down me-2" style="color: #eb3349;"></i>
-            <strong>待提升项目</strong>
-            <div class="mt-2">
-                ${weakItems.map(item => `
-                    <div class="d-flex justify-content-between">
-                        <span>${item.name}</span>
-                        <span class="text-danger fw-bold">${item.percentage.toFixed(1)}%</span>
+        `;
+        
+        // 强弱项分析
+        detailsHTML += `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem;">
+                <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-radius: 16px; padding: 1rem; border-left: 4px solid #10b981;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #065f46; margin-bottom: 0.5rem;">
+                        <i class="fas fa-arrow-up me-1"></i>优势项目
                     </div>
-                `).join('')}
+                    ${strongItems.map(item => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <span style="font-size: 0.85rem; font-weight: 500;">${item.name}</span>
+                            <span style="font-weight: 700; color: #10b981;">${item.percentage.toFixed(1)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); border-radius: 16px; padding: 1rem; border-left: 4px solid #ef4444;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #991b1b; margin-bottom: 0.5rem;">
+                        <i class="fas fa-arrow-down me-1"></i>待提升项目
+                    </div>
+                    ${weakItems.map(item => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <span style="font-size: 0.85rem; font-weight: 500;">${item.name}</span>
+                            <span style="font-weight: 700; color: #ef4444;">${item.percentage.toFixed(1)}%</span>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
-        </div>
-    </div>
-`;
-scoreDetailsContainer.appendChild(analysisDiv);
+        `;
+        
+        // 各项目成绩
+        detailsHTML += `
+            <h6 style="font-weight: 700; color: #1e293b; margin-bottom: 1rem;">
+                <i class="fas fa-list-check me-2" style="color: #6366f1;"></i>各项目详情
+            </h6>
+        `;
+        
         studentScores.forEach(score => {
-            // 先从 levelProjects 查找，再从 projects 查找
-            let project = levelProjects.find(p => p.id === score.projectId);
-            if (!project) {
-                project = projects.find(p => p.id === score.projectId);
-            }
-            
+            let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
             const fullMark = score.fullMark || (project ? project.fullMark : 100);
             const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
             const projectName = score.projectName || (project ? project.name : '未知项目');
+            const percentage = (score.score / fullMark * 100);
             
-            const percentage = (score.score / fullMark * 100).toFixed(1);
+            let barColor, badgeColor;
+            if (percentage >= 90) { barColor = '#10b981'; badgeColor = '#065f46'; }
+            else if (percentage >= 80) { barColor = '#6366f1'; badgeColor = '#3730a3'; }
+            else if (percentage >= 70) { barColor = '#f59e0b'; badgeColor = '#92400e'; }
+            else if (percentage >= 60) { barColor = '#f97316'; badgeColor = '#9a3412'; }
+            else { barColor = '#ef4444'; badgeColor = '#991b1b'; }
             
-            const scoreItem = document.createElement('div');
-            scoreItem.className = 'score-item';
-            scoreItem.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1">${projectName}</h6>
-                        <small class="text-muted">满分: ${fullMark}分 | 权重: ${(weight * 100).toFixed(1)}%</small>
+            detailsHTML += `
+                <div style="background: white; border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 10px; border: 1px solid #f1f5f9; transition: all 0.2s ease;"
+                     onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)'; this.style.transform='translateX(4px)';"
+                     onmouseout="this.style.boxShadow='none'; this.style.transform='translateX(0)';">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div>
+                            <span style="font-weight: 600; color: #1e293b;">${projectName}</span>
+                            <span style="font-size: 0.75rem; color: #94a3b8; margin-left: 8px;">满分: ${fullMark}分 | 权重: ${(weight * 100).toFixed(0)}%</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-weight: 700; font-size: 1.1rem; color: ${barColor};">${score.score}/${fullMark}</span>
+                            <span style="display: inline-block; margin-left: 8px; padding: 2px 10px; background: ${barColor}15; color: ${badgeColor}; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">
+                                ${percentage.toFixed(1)}%
+                            </span>
+                        </div>
                     </div>
-                    <div class="text-end">
-                        <div class="fw-bold ${percentage < 60 ? 'text-danger' : percentage < 80 ? 'text-warning' : 'text-success'}">
-                            ${score.score}分 (${percentage}%)
-                        </div>
-                        <div class="progress score-progress" style="width: 150px;">
-                            <div class="progress-bar ${percentage < 60 ? 'bg-danger' : percentage < 80 ? 'bg-warning' : 'bg-success'}" 
-                                 role="progressbar" style="width: ${percentage}%" 
-                                 aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                    <div style="background: #f1f5f9; border-radius: 10px; height: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, ${barColor}cc, ${barColor}); height: 100%; width: ${percentage}%; border-radius: 10px; transition: width 1s ease;"></div>
                     </div>
                 </div>
             `;
-            
-            scoreDetailsContainer.appendChild(scoreItem);
         });
+        
+        scoreDetailsContainer.innerHTML = detailsHTML;
+        
+        // 存储成绩数据供导出使用
+        window._lastStudentReportData = {
+            student,
+            studentScores,
+            average,
+            studentRank,
+            totalInLevel,
+            percentile,
+            gradeLevel,
+            gradeColor,
+            strongItems,
+            weakItems,
+            levelProjects,
+            projects
+        };
         
         // 显示查询结果
         document.getElementById('query-results').style.display = 'block';
 
         // --- 在 queryStudentScores 函数末尾，showAlert 之前添加 ---
 
-// 导出成绩单按钮
-document.getElementById('export-student-report-btn').onclick = function() {
-    const studentName = document.getElementById('student-name-display').textContent;
-    const studentId = document.getElementById('student-id-display').textContent;
-    const average = document.getElementById('average-score-display').textContent;
-    
-    let csvContent = "项目名称,分数,满分,得分率,权重\n";
-    studentScores.forEach(score => {
-        let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
-        const fullMark = score.fullMark || (project ? project.fullMark : 100);
-        const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
-        const projectName = score.projectName || (project ? project.name : '未知项目');
-        const percentage = ((score.score / fullMark) * 100).toFixed(1);
-        csvContent += `"${projectName}",${score.score},${fullMark},${percentage}%,${(weight*100).toFixed(1)}%\n`;
-    });
-    csvContent += `\n"总平均",,,${average},`;
-    
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${studentName}_${studentId}_成绩单.csv`;
-    link.click();
-    
-    showAlert("成绩单导出成功", "success");
-};
+        // ==================== 导出美化 PDF 成绩单 ====================
+        document.getElementById('export-student-report-btn').onclick = function() {
+            const data = window._lastStudentReportData;
+            if (!data) {
+                showAlert('请先查询成绩', 'warning');
+                return;
+            }
+            exportBeautifulPDF(data);
+        };
+        
+        // ==================== 打印美化成绩单 ====================
+        document.getElementById('print-student-report-btn').onclick = function() {
+            const data = window._lastStudentReportData;
+            if (!data) {
+                showAlert('请先查询成绩', 'warning');
+                return;
+            }
+            printBeautifulReport(data);
+        };
 
-// 打印成绩单按钮
-document.getElementById('print-student-report-btn').onclick = function() {
-    const printContent = document.querySelector('.student-score-card').cloneNode(true);
-    const printWindow = window.open('', '_blank');
+        // ==================== 🎓 美化 PDF 成绩单导出 ====================
+async function exportBeautifulPDF(data) {
+    const { student, studentScores, average, studentRank, totalInLevel, percentile, gradeLevel, gradeColor, strongItems, weakItems } = data;
+    
+    showAlert('正在生成PDF成绩单...', 'info');
+    
+    // 创建临时的成绩单 HTML
+    const reportHTML = createReportCardHTML(data);
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = reportHTML;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = '800px';
+    tempDiv.style.padding = '0';
+    document.body.appendChild(tempDiv);
+    
+    try {
+        const canvas = await html2canvas(tempDiv, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            width: 800
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pdfWidth - 20;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (imgHeight <= pdfHeight - 20) {
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        } else {
+            let remainingHeight = imgHeight;
+            let sourceY = 0;
+            let pageCount = 0;
+            
+            while (remainingHeight > 0) {
+                if (pageCount > 0) pdf.addPage();
+                const pageImgHeight = Math.min(remainingHeight, pdfHeight - 20);
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = (pageImgHeight / imgHeight) * canvas.height;
+                const pageCtx = pageCanvas.getContext('2d');
+                pageCtx.drawImage(canvas, 0, sourceY, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+                pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgWidth, pageImgHeight);
+                sourceY += pageCanvas.height;
+                remainingHeight -= pageImgHeight;
+                pageCount++;
+            }
+        }
+        
+        const fileName = `${student.name}_${student.studentId}_成绩单.pdf`;
+        pdf.save(fileName);
+        showAlert('PDF成绩单下载成功！', 'success');
+    } catch (error) {
+        console.error('PDF生成失败:', error);
+        showAlert('PDF生成失败，请重试', 'danger');
+    } finally {
+        document.body.removeChild(tempDiv);
+    }
+}
+
+// ==================== 🖨️ 美化打印成绩单 ====================
+function printBeautifulReport(data) {
+    const reportHTML = createReportCardHTML(data);
+    
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
     printWindow.document.write(`
-        <html>
-            <head>
-                <title>成绩单</title>
-                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-                <style>
-                    body { padding: 30px; font-family: 'Noto Sans SC', sans-serif; }
-                    .print-header { text-align: center; margin-bottom: 30px; }
-                </style>
-            </head>
-            <body>
-                <div class="print-header">
-                    <h2>新山宽柔中学电脑协会</h2>
-                    <h3>学生成绩单</h3>
-                    <p>打印日期: ${new Date().toLocaleDateString()}</p>
-                </div>
-                ${printContent.outerHTML}
-            </body>
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+            <meta charset="UTF-8">
+            <title>学生成绩单</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+            <style>
+                @page { size: A4; margin: 15mm; }
+                body { font-family: 'Noto Sans SC', sans-serif; background: white; padding: 20px; }
+                @media print {
+                    body { padding: 0; }
+                    .no-print { display: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="no-print" style="text-align:right; margin-bottom:15px;">
+                <button onclick="window.print()" style="padding:10px 20px; background:#6366f1; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px;">
+                    <i class="fas fa-print me-1"></i>打印
+                </button>
+                <button onclick="window.close()" style="padding:10px 20px; background:#94a3b8; color:white; border:none; border-radius:8px; cursor:pointer; font-size:14px; margin-left:8px;">
+                    <i class="fas fa-times me-1"></i>关闭
+                </button>
+            </div>
+            ${reportHTML}
+        </body>
         </html>
     `);
     printWindow.document.close();
-    printWindow.print();
-};
-        
-    } catch (error) {
-        console.error("查询成绩失败: ", error);
-        showAlert("查询成绩失败: " + error.message, "danger");
-    }
+    
+    // 延迟打印，确保样式加载
+    setTimeout(() => {
+        printWindow.print();
+    }, 500);
+}
+
+// ==================== 📄 生成成绩单 HTML 模板 ====================
+function createReportCardHTML(data) {
+    const { student, studentScores, average, studentRank, totalInLevel, percentile, gradeLevel, gradeColor, strongItems, weakItems } = data;
+    
+    const scorePercentages = studentScores.map(score => {
+        let project = data.levelProjects.find(p => p.id === score.projectId) || data.projects.find(p => p.id === score.projectId);
+        const fullMark = score.fullMark || (project ? project.fullMark : 100);
+        const projectName = score.projectName || (project ? project.name : '未知项目');
+        return { name: projectName, percentage: (score.score / fullMark) * 100, score: score.score, fullMark: fullMark };
+    });
+    
+    const dateStr = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+    
+    return `
+        <div style="max-width:750px; margin:0 auto; font-family:'Noto Sans SC', sans-serif; color:#1e293b;">
+            
+            <!-- 头部 -->
+            <div style="text-align:center; padding-bottom:20px; border-bottom:3px solid #6366f1; margin-bottom:25px;">
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:10px;">
+                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height:55px;">
+                    <div>
+                        <h2 style="margin:0; font-weight:800; color:#1e293b; letter-spacing:2px;">新山宽柔中学电脑协会</h2>
+                        <p style="margin:5px 0 0; font-size:0.9rem; color:#64748b;">FOON YEW HIGH SCHOOL COMPUTER SOCIETY</p>
+                    </div>
+                </div>
+                <h1 style="font-size:1.8rem; font-weight:800; color:#6366f1; margin:15px 0 5px; letter-spacing:3px;">学 生 成 绩 单</h1>
+                <p style="color:#94a3b8; font-size:0.85rem;">STUDENT ACADEMIC REPORT</p>
+            </div>
+            
+            <!-- 学生信息卡片 -->
+            <div style="background:linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius:16px; padding:20px; margin-bottom:20px; display:flex; align-items:center; gap:20px;">
+                <div style="width:70px; height:70px; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:white; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:bold; box-shadow:0 8px 20px rgba(99,102,241,0.3);">
+                    ${student.name.charAt(0)}
+                </div>
+                <div style="flex:1;">
+                    <h3 style="margin:0 0 8px; font-weight:700;">${student.name}</h3>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap; font-size:0.85rem; color:#64748b;">
+                        <span><i class="fas fa-id-card" style="color:#6366f1;"></i> ${student.studentId}</span>
+                        <span><i class="fas fa-users" style="color:#6366f1;"></i> ${student.class}</span>
+                        <span><i class="fas fa-layer-group" style="color:#6366f1;"></i> ${student.levelName || '未设置'}</span>
+                    </div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2rem; font-weight:800; background:linear-gradient(135deg, ${gradeColor}, ${gradeColor}cc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">
+                        ${average.toFixed(1)}%
+                    </div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">总平均分</div>
+                </div>
+            </div>
+            
+            <!-- 等级徽章 -->
+            <div style="text-align:center; padding:15px; background:linear-gradient(135deg, ${gradeColor}10, ${gradeColor}05); border-radius:16px; border:2px solid ${gradeColor}20; margin-bottom:20px;">
+                <div style="font-size:2.5rem;">${gradeLevel === '优秀' ? '🏆' : gradeLevel === '良好' ? '🌟' : gradeLevel === '中等' ? '👍' : gradeLevel === '及格' ? '📚' : '💪'}</div>
+                <div style="font-size:1.3rem; font-weight:700; color:${gradeColor};">${gradeLevel}</div>
+                <div style="font-size:0.8rem; color:#64748b;">
+                    级别排名 <strong>第 ${studentRank} 名</strong> / ${totalInLevel} 人 | 超过 <strong>${percentile}%</strong> 同学
+                </div>
+            </div>
+            
+            <!-- 强弱项 -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+                <div style="background:#ecfdf5; border-radius:14px; padding:14px; border-left:4px solid #10b981;">
+                    <div style="font-weight:600; color:#065f46; font-size:0.85rem; margin-bottom:8px;">✅ 优势项目</div>
+                    ${strongItems.map(i => `<div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;"><span>${i.name}</span><strong style="color:#10b981;">${i.percentage.toFixed(1)}%</strong></div>`).join('')}
+                </div>
+                <div style="background:#fef2f2; border-radius:14px; padding:14px; border-left:4px solid #ef4444;">
+                    <div style="font-weight:600; color:#991b1b; font-size:0.85rem; margin-bottom:8px;">📈 待提升</div>
+                    ${weakItems.map(i => `<div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;"><span>${i.name}</span><strong style="color:#ef4444;">${i.percentage.toFixed(1)}%</strong></div>`).join('')}
+                </div>
+            </div>
+            
+            <!-- 各项目成绩 -->
+            <h4 style="font-weight:700; color:#1e293b; margin-bottom:12px;">📋 项目明细</h4>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+                <thead>
+                    <tr style="background:#f8fafc;">
+                        <th style="padding:10px 14px; text-align:left; border-bottom:2px solid #e2e8f0; font-size:0.8rem;">项目</th>
+                        <th style="padding:10px 14px; text-align:center; border-bottom:2px solid #e2e8f0; font-size:0.8rem;">分数</th>
+                        <th style="padding:10px 14px; text-align:center; border-bottom:2px solid #e2e8f0; font-size:0.8rem;">得分率</th>
+                        <th style="padding:10px 14px; text-align:left; border-bottom:2px solid #e2e8f0; font-size:0.8rem;">进度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${scorePercentages.map(item => {
+                        let barColor = item.percentage >= 80 ? '#10b981' : item.percentage >= 60 ? '#f59e0b' : '#ef4444';
+                        return `
+                            <tr style="border-bottom:1px solid #f1f5f9;">
+                                <td style="padding:10px 14px; font-weight:500;">${item.name}</td>
+                                <td style="padding:10px 14px; text-align:center; font-weight:600;">${item.score}/${item.fullMark}</td>
+                                <td style="padding:10px 14px; text-align:center; font-weight:600; color:${barColor};">${item.percentage.toFixed(1)}%</td>
+                                <td style="padding:10px 14px;">
+                                    <div style="background:#f1f5f9; border-radius:8px; height:6px;">
+                                        <div style="background:${barColor}; height:6px; width:${item.percentage}%; border-radius:8px;"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+            
+            <!-- 页脚 -->
+            <div style="text-align:center; padding-top:15px; border-top:2px solid #e2e8f0; color:#94a3b8; font-size:0.75rem;">
+                <p style="margin:0;">本成绩单由智能评分系统自动生成 | ${dateStr}</p>
+                <p style="margin:2px 0 0;">© ${new Date().getFullYear()} 新山宽柔中学电脑协会 | 杂家——MAKER</p>
+            </div>
+        </div>
+    `;
 }
         // 为查询加载所有必要数据
 async function loadAllDataForQuery() {
