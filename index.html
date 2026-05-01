@@ -4387,6 +4387,7 @@ async function generateReport() {
 }
 
         // 新增增强版报告HTML
+// 增强版报告HTML生成函数 - 将"全校"改为"杂家——MAKER"
 function createEnhancedReportHTML(selectedClass, studentAverages, projects) {
     const totalStudents = studentAverages.length;
     const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
@@ -4394,89 +4395,93 @@ function createEnhancedReportHTML(selectedClass, studentAverages, projects) {
     const maxAvg = totalStudents > 0 ? studentAverages[0].average : 0;
     const minAvg = totalStudents > 0 ? studentAverages[totalStudents - 1].average : 0;
     
+    // 确定标题
+    const reportTitle = selectedClass ? `${selectedClass} 成绩报告` : '杂家——MAKER 成绩报告';
+    
     return `
-        <div class="report-container" style="font-family: 'Noto Sans SC', sans-serif; padding: 20px;">
+        <div class="report-container" style="font-family: 'Noto Sans SC', sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
             <!-- 报告头部 -->
             <div style="text-align: center; margin-bottom: 30px;">
                 <h2 style="color: #1a1a2e; margin-bottom: 5px; font-weight: 800;">
-                    <i class="fas fa-file-alt me-2" style="color: #4361ee;"></i>${selectedClass || '全校'} 成绩报告
+                    <i class="fas fa-file-alt me-2" style="color: #4361ee;"></i>${reportTitle}
                 </h2>
                 <p style="color: #666;">生成日期: ${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             </div>
             
             <!-- 统计概览卡片 -->
-            <div class="row mb-4">
-                <div class="col-md-3 col-6 mb-3">
-                    <div class="stat-card-small" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800;">${totalStudents}</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9;">学生总人数</div>
-                    </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+                <div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 800;">${totalStudents}</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">学生总人数</div>
                 </div>
-                <div class="col-md-3 col-6 mb-3">
-                    <div class="stat-card-small" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; border-radius: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800;">${avgScore.toFixed(1)}%</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9;">平均成绩</div>
-                    </div>
+                <div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 800;">${avgScore.toFixed(1)}%</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">平均成绩</div>
                 </div>
-                <div class="col-md-3 col-6 mb-3">
-                    <div class="stat-card-small" style="background: linear-gradient(135deg, #f5af19, #f12711); color: white; padding: 20px; border-radius: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800;">${passRate}%</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9;">及格率</div>
-                    </div>
+                <div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #f5af19, #f12711); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 800;">${passRate}%</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">及格率</div>
                 </div>
-                <div class="col-md-3 col-6 mb-3">
-                    <div class="stat-card-small" style="background: linear-gradient(135deg, #36d1dc, #5b86e5); color: white; padding: 20px; border-radius: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800;">${projects.length}</div>
-                        <div style="font-size: 0.85rem; opacity: 0.9;">评分项目数</div>
-                    </div>
+                <div style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #36d1dc, #5b86e5); color: white; padding: 20px; border-radius: 16px; text-align: center;">
+                    <div style="font-size: 1.8rem; font-weight: 800;">${projects.length}</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">评分项目数</div>
                 </div>
             </div>
             
-            <!-- 成绩表格 -->
-            <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto;">
+            <!-- 成绩表格 - 设置固定宽度防止截断 -->
+            <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: visible; min-width: 1000px;">
                 <h5 style="margin-bottom: 20px; color: #1a1a2e; font-weight: 700;">
                     <i class="fas fa-list me-2" style="color: #4361ee;"></i>成绩明细
                 </h5>
-                <table class="table table-hover" style="font-size: 0.85rem;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 900px;">
                     <thead>
                         <tr style="background: #f0f4ff;">
-                            <th style="width: 40px; text-align: center;">
+                            <th style="width: 40px; text-align: center; padding: 10px; border: 1px solid #ddd;">
                                 <span class="badge bg-dark">排名</span>
                             </th>
-                            <th>学号</th>
-                            <th>姓名</th>
-                            <th style="text-align: center;">班级</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">学号</th>
+                            <th style="padding: 10px; border: 1px solid #ddd;">姓名</th>
+                            <th style="text-align: center; padding: 10px; border: 1px solid #ddd;">班级</th>
                             ${projects.map(p => `
-                                <th style="text-align: center;">
+                                <th style="text-align: center; padding: 10px; border: 1px solid #ddd;">
                                     ${p.name}
                                     <br><small style="font-weight: normal; font-size: 0.7rem;">(${p.fullMark}分, ${(p.weight * 100).toFixed(0)}%)</small>
                                 </th>
                             `).join('')}
-                            <th style="text-align: center; font-weight: 700;">总平均</th>
+                            <th style="text-align: center; padding: 10px; border: 1px solid #ddd; font-weight: 700;">总平均</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${studentAverages.map((item, index) => {
-                            const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '';
                             return `
-                                <tr>
-                                    <td style="text-align: center;">
-                                        ${index < 3 ? `<span class="score-rank-badge ${rankClass}">${index + 1}</span>` : index + 1}
+                                <tr style="${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                                    <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">
+                                        ${index < 3 ? `
+                                            <span class="score-rank-badge" style="
+                                                display: inline-block; width: 24px; height: 24px; line-height: 24px;
+                                                border-radius: 50%; font-weight: 700; font-size: 0.75rem;
+                                                background: ${index === 0 ? 'linear-gradient(135deg, #FFD700, #FFA500)' : index === 1 ? 'linear-gradient(135deg, #C0C0C0, #A9A9A9)' : 'linear-gradient(135deg, #CD7F32, #8B6914)'};
+                                                color: white;">
+                                                ${index + 1}
+                                            </span>
+                                        ` : index + 1}
                                     </td>
-                                    <td>${item.student.studentId}</td>
-                                    <td>${item.student.name}</td>
-                                    <td style="text-align: center;"><span class="badge bg-primary">${item.student.class}</span></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${item.student.studentId}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${item.student.name}</td>
+                                    <td style="text-align: center; padding: 8px; border: 1px solid #ddd;">
+                                        <span style="background: #667eea; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">${item.student.class}</span>
+                                    </td>
                                     ${projects.map(p => {
                                         const score = item.scores.find(s => s.projectName === p.name);
                                         const percentage = score ? (score.score / p.fullMark * 100) : 0;
-                                        const colorClass = percentage >= 80 ? 'text-success' : percentage >= 60 ? 'text-warning' : 'text-danger';
+                                        const color = percentage >= 80 ? '#11998e' : percentage >= 60 ? '#f5af19' : '#eb3349';
                                         return `
-                                            <td style="text-align: center;" class="${colorClass}">
-                                                ${score ? `${score.score} <small>(${percentage.toFixed(0)}%)</small>` : '<span class="text-muted">-</span>'}
+                                            <td style="text-align: center; padding: 8px; border: 1px solid #ddd; color: ${color}; font-weight: ${percentage >= 80 ? 'bold' : 'normal'};">
+                                                ${score ? `${score.score} <small>(${percentage.toFixed(0)}%)</small>` : '<span style="color: #999;">-</span>'}
                                             </td>
                                         `;
                                     }).join('')}
-                                    <td style="text-align: center; font-weight: 700; 
+                                    <td style="text-align: center; padding: 8px; border: 1px solid #ddd; font-weight: 700; 
                                         ${item.average >= 80 ? 'color: #11998e;' : item.average >= 60 ? 'color: #f5af19;' : 'color: #eb3349;'}">
                                         ${item.average.toFixed(1)}%
                                     </td>
@@ -4489,60 +4494,108 @@ function createEnhancedReportHTML(selectedClass, studentAverages, projects) {
             
             <!-- 页脚 -->
             <div style="text-align: center; margin-top: 30px; color: #999; font-size: 0.8rem;">
-                <p>本报告由智能评分系统自动生成</p>
+                <p>本报告由智能评分系统自动生成 | 杂家——MAKER</p>
+                <p>© ${new Date().getFullYear()} 新山宽柔中学电脑协会 - 版权所有</p>
             </div>
         </div>
     `;
 }
 
         // PDF下载函数
+// PDF下载函数 - 修复表格截断问题
 async function downloadReportAsPDF(studentAverages, reportProjects, selectedClass) {
-    const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects);
+    const btn = document.getElementById('download-pdf-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 生成中...';
     
-    // 创建一个临时容器来渲染报告
+    // 创建一个完整的临时容器来渲染报告
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = reportHTML;
+    tempDiv.innerHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects);
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
-    tempDiv.style.width = '1100px'; // 设置固定宽度以便截图
+    tempDiv.style.width = '1200px'; // 设置足够的宽度
+    tempDiv.style.padding = '20px';
+    tempDiv.style.backgroundColor = '#f8f9fa';
     document.body.appendChild(tempDiv);
     
     try {
+        // 使用html2canvas截取整个内容
         const canvas = await html2canvas(tempDiv, {
             scale: 2,
             useCORS: true,
-            logging: false
+            logging: false,
+            windowWidth: 1200,
+            windowHeight: tempDiv.scrollHeight,
+            height: tempDiv.scrollHeight,
+            scrollY: -window.scrollY,
+            scrollX: -window.scrollX
         });
         
         const imgData = canvas.toDataURL('image/png');
+        
+        // 使用jsPDF创建纵向A4纸张
         const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const pageHeight = 295;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // 计算图像在PDF中的尺寸
+        const imgWidth = pdfWidth - 20; // 左右各留10mm边距
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+        // 如果图像高度超过一页，分页处理
+        if (imgHeight <= pdfHeight) {
+            // 内容适合一页
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        } else {
+            // 需要分页
+            let remainingHeight = imgHeight;
+            let sourceY = 0;
+            let pageCount = 0;
+            
+            while (remainingHeight > 0) {
+                if (pageCount > 0) {
+                    pdf.addPage();
+                }
+                
+                // 计算当前页可以显示的高度
+                const pageImgHeight = Math.min(remainingHeight, pdfHeight - 20);
+                
+                // 创建当前页的canvas
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = (pageImgHeight / imgHeight) * canvas.height;
+                
+                const pageCtx = pageCanvas.getContext('2d');
+                pageCtx.drawImage(
+                    canvas,
+                    0, sourceY, canvas.width, pageCanvas.height,
+                    0, 0, pageCanvas.width, pageCanvas.height
+                );
+                
+                const pageImgData = pageCanvas.toDataURL('image/png');
+                pdf.addImage(pageImgData, 'PNG', 10, 10, imgWidth, pageImgHeight);
+                
+                sourceY += pageCanvas.height;
+                remainingHeight -= pageImgHeight;
+                pageCount++;
+            }
         }
         
         const date = new Date().toISOString().split('T')[0];
-        pdf.save(`${selectedClass || '全校'}_成绩报告_${date}.pdf`);
+        const fileName = `${selectedClass || '杂家MAKER'}_成绩报告_${date}.pdf`;
+        pdf.save(fileName);
         showAlert("PDF报告下载成功", "success");
     } catch (error) {
         console.error("PDF生成失败:", error);
         showAlert("PDF生成失败，请重试", "danger");
     } finally {
         document.body.removeChild(tempDiv);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-pdf me-1"></i>下载PDF';
     }
 }
 
+// Excel下载函数
 // Excel下载函数
 function downloadReportAsExcel(studentAverages, reportProjects, selectedClass) {
     const excelData = studentAverages.map((item, index) => {
@@ -4568,7 +4621,8 @@ function downloadReportAsExcel(studentAverages, reportProjects, selectedClass) {
     XLSX.utils.book_append_sheet(wb, ws, "成绩报告");
     
     const date = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `${selectedClass || '全校'}_成绩报告_${date}.xlsx`);
+    const fileName = `${selectedClass || '杂家MAKER'}_成绩报告_${date}.xlsx`;
+    XLSX.writeFile(wb, fileName);
     showAlert("Excel报告下载成功", "success");
 }
         // 创建报告HTML - 修复版本
