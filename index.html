@@ -1921,8 +1921,8 @@
         </div>
     </div>
 
-<!-- 成绩报告模态框 -->
-<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
+<!-- 成绩报告模态框 - 最简单版本 -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white;">
@@ -1936,11 +1936,7 @@
                     <button class="btn btn-sm btn-outline-light me-2" id="download-excel-btn">
                         <i class="fas fa-file-excel me-1"></i>下载Excel
                     </button>
-                    
-                    <!-- ⬇️ 这里就是要替换的关闭按钮 ⬇️ -->
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    <!-- ⬆️ 替换上面这行 ⬆️ -->
-                    
                 </div>
             </div>
             <div class="modal-body" id="report-modal-body" style="background: #f8f9fa; max-height: 70vh; overflow-y: auto;">
@@ -2402,33 +2398,6 @@ document.getElementById('import-scores-btn').addEventListener('click', function(
     reader.readAsArrayBuffer(file);
 });
 
-            // 全局处理所有模态框关闭事件
-document.addEventListener('hidden.bs.modal', function(event) {
-    // 只处理报告模态框
-    if (event.target && event.target.id === 'reportModal') {
-        setTimeout(() => {
-            forceCleanAllBackdrops();
-        }, 250);
-    }
-});
-
-// 页面卸载时清理
-window.addEventListener('beforeunload', function() {
-    forceCleanAllBackdrops();
-});
-
-// ESC键处理
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const reportModal = document.getElementById('reportModal');
-        if (reportModal && reportModal.classList.contains('show')) {
-            // 让Bootstrap自然处理关闭
-            setTimeout(() => {
-                forceCleanAllBackdrops();
-            }, 300);
-        }
-    }
-});
             
         }
 
@@ -4373,9 +4342,7 @@ function saveLevel() {
                 filteredStudents.forEach(student => addStudentToTable(student));
             }
         }
-// 替换原有的 generateReport 函数
-// 全局变量：存储报告数据，避免闭包问题
-let currentReportData = null;
+// 报告模态框实例
 let reportModalInstance = null;
 
 // 完整替换 generateReport 函数
@@ -4468,7 +4435,7 @@ async function generateReport() {
             item.globalRank = index + 1;
         });
         
-        // 如果按级别分组，计算级别内排名
+        // 如果按级别分组
         if (groupByLevel) {
             const levelGroups = {};
             studentAverages.forEach(item => {
@@ -4498,9 +4465,6 @@ async function generateReport() {
         // 生成报告HTML
         const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects, groupByLevel);
         
-        // 先彻底清理所有遮罩层
-        forceCleanAllBackdrops();
-        
         // 获取模态框元素
         const modalElement = document.getElementById('reportModal');
         if (!modalElement) {
@@ -4511,45 +4475,80 @@ async function generateReport() {
         // 设置报告内容
         document.getElementById('report-modal-body').innerHTML = reportHTML;
         
-        // 先销毁之前的实例
+        // 先销毁旧实例
         if (reportModalInstance) {
             try {
-                reportModalInstance.hide();
                 reportModalInstance.dispose();
             } catch(e) {}
             reportModalInstance = null;
         }
         
-        // 延迟一下确保DOM更新
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // 创建新的模态框实例
+        // 创建新实例
         reportModalInstance = new bootstrap.Modal(modalElement, {
-            backdrop: 'static',  // 改为static，点击背景不关闭，避免误操作
+            backdrop: true,
             keyboard: true,
             focus: true
         });
         
-        // 监听关闭事件
+        // 最重要的修复：隐藏时正确恢复body状态
         modalElement.addEventListener('hidden.bs.modal', function() {
-            // 模态框完全关闭后的清理
+            // 不手动清理，让Bootstrap自己处理
+            // 只检查并修复可能出现的问题
             setTimeout(() => {
-                forceCleanAllBackdrops();
+                // 检查是否有其他模态框打开
+                const otherModals = document.querySelectorAll('.modal.show');
+                if (otherModals.length === 0) {
+                    // 没有其他模态框，确保body状态正确
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    if (backdrops.length > 0) {
+                        // 有残留遮罩层，清理掉
+                        backdrops.forEach(b => b.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }
+                }
+                // 如果有其他模态框打开，不做任何事，让Bootstrap管理
             }, 200);
-        }, { once: true });
-        
-        // 监听显示事件，确保只有这一个模态框
-        modalElement.addEventListener('shown.bs.modal', function() {
-            // 确保body样式正确
-            document.body.style.overflow = 'hidden';
-        }, { once: true });
+        });
         
         // 显示模态框
         reportModalInstance.show();
         
-        // 绑定下载按钮（延迟绑定，确保DOM存在）
+        // 绑定下载按钮
         setTimeout(() => {
-            bindDownloadButtons();
+            const pdfBtn = document.getElementById('download-pdf-btn');
+            const excelBtn = document.getElementById('download-excel-btn');
+            
+            if (pdfBtn) {
+                const newPdfBtn = pdfBtn.cloneNode(true);
+                pdfBtn.parentNode.replaceChild(newPdfBtn, pdfBtn);
+                newPdfBtn.addEventListener('click', function() {
+                    if (currentReportData) {
+                        downloadReportAsPDF(
+                            currentReportData.studentAverages,
+                            currentReportData.reportProjects,
+                            currentReportData.selectedClass,
+                            currentReportData.groupByLevel
+                        );
+                    }
+                });
+            }
+            
+            if (excelBtn) {
+                const newExcelBtn = excelBtn.cloneNode(true);
+                excelBtn.parentNode.replaceChild(newExcelBtn, excelBtn);
+                newExcelBtn.addEventListener('click', function() {
+                    if (currentReportData) {
+                        downloadReportAsExcel(
+                            currentReportData.studentAverages,
+                            currentReportData.reportProjects,
+                            currentReportData.selectedClass,
+                            currentReportData.groupByLevel
+                        );
+                    }
+                });
+            }
         }, 300);
         
         showAlert("报告生成成功", "success");
@@ -4565,6 +4564,8 @@ async function generateReport() {
     }
 }
 
+// 全局变量存储报告数据
+let currentReportData = null;
 // 绑定下载按钮函数
 function bindDownloadButtons() {
     const pdfBtn = document.getElementById('download-pdf-btn');
@@ -4603,49 +4604,6 @@ function bindDownloadButtons() {
             }
         });
     }
-}
-
-// 强制清理所有遮罩层和恢复body状态
-function forceCleanAllBackdrops() {
-    // 移除所有遮罩层
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => {
-        try {
-            backdrop.remove();
-        } catch(e) {}
-    });
-    
-    // 恢复body状态
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-    document.body.removeAttribute('data-bs-overflow');
-    document.body.removeAttribute('data-bs-padding-right');
-    
-    // 移除body上可能残留的inline样式
-    if (document.body.hasAttribute('style') && document.body.getAttribute('style').trim() === '') {
-        document.body.removeAttribute('style');
-    }
-    
-    // 关闭所有显示的模态框
-    const openModals = document.querySelectorAll('.modal.show');
-    openModals.forEach(modal => {
-        try {
-            const instance = bootstrap.Modal.getInstance(modal);
-            if (instance) {
-                instance.hide();
-                instance.dispose();
-            }
-            modal.classList.remove('show');
-            modal.style.display = 'none';
-            modal.setAttribute('aria-hidden', 'true');
-        } catch(e) {}
-    });
-}
-
-// 辅助函数：清理所有残留的遮罩层
-function cleanupBackdrops() {
-    forceCleanAllBackdrops();
 }
 
 // 辅助函数：根据levelId获取级别名称
