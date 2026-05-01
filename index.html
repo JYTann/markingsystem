@@ -2692,29 +2692,155 @@ async function loadAllDataForQuery() {
             document.getElementById('student-query-page').style.display = 'none';
             document.getElementById('main-system').style.display = 'block';
         }
-
-        // 其他原有函数保持不变
-        // ...
         
-        // 显示提示信息
-        function showAlert(message, type) {
-            const alertHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3" style="z-index: 1100;">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', alertHtml);
-            
-            // 5秒后自动消失
-            setTimeout(() => {
-                const alerts = document.querySelectorAll('.alert');
-                alerts.forEach(alert => {
-                    new bootstrap.Alert(alert).close();
-                });
-            }, 5000);
+        // ========== 增强版 Toast 通知系统 ==========
+
+// 替换原有的 showAlert 函数
+function showAlert(message, type = 'info') {
+    // 创建 toast 容器（如果不存在）
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            pointer-events: none;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    
+    // 根据类型设置图标和颜色
+    const iconMap = {
+        success: 'fa-check-circle',
+        danger: 'fa-times-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const bgMap = {
+        success: 'linear-gradient(135deg, #11998e, #38ef7d)',
+        danger: 'linear-gradient(135deg, #eb3349, #f45c43)',
+        warning: 'linear-gradient(135deg, #f5af19, #f12711)',
+        info: 'linear-gradient(135deg, #667eea, #764ba2)'
+    };
+    
+    const icon = iconMap[type] || iconMap.info;
+    const bg = bgMap[type] || bgMap.info;
+    
+    // 创建 toast 元素
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background: ${bg};
+        color: white;
+        padding: 14px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: auto;
+        transform: translateX(120%);
+        transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        min-width: 280px;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+    `;
+    
+    toast.innerHTML = `
+        <i class="fas ${icon}" style="font-size: 1.2rem;"></i>
+        <span style="flex: 1;">${message}</span>
+        <button class="toast-close" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        " onmouseover="this.style.background='rgba(255,255,255,0.4)'" 
+           onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            ×
+        </button>
+    `;
+    
+    // 添加到容器
+    toastContainer.appendChild(toast);
+    
+    // 关闭按钮事件
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+        removeToast(toast);
+    });
+    
+    // 滑入动画
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // 自动消失
+    const autoHideDelay = type === 'danger' ? 6000 : 4000;
+    const timer = setTimeout(() => {
+        removeToast(toast);
+    }, autoHideDelay);
+    
+    // 鼠标悬停时暂停自动消失
+    toast.addEventListener('mouseenter', () => {
+        clearTimeout(timer);
+    });
+    
+    toast.addEventListener('mouseleave', () => {
+        const newTimer = setTimeout(() => {
+            removeToast(toast);
+        }, 2000);
+        // 存储新的 timer
+        toast._timer = newTimer;
+    });
+    
+    // 存储 timer 以便清理
+    toast._timer = timer;
+    
+    // 限制最多显示 5 个 toast
+    const toasts = toastContainer.querySelectorAll('div');
+    if (toasts.length > 5) {
+        removeToast(toasts[0]);
+    }
+}
+
+// 移除 toast 的动画
+function removeToast(toast) {
+    if (!toast || !toast.parentNode) return;
+    
+    // 清除定时器
+    if (toast._timer) {
+        clearTimeout(toast._timer);
+    }
+    
+    // 滑出动画
+    toast.style.transform = 'translateX(120%)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'all 0.3s ease-in';
+    
+    // 动画结束后移除
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
         }
+    }, 300);
+}
+
+// ========== Toast 通知系统结束 ==========
 
         // 加载所有数据
         function loadAllData() {
