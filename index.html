@@ -1547,6 +1547,7 @@
                 </div>
 
 <!-- 成绩报告 - 增强版 -->
+<!-- 成绩报告 -->
 <div class="tab-pane fade" id="reports-tab">
     <div class="card fade-in">
         <div class="card-header">
@@ -1564,13 +1565,6 @@
                     <label for="report-level-select" class="form-label">选择级别</label>
                     <select class="form-select" id="report-level-select">
                         <option value="">-- 所有级别 --</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="report-format-select" class="form-label">报告格式</label>
-                    <select class="form-select" id="report-format-select">
-                        <option value="modal">预览查看</option>
-                        <option value="excel">直接下载 Excel</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -1594,7 +1588,12 @@
             
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                提示：满分不一定是100分，系统会根据每个项目的实际满分正确计算得分率。勾选"按级别分组"可查看各等级学生排名。
+                提示：报告将在新窗口中预览，可下载为PDF或Excel格式。关闭预览窗口后即可继续操作。
+            </div>
+            
+            <div id="report-preview" class="text-center p-4 border rounded bg-light">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <p class="text-muted">选择筛选条件后点击"生成报告"</p>
             </div>
         </div>
     </div>
@@ -1922,8 +1921,8 @@
         </div>
     </div>
 
-    <!-- 成绩报告模态框 -->
-<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+<!-- 成绩报告模态框 - 修复遮罩层问题 -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true">
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e); color: white;">
@@ -1942,6 +1941,12 @@
             </div>
             <div class="modal-body" id="report-modal-body" style="background: #f8f9fa; max-height: 70vh; overflow-y: auto;">
                 <!-- 报告内容将动态加载到这里 -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-2 text-muted">正在生成报告...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -2190,7 +2195,15 @@ function loadAllProjectsToSelect() {
             document.getElementById('save-score-btn').addEventListener('click', saveScore);
             
             // 生成报告
-            document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+            // 在 initUIEvents 函数中
+// 移除旧的事件监听器，防止重复绑定
+const generateBtn = document.getElementById('generate-report-btn');
+if (generateBtn) {
+    // 使用替换元素的方式清除所有事件监听器
+    const newBtn = generateBtn.cloneNode(true);
+    generateBtn.parentNode.replaceChild(newBtn, generateBtn);
+    newBtn.addEventListener('click', generateReport);
+}
             
             // 确认删除
             document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
@@ -2384,6 +2397,34 @@ document.getElementById('import-scores-btn').addEventListener('click', function(
         }
     };
     reader.readAsArrayBuffer(file);
+});
+
+            // 在 initUIEvents 函数末尾添加
+
+// 全局处理所有模态框关闭事件，确保清理遮罩层
+document.addEventListener('hidden.bs.modal', function(event) {
+    // 延迟清理，确保Bootstrap完成自己的清理工作
+    setTimeout(() => {
+        cleanupBackdrops();
+    }, 150);
+});
+
+// 页面卸载时清理
+window.addEventListener('beforeunload', function() {
+    cleanupBackdrops();
+});
+
+// ESC键关闭模态框的额外处理
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        // 检查是否有打开的模态框
+        const openModals = document.querySelectorAll('.modal.show');
+        if (openModals.length > 0) {
+            setTimeout(() => {
+                cleanupBackdrops();
+            }, 200);
+        }
+    }
 });
             
         }
@@ -4329,13 +4370,11 @@ function saveLevel() {
                 filteredStudents.forEach(student => addStudentToTable(student));
             }
         }
-
-        // 生成报告 - 完整修复版本
-// 替换原有的 generateReport 函数 - 修复满分计算 + 添加级别分组
+// 替换原有的 generateReport 函数
 async function generateReport() {
-    const selectedClass = document.getElementById('report-class-select').value;
-    const selectedLevel = document.getElementById('report-level-select')?.value || ''; // 新增级别筛选
-    const groupByLevel = document.getElementById('report-group-by-level')?.checked || false; // 是否按级别分组
+    const selectedClass = document.getElementById('report-class-select')?.value || '';
+    const selectedLevel = document.getElementById('report-level-select')?.value || '';
+    const groupByLevel = document.getElementById('report-group-by-level')?.checked || false;
     
     let filteredStudents = students;
     
@@ -4356,117 +4395,176 @@ async function generateReport() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 生成中...';
     
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // 计算每个学生的平均分 - 修复满分逻辑
-    const studentAverages = [];
-    const allProjectsMap = new Map();
-    
-    for (const student of filteredStudents) {
-        const studentScores = scores.filter(s => s.studentId === student.id);
-        let totalWeightedPercentage = 0; // 加权得分率总和
-        let totalWeight = 0;
-        const scoreDetails = [];
+    try {
+        // 计算每个学生的平均分
+        const studentAverages = [];
+        const allProjectsMap = new Map();
         
-        for (const score of studentScores) {
-            // 先从 levelProjects 查找，再从 projects 查找
-            let project = levelProjects.find(p => p.id === score.projectId);
-            if (!project) project = projects.find(p => p.id === score.projectId);
+        for (const student of filteredStudents) {
+            const studentScores = scores.filter(s => s.studentId === student.id);
+            let totalWeightedPercentage = 0;
+            let totalWeight = 0;
+            const scoreDetails = [];
             
-            // 【关键修复】使用分数记录中存储的满分，如果没有则从项目中获取
-            const fullMark = score.fullMark || (project ? project.fullMark : 100);
-            const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
-            const projectName = score.projectName || (project ? project.name : null);
-            
-            if (!projectName) continue;
-            if (fullMark <= 0) continue; // 满分必须大于0
-            
-            // 记录项目信息（使用分数中实际存储的值）
-            if (!allProjectsMap.has(projectName)) {
-                allProjectsMap.set(projectName, { 
-                    name: projectName, 
-                    fullMark: fullMark, 
-                    weight: weight 
+            for (const score of studentScores) {
+                let project = levelProjects.find(p => p.id === score.projectId);
+                if (!project) project = projects.find(p => p.id === score.projectId);
+                
+                const fullMark = score.fullMark || (project ? project.fullMark : 100);
+                const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
+                const projectName = score.projectName || (project ? project.name : null);
+                
+                if (!projectName || fullMark <= 0) continue;
+                
+                if (!allProjectsMap.has(projectName)) {
+                    allProjectsMap.set(projectName, { 
+                        name: projectName, 
+                        fullMark: fullMark, 
+                        weight: weight 
+                    });
+                }
+                
+                if (fullMark > 0 && weight > 0) {
+                    const percentage = (score.score / fullMark) * 100;
+                    totalWeightedPercentage += percentage * weight;
+                    totalWeight += weight;
+                }
+                
+                scoreDetails.push({ 
+                    projectName, 
+                    score: score.score, 
+                    fullMark, 
+                    weight,
+                    percentage: fullMark > 0 ? (score.score / fullMark) * 100 : 0
                 });
             }
             
-            // 【关键修复】正确计算加权得分率
-            // 得分率 = (分数 / 满分) * 100，然后乘以权重
-            if (fullMark > 0 && weight > 0) {
-                const percentage = (score.score / fullMark) * 100; // 该项目的得分率
-                totalWeightedPercentage += percentage * weight; // 加权得分率
-                totalWeight += weight;
-            }
+            const average = totalWeight > 0 ? (totalWeightedPercentage / totalWeight) : 0;
             
-            scoreDetails.push({ 
-                projectName, 
-                score: score.score, 
-                fullMark, 
-                weight,
-                percentage: fullMark > 0 ? (score.score / fullMark) * 100 : 0
+            studentAverages.push({ 
+                student, 
+                average, 
+                scores: scoreDetails,
+                levelId: student.levelId,
+                levelName: student.levelName || getLevelName(student.levelId)
             });
         }
         
-        // 【关键修复】总平均 = 加权得分率总和 / 总权重
-        const average = totalWeight > 0 ? (totalWeightedPercentage / totalWeight) : 0;
+        const reportProjects = Array.from(allProjectsMap.values());
         
-        studentAverages.push({ 
-            student, 
-            average, 
-            scores: scoreDetails,
-            levelId: student.levelId,
-            levelName: student.levelName || getLevelName(student.levelId)
+        // 按平均分排序
+        studentAverages.sort((a, b) => b.average - a.average);
+        studentAverages.forEach((item, index) => {
+            item.globalRank = index + 1;
         });
+        
+        // 如果按级别分组，计算级别内排名
+        if (groupByLevel) {
+            const levelGroups = {};
+            studentAverages.forEach(item => {
+                const levelKey = item.levelName || '未设置级别';
+                if (!levelGroups[levelKey]) {
+                    levelGroups[levelKey] = [];
+                }
+                levelGroups[levelKey].push(item);
+            });
+            
+            Object.values(levelGroups).forEach(group => {
+                group.sort((a, b) => b.average - a.average);
+                group.forEach((item, index) => {
+                    item.levelRank = index + 1;
+                });
+            });
+        }
+        
+        // 生成报告HTML
+        const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects, groupByLevel);
+        
+        // 获取或创建报告模态框
+        const modalElement = document.getElementById('reportModal');
+        if (!modalElement) {
+            console.error("找不到报告模态框元素");
+            showAlert("系统错误：找不到报告模态框", "danger");
+            return;
+        }
+        
+        // 先清理之前可能残留的遮罩层
+        cleanupBackdrops();
+        
+        // 设置报告内容
+        document.getElementById('report-modal-body').innerHTML = reportHTML;
+        
+        // 获取或创建Bootstrap模态框实例
+        let reportModal = bootstrap.Modal.getInstance(modalElement);
+        if (reportModal) {
+            reportModal.dispose(); // 先销毁旧实例
+        }
+        
+        // 创建新的模态框实例
+        reportModal = new bootstrap.Modal(modalElement, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        
+        // 监听模态框完全关闭事件，确保清理遮罩层
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            cleanupBackdrops();
+            // 恢复body状态
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, { once: true });
+        
+        // 显示模态框
+        reportModal.show();
+        
+        // 绑定下载按钮事件（使用闭包保存数据）
+        const pdfBtn = document.getElementById('download-pdf-btn');
+        const excelBtn = document.getElementById('download-excel-btn');
+        
+        if (pdfBtn) {
+            // 移除旧的事件监听器（通过替换元素）
+            const newPdfBtn = pdfBtn.cloneNode(true);
+            pdfBtn.parentNode.replaceChild(newPdfBtn, pdfBtn);
+            newPdfBtn.addEventListener('click', () => downloadReportAsPDF(studentAverages, reportProjects, selectedClass, groupByLevel));
+        }
+        
+        if (excelBtn) {
+            const newExcelBtn = excelBtn.cloneNode(true);
+            excelBtn.parentNode.replaceChild(newExcelBtn, excelBtn);
+            newExcelBtn.addEventListener('click', () => downloadReportAsExcel(studentAverages, reportProjects, selectedClass, groupByLevel));
+        }
+        
+        showAlert("报告生成成功", "success");
+        addActivity("生成成绩报告", "success");
+        
+    } catch (error) {
+        console.error("生成报告失败:", error);
+        showAlert("生成报告失败: " + error.message, "danger");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
     }
-    
-    const reportProjects = Array.from(allProjectsMap.values());
-    
-    // 按平均分排序（全局排名）
-    studentAverages.sort((a, b) => b.average - a.average);
-    
-    // 添加全局排名
-    studentAverages.forEach((item, index) => {
-        item.globalRank = index + 1;
+}
+
+// 辅助函数：清理所有残留的遮罩层
+function cleanupBackdrops() {
+    // 移除所有模态框遮罩层
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
     });
     
-    // 如果按级别分组，计算级别内排名
-    if (groupByLevel) {
-        const levelGroups = {};
-        studentAverages.forEach(item => {
-            const levelKey = item.levelName || '未设置级别';
-            if (!levelGroups[levelKey]) {
-                levelGroups[levelKey] = [];
-            }
-            levelGroups[levelKey].push(item);
-        });
-        
-        // 每个级别组内排序
-        Object.values(levelGroups).forEach(group => {
-            group.sort((a, b) => b.average - a.average);
-            group.forEach((item, index) => {
-                item.levelRank = index + 1;
-            });
-        });
-    }
+    // 恢复body状态
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
     
-    // 生成精致的报告HTML
-    const reportHTML = createEnhancedReportHTML(selectedClass, studentAverages, reportProjects, groupByLevel);
-    
-    // 显示在模态框中
-    document.getElementById('report-modal-body').innerHTML = reportHTML;
-    
-    const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
-    reportModal.show();
-    
-    // 绑定下载按钮事件
-    document.getElementById('download-pdf-btn').onclick = () => downloadReportAsPDF(studentAverages, reportProjects, selectedClass, groupByLevel);
-    document.getElementById('download-excel-btn').onclick = () => downloadReportAsExcel(studentAverages, reportProjects, selectedClass, groupByLevel);
-    
-    showAlert("报告生成成功", "success");
-    addActivity("生成成绩报告", "success");
-    
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-download me-1"></i>生成并下载报告';
+    // 移除所有模态框相关的aria属性
+    document.body.removeAttribute('aria-modal');
+    document.body.removeAttribute('data-bs-overflow');
+    document.body.removeAttribute('data-bs-padding-right');
 }
 
 // 辅助函数：根据levelId获取级别名称
