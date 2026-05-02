@@ -2779,17 +2779,45 @@ body.modal-open #student-query-page {
                     </form>
                 </div>
 
-                <!-- 学生签到标签页 -->
-                <div class="tab-pane fade" id="student-attendance-tab">
-                    <div id="student-attendance-content">
-                        <div class="text-center py-4">
-                            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">请先登录Google账号进行签到</p>
-                            <button id="student-attendance-login-btn" class="btn btn-danger" onclick="studentGoogleLogin()">
-                                <i class="fab fa-google me-2"></i>使用学校Google账号登录
-                            </button>
-                        </div>
-                    </div>
+<!-- 学生签到标签页 -->
+<div class="tab-pane fade" id="student-attendance-tab">
+    <div id="student-attendance-content">
+        <div class="text-center py-4">
+            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+            <p class="text-muted">请选择签到方式</p>
+            
+            <!-- Google登录按钮 -->
+            <button id="student-attendance-login-btn" class="btn btn-danger w-100 mb-3" onclick="studentGoogleLogin()">
+                <i class="fab fa-google me-2"></i>使用学校Google账号登录
+            </button>
+            
+            <!-- 分隔线 -->
+            <div class="text-center my-3">
+                <span style="background: #f1f5f9; padding: 5px 15px; border-radius: 20px; color: #94a3b8; font-size: 0.85rem;">
+                    或使用学号登录
+                </span>
+            </div>
+            
+            <!-- 学号登录表单 -->
+            <form id="student-id-login-form" onsubmit="return handleStudentIdLogin(event)">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="student-id-login-input" 
+                           placeholder="请输入您的学号" required
+                           style="text-align: center; font-size: 1.1rem;">
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="student-name-login-input" 
+                           placeholder="请输入您的姓名（验证用）" required
+                           style="text-align: center;">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>学号登录签到
+                </button>
+            </form>
+            <div id="student-id-login-error" class="text-danger mt-2" style="display: none;"></div>
+        </div>
+    </div>
+    
                     
                     <!-- 签到表单（登录后显示） -->
                     <div id="attendance-checkin-form" style="display: none;">
@@ -3344,6 +3372,12 @@ body.modal-open #student-query-page {
                             <label for="student-id" class="form-label">学号 <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="student-id" required>
                         </div>
+                        <div class="mb-3">
+        <label for="student-email" class="form-label">学校邮箱（选填）</label>
+        <input type="email" class="form-control" id="student-email" 
+               placeholder="例如：jb220225@foonyew.edu.my">
+        <small class="text-muted">用于Google账号签到匹配，选填</small>
+    </div>
                         <div class="mb-3">
                             <label for="study-group" class="form-label">学习组</label>
                             <input type="text" class="form-control" id="study-group">
@@ -5178,6 +5212,7 @@ function saveStudent() {
         name,
         class: studentClass,
         studentId,
+        studentEmail: document.getElementById('student-email').value.trim() || null,
         levelId,
         levelName: level ? level.name : null,  // 冗余存储级别名称，方便查询
         studyGroup: studyGroup || null,
@@ -8600,11 +8635,23 @@ function studentGoogleLogin() {
 }
 
 // 显示学生签到界面
+// 显示学生签到界面
 function showStudentCheckinInterface() {
     if (!studentAttendanceUser) return;
     
+    // 查找匹配的学生
+    const email = studentAttendanceUser.email;
+    let student = students.find(s => s.studentEmail === email);
+    if (!student) {
+        const displayName = studentAttendanceUser.displayName || '';
+        const cleanName = displayName.split(' - ')[0].split('(')[0].trim();
+        student = students.find(s => s.name === cleanName);
+    }
+    
     document.getElementById('attendance-checkin-form').style.display = 'block';
-    document.getElementById('student-attendance-name').textContent = studentAttendanceUser.displayName || '同学';
+    // 优先显示学生真实姓名
+    document.getElementById('student-attendance-name').textContent = 
+        student ? `${student.name} (${student.studentId})` : (studentAttendanceUser.displayName || '同学');
     document.getElementById('student-attendance-email').textContent = studentAttendanceUser.email;
     
     // 隐藏登录按钮区域
@@ -8612,8 +8659,6 @@ function showStudentCheckinInterface() {
     if (loginArea) loginArea.style.display = 'none';
     
     loadActiveSessions();
-    
-    // 每30秒刷新一次进行中的点名
     setInterval(loadActiveSessions, 30000);
 }
 
@@ -8735,11 +8780,21 @@ function submitCheckIn() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
     
     // 查找学生信息
-    const email = studentAttendanceUser.email;
-    const student = students.find(s => 
-        s.studentEmail === email || 
-        s.name === studentAttendanceUser.displayName
-    );
+    // 查找学生信息 - 通过学号匹配（学号存储在Google账号的displayName中或通过email匹配）
+const email = studentAttendanceUser.email;
+// 尝试多种方式匹配学生
+let student = students.find(s => s.studentEmail === email);
+if (!student) {
+    // 尝试通过姓名匹配（去掉"HYBRID - STUDY GROUP"等后缀）
+    const displayName = studentAttendanceUser.displayName || '';
+    const cleanName = displayName.split(' - ')[0].split('(')[0].trim();
+    student = students.find(s => s.name === cleanName);
+}
+if (!student) {
+    // 尝试通过邮箱前缀匹配学号
+    const emailPrefix = email.split('@')[0];
+    student = students.find(s => s.studentId === emailPrefix);
+}
     
     const checkinData = {
         attendanceId: activeCheckinSession.id,
@@ -8784,6 +8839,46 @@ setInterval(() => {
         updateCurrentSessionInfo();
     }
 }, 30000);
+
+        // 学号登录处理
+function handleStudentIdLogin(event) {
+    event.preventDefault();
+    
+    const studentId = document.getElementById('student-id-login-input').value.trim();
+    const studentName = document.getElementById('student-name-login-input').value.trim();
+    const errorDiv = document.getElementById('student-id-login-error');
+    
+    if (!studentId || !studentName) {
+        errorDiv.textContent = '请输入学号和姓名';
+        errorDiv.style.display = 'block';
+        return false;
+    }
+    
+    // 查找匹配的学生
+    const student = students.find(s => 
+        s.studentId === studentId && s.name === studentName
+    );
+    
+    if (!student) {
+        errorDiv.textContent = '学号或姓名不正确，请检查后重试';
+        errorDiv.style.display = 'block';
+        return false;
+    }
+    
+    errorDiv.style.display = 'none';
+    
+    // 模拟一个用户对象
+    studentAttendanceUser = {
+        displayName: student.name,
+        email: student.studentEmail || `${studentId}@student.foonyew.edu.my`,
+        uid: `student_${student.id}`
+    };
+    
+    // 显示签到界面
+    showStudentCheckinInterface();
+    
+    return false;
+}
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
