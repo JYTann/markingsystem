@@ -2525,6 +2525,150 @@ body.modal-open #student-query-page {
     color: white;
     transform: translateY(-2px);
 }
+
+        /* ==================== 点名系统样式 ==================== */
+.attendance-card {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: var(--transition-smooth);
+    border: 1px solid #e2e8f0;
+}
+
+.attendance-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.attendance-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.attendance-status.active {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.attendance-status.completed {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.attendance-status.upcoming {
+    background: #fefce8;
+    color: #854d0e;
+    border: 1px solid #fcd34d;
+}
+
+.attendance-status.cancelled {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.attendance-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.attendance-status.active .attendance-status-dot {
+    background: #10b981;
+    animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+.checkin-timer {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6366f1;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.student-checkin-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.student-checkin-status.checked-in {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+.student-checkin-status.absent {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.student-checkin-status.late {
+    background: #fefce8;
+    color: #854d0e;
+}
+
+/* 验证码输入框样式 */
+#checkin-code-input {
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+}
+
+#checkin-code-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* 点名进度条 */
+.attendance-progress {
+    height: 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    overflow: hidden;
+}
+
+.attendance-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* 已签到学生网格 */
+.checkin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.checkin-student-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.checkin-student-card:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+}
+
+.checkin-student-card .checkin-time {
+    font-size: 0.7rem;
+    color: #94a3b8;
+}
 </style>
 </head>
     
@@ -2548,6 +2692,11 @@ body.modal-open #student-query-page {
                         <i class="fas fa-sign-in-alt me-1"></i>管理员登录
                     </a>
                 </li>
+                <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#student-attendance-tab">
+        <i class="fas fa-clipboard-check me-1"></i>联课点名
+    </a>
+</li>
             </ul>
             
             <div class="tab-content">
@@ -2619,6 +2768,62 @@ body.modal-open #student-query-page {
                         <button type="submit" class="btn btn-primary w-100 mt-3">
                             <i class="fas fa-sign-in-alt me-2"></i>登录
                         </button>
+                        <!-- 学生签到标签页 -->
+<div class="tab-pane fade" id="student-attendance-tab">
+    <div id="student-attendance-content">
+        <div class="text-center py-4">
+            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+            <p class="text-muted">请先登录Google账号进行签到</p>
+            <button id="student-attendance-login-btn" class="btn btn-danger" onclick="studentGoogleLogin()">
+                <i class="fab fa-google me-2"></i>使用学校Google账号登录
+            </button>
+        </div>
+    </div>
+    
+    <!-- 签到表单（登录后显示） -->
+    <div id="attendance-checkin-form" style="display: none;">
+        <div class="text-center mb-4">
+            <div class="login-logo">
+                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height: 60px;">
+            </div>
+            <h4 class="gradient-text">联课活动点名</h4>
+            <p class="text-muted">欢迎，<span id="student-attendance-name"></span></p>
+            <p class="small text-muted" id="student-attendance-email"></p>
+        </div>
+        
+        <div id="active-sessions-list" class="mb-4">
+            <!-- 进行中的点名列表 -->
+        </div>
+        
+        <div class="card" id="checkin-card" style="display: none;">
+            <div class="card-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <h5 class="mb-0 text-white"><i class="fas fa-check-circle me-2"></i>签到确认</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 text-center">
+                    <h6>当前点名：<span id="checkin-session-title" class="text-primary"></span></h6>
+                    <p class="text-muted small" id="checkin-session-time"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="checkin-code-input" class="form-label required">请输入签到验证码</label>
+                    <input type="text" class="form-control form-control-lg text-center" 
+                           id="checkin-code-input" placeholder="输入验证码" maxlength="6"
+                           style="font-size: 1.5rem; letter-spacing: 8px;">
+                </div>
+                <button class="btn btn-primary w-100 btn-lg" id="submit-checkin-btn" onclick="submitCheckIn()">
+                    <i class="fas fa-check-circle me-2"></i>确认签到
+                </button>
+                <div id="checkin-result" class="mt-3 text-center"></div>
+            </div>
+        </div>
+        
+        <div id="no-active-session" class="text-center py-4" style="display: none;">
+            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+            <p class="text-muted">当前没有进行中的点名</p>
+            <p class="small text-muted">请等待管理员开启点名</p>
+        </div>
+    </div>
+</div>
                         
                         <!-- 添加Google登录按钮 -->
                         <div class="text-center my-3">
@@ -2664,6 +2869,11 @@ body.modal-open #student-query-page {
                         <li class="nav-item">
     <a class="nav-link" data-bs-toggle="tab" data-bs-target="#levels-tab">
         <i class="fas fa-layer-group me-1"></i>级别管理
+    </a>
+</li>
+                        <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
+        <i class="fas fa-clipboard-check me-1"></i>点名系统
     </a>
 </li>
                         <li class="nav-item">
@@ -3059,7 +3269,56 @@ body.modal-open #student-query-page {
         </div>
     </div>
 </div>
-
+<!-- 点名系统 -->
+<div class="tab-pane fade" id="attendance-tab">
+    <div class="row">
+        <!-- 管理员面板 -->
+        <div class="col-md-8">
+            <div class="card fade-in">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-clipboard-check me-2"></i>点名管理</span>
+                    <button class="btn btn-sm btn-success" onclick="createNewAttendance()">
+                        <i class="fas fa-plus me-1"></i>新建点名
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- 点名列表 -->
+                    <div id="attendance-list">
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                            <p>暂无点名记录，点击"新建点名"开始</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快捷操作和统计 -->
+        <div class="col-md-4">
+            <div class="card fade-in">
+                <div class="card-header">
+                    <span><i class="fas fa-cog me-2"></i>点名设置</span>
+                </div>
+                <div class="card-body">
+                    <div id="current-session-info" class="mb-3">
+                        <!-- 当前进行中的点名 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card fade-in mt-3">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-bar me-2"></i>点名统计</span>
+                </div>
+                <div class="card-body">
+                    <div id="attendance-stats">
+                        <p class="text-muted text-center">选择点名查看统计</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- 添加学生模态框 -->
     <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -3382,6 +3641,110 @@ body.modal-open #student-query-page {
         </div>
     </div>
 
+                <!-- 新建点名模态框 -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-clipboard-check me-2"></i><span id="attendance-modal-title">新建点名</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attendance-form">
+                    <input type="hidden" id="attendance-id">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="attendance-title" class="form-label required">点名标题</label>
+                            <input type="text" class="form-control" id="attendance-title" 
+                                   placeholder="例如：第15次联课点名" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="attendance-date" class="form-label required">点名日期</label>
+                            <input type="date" class="form-control" id="attendance-date" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="attendance-start-time" class="form-label required">开始时间</label>
+                            <input type="time" class="form-control" id="attendance-start-time" required>
+                            <small class="text-muted">学生可以开始签到的时间</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="attendance-end-time" class="form-label required">结束时间</label>
+                            <input type="time" class="form-control" id="attendance-end-time" required>
+                            <small class="text-muted">签到截止时间</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="attendance-code" class="form-label required">签到验证码</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="attendance-code" 
+                                       placeholder="4-6位验证码" maxlength="6" minlength="4" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="generateRandomCode()">
+                                    <i class="fas fa-random"></i> 随机生成
+                                </button>
+                            </div>
+                            <small class="text-muted">学生需要输入此验证码才能签到成功</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="attendance-level" class="form-label">指定级别（可选）</label>
+                            <select class="form-select" id="attendance-level">
+                                <option value="">所有级别</option>
+                            </select>
+                            <small class="text-muted">留空则所有学生均可签到</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="attendance-note" class="form-label">备注</label>
+                        <textarea class="form-control" id="attendance-note" rows="2" 
+                                  placeholder="可选备注信息"></textarea>
+                    </div>
+                    
+                    <!-- 时间预览 -->
+                    <div class="alert alert-info" id="time-preview">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="time-preview-text">请设置点名时间</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-attendance-btn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 点名详情模态框 -->
+<div class="modal fade" id="attendanceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-list-check me-2"></i>点名详情
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="attendance-detail-content">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="export-attendance-btn">
+                    <i class="fas fa-file-excel me-1"></i>导出Excel
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
                 <!-- 快速返回顶部按钮 -->
 <button id="back-to-top" class="back-to-top" title="返回顶部">
     <i class="fas fa-arrow-up"></i>
@@ -3465,7 +3828,12 @@ body.modal-open #student-query-page {
         let levels = [];
 let levelProjects = [];
 let currentLevelId = null;
-
+// 点名系统全局变量
+let attendances = [];
+let attendanceRecords = [];
+let currentAttendanceId = null;
+let activeCheckinSession = null;
+let studentAttendanceUser = null;
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -3699,6 +4067,13 @@ if (generateBtn) {
             
             // 班级筛选
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
+            document.getElementById('save-attendance-btn').addEventListener('click', saveAttendance);
+        document.getElementById('attendance-start-time').addEventListener('change', updateTimePreview);
+        document.getElementById('attendance-end-time').addEventListener('change', updateTimePreview);
+        document.getElementById('attendance-date').addEventListener('change', updateTimePreview);
+
+        // 点名详情导出
+        document.getElementById('export-attendance-btn').addEventListener('click', exportAttendanceDetail);
             
         // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
 // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
@@ -4359,6 +4734,7 @@ function removeToast(toast) {
 
         // 加载所有数据
         function loadAllData() {
+            loadAttendances();
     loadLevels();
     loadStudents();
     loadProjects();
@@ -7681,6 +8057,730 @@ function createReportCardHTML(data) {
         <div style="text-align:center;padding-top:15px;border-top:2px solid #e2e8f0;color:#94a3b8;font-size:0.75rem"><p style="margin:0">本成绩单由智能评分系统自动生成 | ${dateStr}</p><p style="margin:2px 0 0">© ${new Date().getFullYear()} 新山宽柔中学电脑协会 | 杂家——MAKER</p></div>
     </div>`;
 }
+
+        // ==================== 点名系统功能 ====================
+
+// 加载点名数据
+function loadAttendances() {
+    db.collection('attendances').orderBy('createdAt', 'desc').get()
+        .then(querySnapshot => {
+            attendances = [];
+            querySnapshot.forEach(doc => {
+                attendances.push({ id: doc.id, ...doc.data() });
+            });
+            renderAttendanceList();
+            loadAttendanceRecords();
+        })
+        .catch(error => {
+            console.error("加载点名数据失败:", error);
+        });
+}
+
+// 加载点名记录
+function loadAttendanceRecords() {
+    db.collection('attendanceRecords').get()
+        .then(querySnapshot => {
+            attendanceRecords = [];
+            querySnapshot.forEach(doc => {
+                attendanceRecords.push({ id: doc.id, ...doc.data() });
+            });
+            renderAttendanceList();
+            updateCurrentSessionInfo();
+        })
+        .catch(error => {
+            console.error("加载点名记录失败:", error);
+        });
+}
+
+// 渲染点名列表
+function renderAttendanceList() {
+    const container = document.getElementById('attendance-list');
+    if (!container) return;
+    
+    if (attendances.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                <p>暂无点名记录，点击"新建点名"开始</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = attendances.map(attendance => {
+        const now = new Date();
+        const startTime = attendance.startTime?.toDate();
+        const endTime = attendance.endTime?.toDate();
+        
+        let status = 'completed';
+        let statusClass = 'completed';
+        let statusText = '已结束';
+        
+        if (now < startTime) {
+            status = 'upcoming';
+            statusClass = 'upcoming';
+            statusText = '即将开始';
+        } else if (now >= startTime && now <= endTime) {
+            status = 'active';
+            statusClass = 'active';
+            statusText = '进行中';
+        }
+        
+        if (attendance.cancelled) {
+            status = 'cancelled';
+            statusClass = 'cancelled';
+            statusText = '已取消';
+        }
+        
+        const recordCount = attendanceRecords.filter(r => r.attendanceId === attendance.id).length;
+        const totalStudents = students.length;
+        const percentage = totalStudents > 0 ? Math.round((recordCount / totalStudents) * 100) : 0;
+        
+        return `
+            <div class="attendance-card mb-3 p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1 fw-bold">${attendance.title}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>${attendance.date || ''}
+                            <i class="fas fa-clock ms-2 me-1"></i>${attendance.startTimeStr || ''} - ${attendance.endTimeStr || ''}
+                        </small>
+                    </div>
+                    <span class="attendance-status ${statusClass}">
+                        <span class="attendance-status-dot"></span>
+                        ${statusText}
+                    </span>
+                </div>
+                
+                ${attendance.code ? `
+                <div class="mb-2">
+                    <small class="text-muted">验证码：</small>
+                    <code style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 1rem; letter-spacing: 3px;">
+                        ${attendance.code}
+                    </code>
+                </div>
+                ` : ''}
+                
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user-check me-1"></i>已签到：${recordCount}/${totalStudents}
+                    </small>
+                    <div class="attendance-progress flex-grow-1">
+                        <div class="attendance-progress-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <small class="text-muted">${percentage}%</small>
+                </div>
+                
+                ${attendance.note ? `<small class="text-muted d-block mb-2"><i class="fas fa-sticky-note me-1"></i>${attendance.note}</small>` : ''}
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-info" onclick="viewAttendanceDetail('${attendance.id}')">
+                        <i class="fas fa-eye me-1"></i>查看详情
+                    </button>
+                    ${status !== 'completed' ? `
+                    <button class="btn btn-sm btn-primary" onclick="editAttendance('${attendance.id}')">
+                        <i class="fas fa-edit me-1"></i>编辑
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="cancelAttendance('${attendance.id}')">
+                        <i class="fas fa-times me-1"></i>取消
+                    </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAttendance('${attendance.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 更新当前进行中的点名信息
+function updateCurrentSessionInfo() {
+    const container = document.getElementById('current-session-info');
+    if (!container) return;
+    
+    const now = new Date();
+    const activeAttendance = attendances.find(a => {
+        if (a.cancelled) return false;
+        const start = a.startTime?.toDate();
+        const end = a.endTime?.toDate();
+        return start && end && now >= start && now <= end;
+    });
+    
+    if (activeAttendance) {
+        const endTime = activeAttendance.endTime.toDate();
+        const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
+        const recordCount = attendanceRecords.filter(r => r.attendanceId === activeAttendance.id).length;
+        
+        container.innerHTML = `
+            <div class="alert alert-success mb-0">
+                <h6 class="alert-heading"><i class="fas fa-broadcast-tower me-2"></i>进行中的点名</h6>
+                <p class="mb-1"><strong>${activeAttendance.title}</strong></p>
+                <p class="mb-1 small">验证码：<code>${activeAttendance.code}</code></p>
+                <p class="mb-1 small">剩余时间：<strong>${remainingMinutes} 分钟</strong></p>
+                <p class="mb-1 small">已签到：${recordCount} 人</p>
+                <hr>
+                <small class="text-muted">学生端访问链接：<br>
+                    <code style="word-break: break-all;">${window.location.origin}${window.location.pathname}</code>
+                </small>
+            </div>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="text-center py-3 text-muted">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <p class="mb-0">当前没有进行中的点名</p>
+            </div>
+        `;
+    }
+}
+
+// 新建点名
+function createNewAttendance() {
+    document.getElementById('attendance-id').value = '';
+    document.getElementById('attendance-modal-title').textContent = '新建点名';
+    document.getElementById('attendance-title').value = '';
+    document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('attendance-start-time').value = '';
+    document.getElementById('attendance-end-time').value = '';
+    document.getElementById('attendance-code').value = '';
+    document.getElementById('attendance-note').value = '';
+    document.getElementById('time-preview-text').textContent = '请设置点名时间';
+    
+    // 更新级别选择
+    const levelSelect = document.getElementById('attendance-level');
+    levelSelect.innerHTML = '<option value="">所有级别</option>';
+    levels.forEach(level => {
+        const option = document.createElement('option');
+        option.value = level.id;
+        option.textContent = level.name;
+        levelSelect.appendChild(option);
+    });
+    
+    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    modal.show();
+}
+
+// 编辑点名
+function editAttendance(attendanceId) {
+    const attendance = attendances.find(a => a.id === attendanceId);
+    if (!attendance) return;
+    
+    document.getElementById('attendance-id').value = attendance.id;
+    document.getElementById('attendance-modal-title').textContent = '编辑点名';
+    document.getElementById('attendance-title').value = attendance.title || '';
+    document.getElementById('attendance-date').value = attendance.date || '';
+    document.getElementById('attendance-start-time').value = attendance.startTimeStr || '';
+    document.getElementById('attendance-end-time').value = attendance.endTimeStr || '';
+    document.getElementById('attendance-code').value = attendance.code || '';
+    document.getElementById('attendance-note').value = attendance.note || '';
+    document.getElementById('attendance-level').value = attendance.levelId || '';
+    
+    updateTimePreview();
+    
+    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
+    modal.show();
+}
+
+// 保存点名
+function saveAttendance() {
+    const id = document.getElementById('attendance-id').value;
+    const title = document.getElementById('attendance-title').value.trim();
+    const date = document.getElementById('attendance-date').value;
+    const startTimeStr = document.getElementById('attendance-start-time').value;
+    const endTimeStr = document.getElementById('attendance-end-time').value;
+    const code = document.getElementById('attendance-code').value.trim().toUpperCase();
+    const note = document.getElementById('attendance-note').value.trim();
+    const levelId = document.getElementById('attendance-level').value;
+    
+    // 验证
+    if (!title) { showAlert('请输入点名标题', 'warning'); return; }
+    if (!date) { showAlert('请选择日期', 'warning'); return; }
+    if (!startTimeStr) { showAlert('请设置开始时间', 'warning'); return; }
+    if (!endTimeStr) { showAlert('请设置结束时间', 'warning'); return; }
+    if (!code || code.length < 4 || code.length > 6) {
+        showAlert('验证码需要4-6位字符', 'warning'); return;
+    }
+    
+    if (startTimeStr >= endTimeStr) {
+        showAlert('结束时间必须晚于开始时间', 'warning'); return;
+    }
+    
+    const startTime = new Date(`${date}T${startTimeStr}:00`);
+    const endTime = new Date(`${date}T${endTimeStr}:00`);
+    
+    const btn = document.getElementById('save-attendance-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    
+    const attendanceData = {
+        title,
+        date,
+        startTime: firebase.firestore.Timestamp.fromDate(startTime),
+        endTime: firebase.firestore.Timestamp.fromDate(endTime),
+        startTimeStr,
+        endTimeStr,
+        code,
+        note: note || null,
+        levelId: levelId || null,
+        cancelled: false,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (!id) {
+        attendanceData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+    
+    const savePromise = id 
+        ? db.collection('attendances').doc(id).update(attendanceData)
+        : db.collection('attendances').add(attendanceData);
+    
+    savePromise
+        .then(() => {
+            showAlert(id ? '点名更新成功' : '点名创建成功', 'success');
+            document.getElementById('attendanceModal').querySelector('.btn-close').click();
+            loadAttendances();
+            addActivity(`${id ? '更新' : '创建'}点名: ${title}`, 'success');
+        })
+        .catch(error => {
+            console.error('保存点名失败:', error);
+            showAlert('保存失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+        });
+}
+
+// 取消点名
+function cancelAttendance(attendanceId) {
+    showConfirmDialog('取消点名', '确定要取消这次点名吗？取消后学生将无法签到。', '确定取消', '返回', () => {
+        db.collection('attendances').doc(attendanceId).update({ cancelled: true })
+            .then(() => {
+                showAlert('点名已取消', 'info');
+                loadAttendances();
+                addActivity('取消了一次点名', 'warning');
+            })
+            .catch(error => {
+                showAlert('操作失败: ' + error.message, 'danger');
+            });
+    });
+}
+
+// 删除点名
+function deleteAttendance(attendanceId) {
+    const attendance = attendances.find(a => a.id === attendanceId);
+    showConfirmDialog('删除点名', `确定要删除点名"${attendance?.title}"吗？此操作不可恢复。`, '删除', '取消', () => {
+        db.collection('attendances').doc(attendanceId).delete()
+            .then(() => {
+                // 同时删除相关记录
+                const batch = db.batch();
+                attendanceRecords
+                    .filter(r => r.attendanceId === attendanceId)
+                    .forEach(r => batch.delete(db.collection('attendanceRecords').doc(r.id)));
+                return batch.commit();
+            })
+            .then(() => {
+                showAlert('点名已删除', 'success');
+                loadAttendances();
+                addActivity('删除了一次点名', 'warning');
+            })
+            .catch(error => {
+                showAlert('删除失败: ' + error.message, 'danger');
+            });
+    });
+}
+
+// 查看点名详情
+function viewAttendanceDetail(attendanceId) {
+    currentAttendanceId = attendanceId;
+    const attendance = attendances.find(a => a.id === attendanceId);
+    if (!attendance) return;
+    
+    const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
+    const checkedInStudents = records.map(r => {
+        const student = students.find(s => s.id === r.studentId);
+        return { ...r, student };
+    });
+    
+    const now = new Date();
+    const endTime = attendance.endTime?.toDate();
+    const isActive = attendance.startTime?.toDate() <= now && now <= endTime && !attendance.cancelled;
+    
+    document.getElementById('attendance-detail-content').innerHTML = `
+        <div class="mb-3">
+            <h5>${attendance.title}</h5>
+            <p class="text-muted mb-1">
+                <i class="fas fa-calendar me-2"></i>${attendance.date}
+                <i class="fas fa-clock ms-3 me-2"></i>${attendance.startTimeStr} - ${attendance.endTimeStr}
+                ${isActive ? '<span class="badge bg-success ms-2">进行中</span>' : ''}
+                ${attendance.cancelled ? '<span class="badge bg-danger ms-2">已取消</span>' : ''}
+            </p>
+            <p class="text-muted mb-0">
+                <i class="fas fa-key me-2"></i>验证码：<code>${attendance.code}</code>
+            </p>
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                    <i class="fas fa-user-check"></i>
+                    <h5 class="card-title">${checkedInStudents.length}</h5>
+                    <p class="card-text">已签到</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #f87171);">
+                    <i class="fas fa-user-times"></i>
+                    <h5 class="card-title">${students.length - checkedInStudents.length}</h5>
+                    <p class="card-text">未签到</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+                    <i class="fas fa-percentage"></i>
+                    <h5 class="card-title">${students.length > 0 ? Math.round((checkedInStudents.length/students.length)*100) : 0}%</h5>
+                    <p class="card-text">出勤率</p>
+                </div>
+            </div>
+        </div>
+        
+        <h6 class="mb-3"><i class="fas fa-list me-2"></i>签到记录</h6>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>学号</th>
+                        <th>姓名</th>
+                        <th>班级</th>
+                        <th>级别</th>
+                        <th>签到时间</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${checkedInStudents.map((record, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${record.student?.studentId || '未知'}</td>
+                            <td>${record.student?.name || '未知'}</td>
+                            <td>${record.student?.class || '-'}</td>
+                            <td>${record.student?.levelName || '-'}</td>
+                            <td>${record.checkinTime?.toDate().toLocaleString() || '-'}</td>
+                            <td>
+                                <span class="student-checkin-status checked-in">
+                                    <i class="fas fa-check-circle me-1"></i>已签到
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到学生</h6>
+        <div class="checkin-grid">
+            ${students
+                .filter(s => !checkedInStudents.find(r => r.studentId === s.id))
+                .map(s => `
+                    <div class="checkin-student-card">
+                        <div class="avatar" style="width: 36px; height: 36px; background-color: #ef4444;">
+                            ${s.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div style="font-weight: 500; font-size: 0.9rem;">${s.name}</div>
+                            <small class="text-muted">${s.studentId} | ${s.class}</small>
+                        </div>
+                    </div>
+                `).join('')}
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('attendanceDetailModal'));
+    modal.show();
+}
+
+// 导出点名详情
+function exportAttendanceDetail() {
+    if (!currentAttendanceId) return;
+    
+    const attendance = attendances.find(a => a.id === currentAttendanceId);
+    if (!attendance) return;
+    
+    const records = attendanceRecords.filter(r => r.attendanceId === currentAttendanceId);
+    const checkedInStudentIds = new Set(records.map(r => r.studentId));
+    
+    const data = students.map((student, index) => {
+        const record = records.find(r => r.studentId === student.id);
+        return {
+            '序号': index + 1,
+            '学号': student.studentId,
+            '姓名': student.name,
+            '班级': student.class,
+            '级别': student.levelName || '-',
+            '签到状态': checkedInStudentIds.has(student.id) ? '已签到' : '未签到',
+            '签到时间': record?.checkinTime?.toDate().toLocaleString() || '-',
+            '签到方式': record?.loginEmail || '-'
+        };
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "点名记录");
+    XLSX.writeFile(wb, `${attendance.title}_点名记录_${attendance.date}.xlsx`);
+    showAlert('导出成功', 'success');
+}
+
+// 更新时间预览
+function updateTimePreview() {
+    const date = document.getElementById('attendance-date').value;
+    const startTime = document.getElementById('attendance-start-time').value;
+    const endTime = document.getElementById('attendance-end-time').value;
+    
+    if (date && startTime && endTime) {
+        const start = new Date(`${date}T${startTime}:00`);
+        const end = new Date(`${date}T${endTime}:00`);
+        const durationMinutes = Math.round((end - start) / 60000);
+        
+        if (durationMinutes > 0) {
+            document.getElementById('time-preview-text').innerHTML = `
+                点名时段：<strong>${date} ${startTime} - ${endTime}</strong><br>
+                持续时长：<strong>${durationMinutes} 分钟</strong>
+                ${durationMinutes > 120 ? '<br><span class="text-warning">⚠️ 点名时间较长，建议控制在2小时内</span>' : ''}
+            `;
+        } else {
+            document.getElementById('time-preview-text').innerHTML = `
+                <span class="text-danger">⚠️ 结束时间必须晚于开始时间</span>
+            `;
+        }
+    } else {
+        document.getElementById('time-preview-text').textContent = '请设置点名时间';
+    }
+}
+
+// 随机生成验证码
+function generateRandomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 5; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('attendance-code').value = code;
+}
+
+// ==================== 学生签到功能 ====================
+
+// 学生Google登录
+function studentGoogleLogin() {
+    const btn = document.getElementById('student-attendance-login-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 登录中...';
+    }
+    
+    auth.signInWithPopup(googleProvider)
+        .then((result) => {
+            studentAttendanceUser = result.user;
+            showStudentCheckinInterface();
+        })
+        .catch((error) => {
+            console.error("登录失败:", error);
+            if (error.code !== 'auth/popup-closed-by-user') {
+                showAlert("登录失败: " + error.message, 'danger');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fab fa-google me-2"></i>使用学校Google账号登录';
+            }
+        });
+}
+
+// 显示学生签到界面
+function showStudentCheckinInterface() {
+    if (!studentAttendanceUser) return;
+    
+    document.getElementById('attendance-checkin-form').style.display = 'block';
+    document.getElementById('student-attendance-name').textContent = studentAttendanceUser.displayName || '同学';
+    document.getElementById('student-attendance-email').textContent = studentAttendanceUser.email;
+    
+    // 隐藏登录按钮区域
+    const loginArea = document.querySelector('#student-attendance-content > div');
+    if (loginArea) loginArea.style.display = 'none';
+    
+    loadActiveSessions();
+    
+    // 每30秒刷新一次进行中的点名
+    setInterval(loadActiveSessions, 30000);
+}
+
+// 加载进行中的点名
+function loadActiveSessions() {
+    const now = new Date();
+    const activeSessions = attendances.filter(a => {
+        if (a.cancelled) return false;
+        const start = a.startTime?.toDate();
+        const end = a.endTime?.toDate();
+        return start && end && now >= start && now <= end;
+    });
+    
+    const container = document.getElementById('active-sessions-list');
+    const noSession = document.getElementById('no-active-session');
+    const checkinCard = document.getElementById('checkin-card');
+    
+    if (activeSessions.length === 0) {
+        if (container) container.innerHTML = '';
+        if (noSession) noSession.style.display = 'block';
+        if (checkinCard) checkinCard.style.display = 'none';
+        return;
+    }
+    
+    if (noSession) noSession.style.display = 'none';
+    
+    // 检查是否已经签到
+    const userEmail = studentAttendanceUser.email;
+    const alreadyCheckedIn = activeSessions.filter(session => {
+        return attendanceRecords.some(r => 
+            r.attendanceId === session.id && r.loginEmail === userEmail
+        );
+    });
+    
+    if (container) {
+        container.innerHTML = activeSessions.map(session => {
+            const endTime = session.endTime.toDate();
+            const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
+            const isCheckedIn = alreadyCheckedIn.find(s => s.id === session.id);
+            
+            return `
+                <div class="alert alert-${isCheckedIn ? 'success' : 'info'} mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${session.title}</h6>
+                            <small class="text-muted">剩余时间：${remainingMinutes} 分钟</small>
+                        </div>
+                        ${isCheckedIn ? `
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>已签到
+                            </span>
+                        ` : `
+                            <button class="btn btn-primary btn-sm" onclick="showCheckinForm('${session.id}')">
+                                <i class="fas fa-pen me-1"></i>签到
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+// 显示签到表单
+function showCheckinForm(sessionId) {
+    const session = attendances.find(a => a.id === sessionId);
+    if (!session) return;
+    
+    activeCheckinSession = session;
+    
+    document.getElementById('checkin-session-title').textContent = session.title;
+    document.getElementById('checkin-session-time').textContent = 
+        `${session.date} ${session.startTimeStr} - ${session.endTimeStr}`;
+    document.getElementById('checkin-code-input').value = '';
+    document.getElementById('checkin-result').innerHTML = '';
+    document.getElementById('checkin-card').style.display = 'block';
+    document.getElementById('checkin-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 提交签到
+function submitCheckIn() {
+    if (!activeCheckinSession || !studentAttendanceUser) {
+        showAlert('签到信息已过期，请刷新重试', 'warning');
+        return;
+    }
+    
+    const inputCode = document.getElementById('checkin-code-input').value.trim().toUpperCase();
+    const correctCode = activeCheckinSession.code;
+    
+    if (inputCode !== correctCode) {
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-times-circle me-2"></i>验证码错误，请重新输入
+            </div>
+        `;
+        document.getElementById('checkin-code-input').classList.add('is-invalid');
+        setTimeout(() => {
+            document.getElementById('checkin-code-input').classList.remove('is-invalid');
+        }, 1000);
+        return;
+    }
+    
+    // 验证时间
+    const now = new Date();
+    const startTime = activeCheckinSession.startTime?.toDate();
+    const endTime = activeCheckinSession.endTime?.toDate();
+    
+    if (now < startTime || now > endTime) {
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-clock me-2"></i>当前不在签到时间范围内
+            </div>
+        `;
+        return;
+    }
+    
+    const btn = document.getElementById('submit-checkin-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
+    
+    // 查找学生信息
+    const email = studentAttendanceUser.email;
+    const student = students.find(s => 
+        s.studentEmail === email || 
+        s.name === studentAttendanceUser.displayName
+    );
+    
+    const checkinData = {
+        attendanceId: activeCheckinSession.id,
+        studentId: student?.id || null,
+        studentName: studentAttendanceUser.displayName || '未知',
+        loginEmail: email,
+        checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
+        code: inputCode,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    db.collection('attendanceRecords').add(checkinData)
+        .then(() => {
+            document.getElementById('checkin-result').innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>签到成功！</strong><br>
+                    ${student ? `${student.name} (${student.studentId})` : studentAttendanceUser.displayName}
+                </div>
+            `;
+            document.getElementById('checkin-card').style.display = 'none';
+            loadAttendanceRecords();
+            setTimeout(() => loadActiveSessions(), 500);
+        })
+        .catch(error => {
+            console.error('签到失败:', error);
+            document.getElementById('checkin-result').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i>签到失败: ${error.message}
+                </div>
+            `;
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
+        });
+}
+
+// 实时更新点名状态（每30秒刷新）
+setInterval(() => {
+    if (document.getElementById('attendance-tab')?.classList.contains('active')) {
+        updateCurrentSessionInfo();
+    }
+}, 30000);
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
