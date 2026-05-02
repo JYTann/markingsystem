@@ -4570,7 +4570,7 @@ async function loadAllDataForQuery() {
                 document.getElementById('user-email').textContent = user.email;
                 currentUser = user;
                 showMainSystem();
-                loadAllData();
+                enhancedLoadAllData();
                 addActivity("用户通过Google登录系统", "success");
             } else {
                 auth.signOut();
@@ -4748,28 +4748,6 @@ function removeToast(toast) {
     }, 300);
 }
 
-// ========== Toast 通知系统结束 ==========
-
-        // 加载所有数据
-       function loadAllData() {
-    loadLevels();
-    loadStudents();
-    loadProjects();
-    loadScores();
-    loadAnnouncements();  // ⬅️ 新增
-    
-    setTimeout(() => {
-        updateDashboard();
-        updateSystemInfo();                    // ⬅️ 新增
-        updateAttendanceClassFilter();         // ⬅️ 新增
-        
-        const dashboardTab = document.getElementById('dashboard-tab');
-        if (dashboardTab && dashboardTab.classList.contains('active')) {
-            updateScoreDistributionChart();
-            updateProjectComparisonChart();
-        }
-    }, 300);
-}
 
         // 加载级别数据
 function loadLevels() {
@@ -7675,7 +7653,7 @@ function initFabMenu() {
 // ========== 刷新所有数据 ==========
 function refreshAllData() {
     showFullscreenLoader('正在刷新数据...');
-    loadAllData();
+    enhancedLoadAllData();
     setTimeout(() => {
         hideFullscreenLoader();
         showAlert('数据刷新成功', 'success');
