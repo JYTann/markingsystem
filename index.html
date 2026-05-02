@@ -2669,6 +2669,683 @@ body.modal-open #student-query-page {
     font-size: 0.7rem;
     color: #94a3b8;
 }
+
+        /* ==================== 🚀 终极增强美化方案 ==================== */
+
+/* ==================== 🌌 全局氛围增强 ==================== */
+body {
+    /* 更细腻的动态渐变背景 */
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+        #f8fafc;
+    background-attachment: fixed;
+}
+
+/* 鼠标跟踪光晕（需配合JS，此处仅定义样式） */
+.mouse-glow {
+    position: fixed;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent 70%);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 0;
+    transition: opacity 0.3s;
+}
+
+/* ==================== 🧊 玻璃拟态变体增强 ==================== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.glass-card-dark {
+    background: rgba(15, 23, 42, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: white;
+}
+
+/* ==================== 🌟 霓虹发光按钮 ==================== */
+.btn-neon {
+    position: relative;
+    z-index: 1;
+    overflow: visible !important;
+}
+
+.btn-neon::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    background: inherit;
+    border-radius: inherit;
+    filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: -1;
+}
+
+.btn-neon:hover::before {
+    opacity: 0.6;
+}
+
+/* ==================== 📊 统计卡片 3D 翻转增强 ==================== */
+.stat-card-3d {
+    perspective: 800px;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.stat-card-3d-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.stat-card-3d:hover .stat-card-3d-inner {
+    transform: rotateY(10deg) rotateX(5deg);
+}
+
+.stat-card-3d .stat-card-front {
+    backface-visibility: hidden;
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+}
+
+/* ==================== 🎴 手风琴效果增强 ==================== */
+.accordion-custom .accordion-item {
+    border: none;
+    margin-bottom: 8px;
+    border-radius: var(--radius-lg) !important;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.accordion-custom .accordion-header button {
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 1rem 1.2rem;
+    background: white;
+    color: var(--text-primary);
+    box-shadow: none !important;
+    border-radius: var(--radius-lg) !important;
+    transition: var(--transition-smooth);
+}
+
+.accordion-custom .accordion-header button:hover {
+    background: #f8fafc;
+    color: var(--primary);
+}
+
+.accordion-custom .accordion-header button::after {
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.accordion-custom .accordion-body {
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* ==================== 🏷️ 标签页现代风格 ==================== */
+.nav-tabs-modern {
+    border-bottom: none;
+    gap: 4px;
+    padding: 4px;
+    background: #f1f5f9;
+    border-radius: 14px;
+    display: inline-flex;
+}
+
+.nav-tabs-modern .nav-link {
+    border: none;
+    border-radius: 10px;
+    padding: 0.6rem 1.4rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: var(--transition-smooth);
+    position: relative;
+}
+
+.nav-tabs-modern .nav-link.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: var(--shadow);
+}
+
+/* 标签页滑动指示器 */
+.nav-tabs-sliding {
+    position: relative;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.nav-tabs-sliding .nav-link {
+    border: none;
+    padding-bottom: 12px;
+    position: relative;
+    color: var(--text-secondary);
+}
+
+.nav-tabs-sliding .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.nav-tabs-sliding .nav-link.active::after {
+    width: 100%;
+}
+
+/* ==================== 🎯 表单输入组装饰 ==================== */
+.input-group-icon {
+    position: relative;
+}
+
+.input-group-icon .form-control {
+    padding-left: 3rem;
+}
+
+.input-group-icon i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    transition: color 0.3s;
+    z-index: 5;
+}
+
+.input-group-icon .form-control:focus ~ i {
+    color: var(--primary);
+}
+
+/* 浮动标签效果 */
+.form-floating-custom {
+    position: relative;
+}
+
+.form-floating-custom .form-control {
+    padding: 1.2rem 1rem 0.6rem;
+    border-radius: var(--radius);
+}
+
+.form-floating-custom label {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: all 0.2s ease;
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+.form-floating-custom .form-control:focus ~ label,
+.form-floating-custom .form-control:not(:placeholder-shown) ~ label {
+    top: 0.5rem;
+    font-size: 0.7rem;
+    color: var(--primary);
+    transform: none;
+}
+
+/* ==================== 💡 通知徽章红点脉动 ==================== */
+.notification-dot {
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* ==================== 🎨 列表组增强 ==================== */
+.list-group-custom .list-group-item {
+    border: none;
+    margin-bottom: 6px;
+    border-radius: var(--radius) !important;
+    transition: var(--transition-smooth);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.list-group-custom .list-group-item:hover {
+    background: white;
+    box-shadow: var(--shadow);
+    transform: translateX(5px);
+}
+
+.list-group-custom .list-group-item.active {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+/* ==================== 🌀 加载骨架屏扩展 ==================== */
+.skeleton-circle {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.skeleton-title {
+    height: 1.2rem;
+    width: 60%;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-subtitle {
+    height: 0.8rem;
+    width: 40%;
+}
+
+/* ==================== 🎭 遮罩层动画 ==================== */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1040;
+}
+
+.overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==================== 🏆 排名奖牌 ==================== */
+.medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.medal-gold {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.medal-silver {
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+}
+
+.medal-bronze {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+}
+
+/* ==================== 📌 固定元素阴影 ==================== */
+.sticky-shadow {
+    transition: box-shadow 0.3s ease;
+}
+
+.sticky-shadow.stuck {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* ==================== 🖱️ 自定义光标 ==================== */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-grab {
+    cursor: grab;
+}
+
+.cursor-grabbing {
+    cursor: grabbing;
+}
+
+/* ==================== 🌈 文字渐变特效集合 ==================== */
+.text-gradient-fire {
+    background: linear-gradient(135deg, #f59e0b, #ef4444, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-ocean {
+    background: linear-gradient(135deg, #06b6d4, #3b82f6, #6366f1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-forest {
+    background: linear-gradient(135deg, #10b981, #059669, #047857);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ==================== 🎈 提示气泡增强 ==================== */
+.tooltip-enhanced {
+    position: relative;
+}
+
+.tooltip-enhanced .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.tooltip-enhanced:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+    bottom: 130%;
+}
+
+/* ==================== 📱 移动端触摸优化 ==================== */
+@media (hover: none) {
+    .btn:hover {
+        transform: none !important;
+    }
+    
+    .card:hover {
+        transform: none !important;
+    }
+}
+
+/* ==================== 🖨️ 打印优化增强 ==================== */
+@media print {
+    .no-print, .navbar, .fab-menu, .back-to-top {
+        display: none !important;
+    }
+    
+    a[href]:after {
+        content: none !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* ==================== 🎪 弹窗入场动画变体 ==================== */
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal.slide-up .modal-content {
+    animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal.zoom-in .modal-content {
+    animation: modalZoomIn 0.3s ease-out;
+}
+
+/* ==================== ✨ 粒子背景（纯CSS模拟光点） ==================== */
+.particle-bg {
+    position: relative;
+    overflow: hidden;
+}
+
+.particle-bg::before,
+.particle-bg::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.2;
+    animation: floatParticle 8s linear infinite;
+}
+
+.particle-bg::after {
+    width: 4px;
+    height: 4px;
+    animation-duration: 12s;
+    animation-delay: -4s;
+    background: var(--accent);
+}
+
+@keyframes floatParticle {
+    0% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(100px, -50px) scale(1.5); }
+    50% { transform: translate(200px, 0) scale(1); }
+    75% { transform: translate(100px, 50px) scale(0.5); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ==================== 🎯 选中文字美化 ==================== */
+::selection {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+    color: var(--primary-dark);
+}
+
+/* ==================== 📏 分割线变体 ==================== */
+.divider-dotted {
+    border-top: 2px dotted #e2e8f0;
+}
+
+.divider-dashed {
+    border-top: 2px dashed #e2e8f0;
+}
+
+.divider-gradient {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent);
+    border: none;
+}
+
+/* ==================== 🎨 自定义滚动条（Firefox） ==================== */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* ==================== 💫 呼吸灯边框 ==================== */
+.border-glow {
+    animation: borderGlow 3s ease-in-out infinite;
+}
+
+@keyframes borderGlow {
+    0%, 100% { border-color: #6366f1; box-shadow: 0 0 8px rgba(99, 102, 241, 0.3); }
+    50% { border-color: #06b6d4; box-shadow: 0 0 16px rgba(6, 182, 212, 0.3); }
+}
+
+/* ==================== 📈 迷你柱状图纯CSS ==================== */
+.mini-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 40px;
+}
+
+.mini-bar-chart .bar {
+    flex: 1;
+    background: linear-gradient(to top, #6366f1, #8b5cf6);
+    border-radius: 3px 3px 0 0;
+    min-height: 4px;
+    transition: height 0.4s ease;
+}
+
+/* ==================== 🎴 卡片水印效果 ==================== */
+.watermark-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.watermark-card::before {
+    content: 'MAKER';
+    position: absolute;
+    bottom: -15px;
+    right: -15px;
+    font-size: 5rem;
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.03);
+    transform: rotate(-15deg);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* ==================== 🧿 数据为空插画风格 ==================== */
+.empty-state-illustration {
+    max-width: 200px;
+    margin: 0 auto;
+    opacity: 0.6;
+    filter: grayscale(0.3);
+}
+
+/* ==================== 🔔 角标数字 ==================== */
+.badge-corner {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    padding: 3px 6px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    background: #ef4444;
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* ==================== 🎭 遮罩文字效果 ==================== */
+.text-masked {
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%236366f1"/></svg>');
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ==================== 🕹️ 开关样式美化 ==================== */
+.form-switch-enhanced .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    border-radius: 1.5em;
+    background-color: #cbd5e1;
+    border: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='white'/%3e%3c/svg%3e");
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.form-switch-enhanced .form-check-input:checked {
+    background-color: #6366f1;
+}
+
+/* ==================== 🌟 评分星星组件（增强版） ==================== */
+.star-rating-enhanced {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.star-rating-enhanced input {
+    display: none;
+}
+
+.star-rating-enhanced label {
+    cursor: pointer;
+    font-size: 1.8rem;
+    color: #d1d5db;
+    transition: all 0.2s ease;
+    margin: 0 2px;
+}
+
+.star-rating-enhanced label:hover,
+.star-rating-enhanced label:hover ~ label,
+.star-rating-enhanced input:checked ~ label {
+    color: #f59e0b;
+    transform: scale(1.2);
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+/* ==================== 🎪 步骤流程连接线 ==================== */
+.steps-connector {
+    display: flex;
+    align-items: center;
+}
+
+.steps-connector .step-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.steps-connector .step-dot.completed {
+    background: #10b981;
+}
+
+.steps-connector .step-dot.active {
+    background: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.steps-connector .step-line {
+    flex: 1;
+    height: 3px;
+    background: #e2e8f0;
+    margin: 0 -2px;
+}
+
+.steps-connector .step-line.completed {
+    background: #10b981;
+}
 </style>
 </head>
     
