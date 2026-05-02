@@ -8952,23 +8952,25 @@ function submitCheckIn() {
     const email = studentAttendanceUser.email;
     let student = null;
     
+       const allMembers = members.length > 0 ? members : students;
+    
     // 如果是学号登录，直接用学号查找
     if (studentAttendanceUser.isStudentLogin && studentAttendanceUser.studentId) {
-        student = students.find(s => s.studentId === studentAttendanceUser.studentId);
+        student = allMembers.find(s => s.studentId === studentAttendanceUser.studentId);
     }
     
     // 如果不是学号登录或没找到，尝试其他方式
     if (!student) {
-        student = students.find(s => s.studentEmail === email);
+        student = allMembers.find(s => s.email === email || s.studentEmail === email);
     }
     if (!student) {
         const displayName = studentAttendanceUser.displayName || '';
         const cleanName = displayName.split(' - ')[0].split('(')[0].trim();
-        student = students.find(s => s.name === cleanName);
+        student = allMembers.find(s => s.name === cleanName);
     }
     if (!student) {
         const emailPrefix = email.split('@')[0];
-        student = students.find(s => s.studentId === emailPrefix);
+        student = allMembers.find(s => s.studentId === emailPrefix);
     }
     
     const checkinData = {
@@ -9043,8 +9045,15 @@ async function handleStudentIdLogin(event) {
     
     try {
         // 先加载学生数据和点名数据
+                // 先加载学生数据和点名数据
         await loadAllDataForQuery();
         await loadAttendanceDataForStudent();
+        
+        // 加载会员数据
+        if (members.length === 0) {
+            const membersSnapshot = await db.collection('members').get();
+            members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
         
         // 查找匹配的学生（不区分大小写，去除空格）
         const normalizedId = studentId.replace(/\s/g, '');
