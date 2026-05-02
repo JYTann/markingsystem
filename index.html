@@ -2754,7 +2754,7 @@ body.modal-open #student-query-page {
                     </div>
                 </div>
                 
-                <!-- 管理员登录标签页 -->
+                           <!-- 管理员登录标签页 -->
                 <div class="tab-pane fade" id="login-tab">
                     <form id="login-form">
                         <div class="mb-3">
@@ -2768,62 +2768,6 @@ body.modal-open #student-query-page {
                         <button type="submit" class="btn btn-primary w-100 mt-3">
                             <i class="fas fa-sign-in-alt me-2"></i>登录
                         </button>
-                        <!-- 学生签到标签页 -->
-<div class="tab-pane fade" id="student-attendance-tab">
-    <div id="student-attendance-content">
-        <div class="text-center py-4">
-            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
-            <p class="text-muted">请先登录Google账号进行签到</p>
-            <button id="student-attendance-login-btn" class="btn btn-danger" onclick="studentGoogleLogin()">
-                <i class="fab fa-google me-2"></i>使用学校Google账号登录
-            </button>
-        </div>
-    </div>
-    
-    <!-- 签到表单（登录后显示） -->
-    <div id="attendance-checkin-form" style="display: none;">
-        <div class="text-center mb-4">
-            <div class="login-logo">
-                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height: 60px;">
-            </div>
-            <h4 class="gradient-text">联课活动点名</h4>
-            <p class="text-muted">欢迎，<span id="student-attendance-name"></span></p>
-            <p class="small text-muted" id="student-attendance-email"></p>
-        </div>
-        
-        <div id="active-sessions-list" class="mb-4">
-            <!-- 进行中的点名列表 -->
-        </div>
-        
-        <div class="card" id="checkin-card" style="display: none;">
-            <div class="card-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                <h5 class="mb-0 text-white"><i class="fas fa-check-circle me-2"></i>签到确认</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3 text-center">
-                    <h6>当前点名：<span id="checkin-session-title" class="text-primary"></span></h6>
-                    <p class="text-muted small" id="checkin-session-time"></p>
-                </div>
-                <div class="mb-3">
-                    <label for="checkin-code-input" class="form-label required">请输入签到验证码</label>
-                    <input type="text" class="form-control form-control-lg text-center" 
-                           id="checkin-code-input" placeholder="输入验证码" maxlength="6"
-                           style="font-size: 1.5rem; letter-spacing: 8px;">
-                </div>
-                <button class="btn btn-primary w-100 btn-lg" id="submit-checkin-btn" onclick="submitCheckIn()">
-                    <i class="fas fa-check-circle me-2"></i>确认签到
-                </button>
-                <div id="checkin-result" class="mt-3 text-center"></div>
-            </div>
-        </div>
-        
-        <div id="no-active-session" class="text-center py-4" style="display: none;">
-            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-            <p class="text-muted">当前没有进行中的点名</p>
-            <p class="small text-muted">请等待管理员开启点名</p>
-        </div>
-    </div>
-</div>
                         
                         <!-- 添加Google登录按钮 -->
                         <div class="text-center my-3">
@@ -2834,6 +2778,65 @@ body.modal-open #student-query-page {
                         </div>
                     </form>
                 </div>
+
+                <!-- 学生签到标签页 -->
+                <div class="tab-pane fade" id="student-attendance-tab">
+                    <div id="student-attendance-content">
+                        <div class="text-center py-4">
+                            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">请先登录Google账号进行签到</p>
+                            <button id="student-attendance-login-btn" class="btn btn-danger" onclick="studentGoogleLogin()">
+                                <i class="fab fa-google me-2"></i>使用学校Google账号登录
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 签到表单（登录后显示） -->
+                    <div id="attendance-checkin-form" style="display: none;">
+                        <div class="text-center mb-4">
+                            <div class="login-logo">
+                                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height: 60px;">
+                            </div>
+                            <h4 class="gradient-text">联课活动点名</h4>
+                            <p class="text-muted">欢迎，<span id="student-attendance-name"></span></p>
+                            <p class="small text-muted" id="student-attendance-email"></p>
+                        </div>
+                        
+                        <div id="active-sessions-list" class="mb-4">
+                            <!-- 进行中的点名列表 -->
+                        </div>
+                        
+                        <div class="card" id="checkin-card" style="display: none;">
+                            <div class="card-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                                <h5 class="mb-0 text-white"><i class="fas fa-check-circle me-2"></i>签到确认</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3 text-center">
+                                    <h6>当前点名：<span id="checkin-session-title" class="text-primary"></span></h6>
+                                    <p class="text-muted small" id="checkin-session-time"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="checkin-code-input" class="form-label required">请输入签到验证码</label>
+                                    <input type="text" class="form-control form-control-lg text-center" 
+                                           id="checkin-code-input" placeholder="输入验证码" maxlength="6"
+                                           style="font-size: 1.5rem; letter-spacing: 8px;">
+                                </div>
+                                <button class="btn btn-primary w-100 btn-lg" id="submit-checkin-btn" onclick="submitCheckIn()">
+                                    <i class="fas fa-check-circle me-2"></i>确认签到
+                                </button>
+                                <div id="checkin-result" class="mt-3 text-center"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="no-active-session" class="text-center py-4" style="display: none;">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">当前没有进行中的点名</p>
+                            <p class="small text-muted">请等待管理员开启点名</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 学生签到标签页结束 -->
+
             </div>
         </div>
     </div>
