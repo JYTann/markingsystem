@@ -2525,6 +2525,181 @@ body.modal-open #student-query-page {
     color: white;
     transform: translateY(-2px);
 }
+
+        /* ==================== 🆕 新增功能样式 ==================== */
+
+/* 数据备份卡片 */
+.backup-card {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #93c5fd;
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.backup-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+}
+
+.backup-card i {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1rem;
+}
+
+/* 考勤状态标签 */
+.attendance-present {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: white;
+}
+
+.attendance-absent {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: white;
+}
+
+.attendance-late {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: white;
+}
+
+.attendance-excused {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+}
+
+/* 趋势图表容器 */
+.trend-chart-container {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+}
+
+/* 公告/通知卡片 */
+.announcement-card {
+    border-left: 4px solid #6366f1;
+    background: linear-gradient(135deg, #f8faff, #f0f4ff);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    animation: slideInLeft 0.4s ease;
+}
+
+.announcement-card:hover {
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+    transform: translateX(4px);
+}
+
+.announcement-card.important {
+    border-left-color: #ef4444;
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+}
+
+.announcement-card.info {
+    border-left-color: #06b6d4;
+    background: linear-gradient(135deg, #ecfeff, #cffafe);
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* 系统设置面板 */
+.settings-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9;
+}
+
+.settings-section h5 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+/* 开关按钮美化 */
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #6366f1;
+    border-color: #6366f1;
+}
+
+/* 批量操作工具栏 */
+.batch-toolbar {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 12px;
+    padding: 0.8rem 1.2rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    border: 1px solid #e2e8f0;
+}
+
+.batch-toolbar .selected-count {
+    font-weight: 600;
+    color: #6366f1;
+    margin-right: auto;
+}
+
+/* 趋势指示器 */
+.trend-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.trend-up { color: #10b981; }
+.trend-down { color: #ef4444; }
+.trend-stable { color: #f59e0b; }
+
+/* 迷你头像组 */
+.avatar-group {
+    display: flex;
+    align-items: center;
+}
+
+.avatar-group .avatar-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid white;
+    margin-left: -8px;
+    transition: all 0.3s ease;
+}
+
+.avatar-group .avatar-sm:first-child {
+    margin-left: 0;
+}
+
+.avatar-group .avatar-sm:hover {
+    transform: translateY(-3px);
+    z-index: 10;
+}
 </style>
 </head>
     
@@ -2676,6 +2851,21 @@ body.modal-open #student-query-page {
                                 <i class="fas fa-file-pdf me-1"></i>成绩报告
                             </a>
                         </li>
+                        <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
+        <i class="fas fa-calendar-check me-1"></i>考勤管理
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#announcements-tab">
+        <i class="fas fa-bullhorn me-1"></i>公告管理
+    </a>
+</li>
+<li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#settings-tab">
+        <i class="fas fa-cog me-1"></i>系统设置
+    </a>
+</li>
                     </ul>
                     <div class="d-flex align-items-center">
                         <div class="text-white me-3">
@@ -3058,6 +3248,209 @@ body.modal-open #student-query-page {
             </div>
         </div>
     </div>
+
+    <!-- 考勤管理 -->
+<div class="tab-pane fade" id="attendance-tab">
+    <div class="card fade-in">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-calendar-check me-2"></i>考勤管理</span>
+            <div>
+                <button class="btn btn-sm btn-success me-2" onclick="markAllPresent()">
+                    <i class="fas fa-check-double me-1"></i>全部出席
+                </button>
+                <button class="btn btn-sm btn-primary" id="export-attendance-btn">
+                    <i class="fas fa-download me-1"></i>导出考勤
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="attendance-date" class="form-label">日期</label>
+                    <input type="date" class="form-control" id="attendance-date" value="${new Date().toISOString().split('T')[0]}">
+                </div>
+                <div class="col-md-4">
+                    <label for="attendance-class-filter" class="form-label">班级筛选</label>
+                    <select class="form-select" id="attendance-class-filter">
+                        <option value="">所有班级</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="load-attendance-btn">
+                        <i class="fas fa-sync-alt me-1"></i>加载/刷新
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="attendance-select-all"></th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>级别</th>
+                            <th>状态</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-table-body">
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                                <p>请选择日期并点击"加载/刷新"查看考勤</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 公告管理 -->
+<div class="tab-pane fade" id="announcements-tab">
+    <div class="card fade-in">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-bullhorn me-2"></i>公告管理</span>
+            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addAnnouncementModal">
+                <i class="fas fa-plus me-1"></i>发布公告
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="announcements-list">
+                <!-- 动态加载公告 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统设置 -->
+<div class="tab-pane fade" id="settings-tab">
+    <div class="card fade-in">
+        <div class="card-header">
+            <span><i class="fas fa-cog me-2"></i>系统设置</span>
+        </div>
+        <div class="card-body">
+            <!-- 数据备份 -->
+            <div class="settings-section">
+                <h5><i class="fas fa-database" style="color: #3b82f6;"></i>数据管理</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="backup-card" onclick="backupAllData()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h6>备份数据</h6>
+                            <p class="text-muted small">导出所有数据为JSON</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="backup-card" onclick="document.getElementById('restore-file-input').click()">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            <h6>恢复数据</h6>
+                            <p class="text-muted small">从备份文件恢复</p>
+                            <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="restoreAllData(event)">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="backup-card" onclick="exportAllExcel()">
+                            <i class="fas fa-file-excel"></i>
+                            <h6>导出Excel</h6>
+                            <p class="text-muted small">导出完整数据报表</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="backup-card" style="border-color: #ef4444;" onclick="showClearDataConfirm()">
+                            <i class="fas fa-trash-alt" style="background: linear-gradient(135deg, #ef4444, #f87171); -webkit-background-clip: text;"></i>
+                            <h6>清空数据</h6>
+                            <p class="text-muted small">重置所有数据</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统偏好设置 -->
+            <div class="settings-section">
+                <h5><i class="fas fa-sliders-h" style="color: #8b5cf6;"></i>偏好设置</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="setting-auto-save" checked>
+                            <label class="form-check-label" for="setting-auto-save">
+                                <i class="fas fa-save me-1"></i>自动保存表单
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="setting-dark-mode">
+                            <label class="form-check-label" for="setting-dark-mode">
+                                <i class="fas fa-moon me-1"></i>深色模式 (即将推出)
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="setting-confirm-delete" checked>
+                            <label class="form-check-label" for="setting-confirm-delete">
+                                <i class="fas fa-shield-alt me-1"></i>删除前确认
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 系统信息 -->
+            <div class="settings-section">
+                <h5><i class="fas fa-info-circle" style="color: #06b6d4;"></i>系统信息</h5>
+                <div id="system-info-display">
+                    <p><i class="fas fa-code-branch me-2"></i>版本: 2.0.0</p>
+                    <p><i class="fas fa-server me-2"></i>数据库: Firebase Firestore</p>
+                    <p><i class="fas fa-clock me-2"></i>最后更新: <span id="last-update-time">-</span></p>
+                    <p><i class="fas fa-chart-bar me-2"></i>数据统计: <span id="data-stats-summary">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 发布公告模态框 -->
+<div class="modal fade" id="addAnnouncementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i>发布公告</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-announcement-form">
+                    <div class="mb-3">
+                        <label for="announcement-title" class="form-label">标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="announcement-title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="announcement-content" class="form-label">内容 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="announcement-content" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="announcement-type" class="form-label">类型</label>
+                        <select class="form-select" id="announcement-type">
+                            <option value="general">一般公告</option>
+                            <option value="important">重要通知</option>
+                            <option value="info">信息提示</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-announcement-btn">
+                    <i class="fas fa-paper-plane me-1"></i>发布
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
     <!-- 添加学生模态框 -->
@@ -3478,7 +3871,7 @@ auth.onAuthStateChanged(user => {
         currentUser = user;
         document.getElementById('user-email').textContent = user.email;
         showMainSystem();
-        loadAllData();
+        enhancedLoadAllData();
         addActivity("用户登录系统", "success");
     } else {
         showStudentQueryPage();
@@ -4358,16 +4751,18 @@ function removeToast(toast) {
 // ========== Toast 通知系统结束 ==========
 
         // 加载所有数据
-        function loadAllData() {
+       function loadAllData() {
     loadLevels();
     loadStudents();
     loadProjects();
     loadScores();
+    loadAnnouncements();  // ⬅️ 新增
     
-    // 延迟更新仪表盘和图表，确保DOM已准备好
     setTimeout(() => {
         updateDashboard();
-        // 只在仪表盘激活时更新图表
+        updateSystemInfo();                    // ⬅️ 新增
+        updateAttendanceClassFilter();         // ⬅️ 新增
+        
         const dashboardTab = document.getElementById('dashboard-tab');
         if (dashboardTab && dashboardTab.classList.contains('active')) {
             updateScoreDistributionChart();
@@ -5743,6 +6138,11 @@ function confirmDelete() {
             collectionName = 'levelProjects';
             successMessage = '评分项目删除成功';
             break;
+            // 在 switch 语句中添加：
+case 'announcement':
+    collectionName = 'announcements';
+    successMessage = '公告删除成功';
+    break;
         default:
             return;
     }
@@ -7681,6 +8081,557 @@ function createReportCardHTML(data) {
         <div style="text-align:center;padding-top:15px;border-top:2px solid #e2e8f0;color:#94a3b8;font-size:0.75rem"><p style="margin:0">本成绩单由智能评分系统自动生成 | ${dateStr}</p><p style="margin:2px 0 0">© ${new Date().getFullYear()} 新山宽柔中学电脑协会 | 杂家——MAKER</p></div>
     </div>`;
 }
+
+        // ==================== 🆕 新功能 JavaScript ====================
+
+// ========== 考勤管理 ==========
+function loadAttendance() {
+    const date = document.getElementById('attendance-date')?.value || new Date().toISOString().split('T')[0];
+    const classFilter = document.getElementById('attendance-class-filter')?.value || '';
+    const tbody = document.getElementById('attendance-table-body');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+    
+    let filteredStudents = students;
+    if (classFilter) {
+        filteredStudents = students.filter(s => s.class === classFilter);
+    }
+    
+    // 查询当天的考勤记录
+    db.collection('attendance')
+        .where('date', '==', date)
+        .get()
+        .then(snapshot => {
+            const attendanceMap = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                attendanceMap[data.studentId] = { id: doc.id, ...data };
+            });
+            
+            tbody.innerHTML = '';
+            
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">暂无学生数据</td></tr>';
+                return;
+            }
+            
+            filteredStudents.forEach(student => {
+                const attendance = attendanceMap[student.id];
+                const status = attendance?.status || 'present';
+                const remark = attendance?.remark || '';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="attendance-checkbox" data-student-id="${student.id}"></td>
+                    <td>${student.studentId}</td>
+                    <td>${student.name}</td>
+                    <td><span class="badge bg-primary">${student.class}</span></td>
+                    <td><span class="badge bg-success">${student.levelName || '-'}</span></td>
+                    <td>
+                        <select class="form-select form-select-sm attendance-status" data-student-id="${student.id}" style="width: 100px;">
+                            <option value="present" ${status === 'present' ? 'selected' : ''}>出席</option>
+                            <option value="absent" ${status === 'absent' ? 'selected' : ''}>缺席</option>
+                            <option value="late" ${status === 'late' ? 'selected' : ''}>迟到</option>
+                            <option value="excused" ${status === 'excused' ? 'selected' : ''}>请假</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm attendance-remark" 
+                               data-student-id="${student.id}" value="${remark}" 
+                               placeholder="备注" style="width: 120px;">
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // 全选功能
+            document.getElementById('attendance-select-all')?.addEventListener('change', function() {
+                document.querySelectorAll('.attendance-checkbox').forEach(cb => cb.checked = this.checked);
+            });
+        })
+        .catch(error => {
+            console.error('加载考勤失败:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">加载失败</td></tr>';
+        });
+}
+
+// 保存考勤
+async function saveAttendance() {
+    const date = document.getElementById('attendance-date')?.value || new Date().toISOString().split('T')[0];
+    const statusElements = document.querySelectorAll('.attendance-status');
+    const remarkElements = document.querySelectorAll('.attendance-remark');
+    
+    if (statusElements.length === 0) {
+        showAlert('请先加载考勤数据', 'warning');
+        return;
+    }
+    
+    const batch = db.batch();
+    let count = 0;
+    
+    const existingSnapshot = await db.collection('attendance').where('date', '==', date).get();
+    const existingDocs = {};
+    existingSnapshot.forEach(doc => {
+        existingDocs[doc.data().studentId] = doc.id;
+    });
+    
+    statusElements.forEach(select => {
+        const studentId = select.dataset.studentId;
+        const status = select.value;
+        const remark = document.querySelector(`.attendance-remark[data-student-id="${studentId}"]`)?.value || '';
+        
+        const data = { studentId, date, status, remark, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        
+        if (existingDocs[studentId]) {
+            batch.update(db.collection('attendance').doc(existingDocs[studentId]), data);
+        } else {
+            batch.set(db.collection('attendance').doc(), data);
+        }
+        count++;
+    });
+    
+    try {
+        await batch.commit();
+        showAlert(`成功保存 ${count} 条考勤记录`, 'success');
+        addActivity(`保存考勤记录: ${date}`, 'success');
+    } catch (error) {
+        console.error('保存考勤失败:', error);
+        showAlert('保存考勤失败', 'danger');
+    }
+}
+
+// 全部标记出席
+function markAllPresent() {
+    document.querySelectorAll('.attendance-status').forEach(select => {
+        select.value = 'present';
+    });
+    saveAttendance();
+}
+
+// ========== 公告管理 ==========
+function loadAnnouncements() {
+    const container = document.getElementById('announcements-list');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    
+    db.collection('announcements').orderBy('createdAt', 'desc').limit(20).get()
+        .then(snapshot => {
+            container.innerHTML = '';
+            
+            if (snapshot.empty) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">暂无公告</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            snapshot.forEach(doc => {
+                const announcement = { id: doc.id, ...doc.data() };
+                const typeClass = announcement.type === 'important' ? 'important' : 
+                                 announcement.type === 'info' ? 'info' : '';
+                
+                const card = document.createElement('div');
+                card.className = `announcement-card ${typeClass}`;
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                ${announcement.type === 'important' ? '<i class="fas fa-exclamation-circle text-danger me-1"></i>' : 
+                                  announcement.type === 'info' ? '<i class="fas fa-info-circle text-info me-1"></i>' :
+                                  '<i class="fas fa-bullhorn text-primary me-1"></i>'}
+                                ${announcement.title}
+                            </h6>
+                            <p class="mb-1 text-muted">${announcement.content}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>${announcement.createdAt?.toDate().toLocaleString() || '未知时间'}
+                                ${announcement.author ? ` · <i class="fas fa-user me-1"></i>${announcement.author}` : ''}
+                            </small>
+                        </div>
+                        <button class="btn btn-sm btn-danger delete-announcement" data-id="${announcement.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+                
+                card.querySelector('.delete-announcement')?.addEventListener('click', () => {
+                    showDeleteConfirm('announcement', announcement.id, '确定要删除此公告吗？');
+                });
+            });
+        })
+        .catch(error => {
+            console.error('加载公告失败:', error);
+            container.innerHTML = '<div class="text-center py-4 text-danger">加载失败</div>';
+        });
+}
+
+function saveAnnouncement() {
+    const title = document.getElementById('announcement-title')?.value.trim();
+    const content = document.getElementById('announcement-content')?.value.trim();
+    const type = document.getElementById('announcement-type')?.value || 'general';
+    
+    if (!title || !content) {
+        showAlert('请填写标题和内容', 'warning');
+        return;
+    }
+    
+    const btn = document.getElementById('save-announcement-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 发布中...';
+    }
+    
+    db.collection('announcements').add({
+        title,
+        content,
+        type,
+        author: currentUser?.email || '系统',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert('公告发布成功', 'success');
+        safeHideModal('addAnnouncementModal');
+        document.getElementById('add-announcement-form')?.reset();
+        loadAnnouncements();
+        addActivity(`发布公告: ${title}`, 'success');
+    })
+    .catch(error => {
+        console.error('发布公告失败:', error);
+        showAlert('发布公告失败', 'danger');
+    })
+    .finally(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>发布';
+        }
+    });
+}
+
+// ========== 数据备份与恢复 ==========
+async function backupAllData() {
+    showFullscreenLoader('正在备份数据...');
+    
+    try {
+        const collections = ['students', 'projects', 'scores', 'levels', 'levelProjects', 'attendance', 'announcements'];
+        const backup = {};
+        
+        for (const colName of collections) {
+            const snapshot = await db.collection(colName).get();
+            backup[colName] = [];
+            snapshot.forEach(doc => {
+                backup[colName].push({ id: doc.id, ...doc.data() });
+            });
+        }
+        
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showAlert('数据备份成功！', 'success');
+        addActivity('数据备份完成', 'success');
+    } catch (error) {
+        console.error('备份失败:', error);
+        showAlert('备份失败: ' + error.message, 'danger');
+    } finally {
+        hideFullscreenLoader();
+    }
+}
+
+async function restoreAllData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showConfirmDialog('确认恢复', '恢复数据将覆盖现有数据，确定要继续吗？', '确认恢复', '取消', async () => {
+        showFullscreenLoader('正在恢复数据...');
+        
+        try {
+            const text = await file.text();
+            const backup = JSON.parse(text);
+            const batch = db.batch();
+            let totalCount = 0;
+            
+            for (const [colName, documents] of Object.entries(backup)) {
+                for (const doc of documents) {
+                    const { id, ...data } = doc;
+                    // 移除时间戳字段
+                    delete data.createdAt;
+                    delete data.updatedAt;
+                    delete data.recordedAt;
+                    
+                    batch.set(db.collection(colName).doc(id), data);
+                    totalCount++;
+                }
+            }
+            
+            await batch.commit();
+            showAlert(`成功恢复 ${totalCount} 条数据`, 'success');
+            loadAllData();
+            addActivity(`数据恢复完成: ${totalCount} 条`, 'success');
+        } catch (error) {
+            console.error('恢复失败:', error);
+            showAlert('恢复失败: ' + error.message, 'danger');
+        } finally {
+            hideFullscreenLoader();
+            event.target.value = '';
+        }
+    });
+}
+
+// ========== 导出全部Excel ==========
+function exportAllExcel() {
+    showFullscreenLoader('正在导出数据...');
+    
+    try {
+        const wb = XLSX.utils.book_new();
+        
+        // 学生数据
+        if (students.length > 0) {
+            const studentData = students.map(s => ({
+                '学号': s.studentId,
+                '姓名': s.name,
+                '班级': s.class,
+                '级别': s.levelName || '-',
+                '学习组': s.studyGroup || '-',
+                '工作组': s.workGroup || '-'
+            }));
+            const ws = XLSX.utils.json_to_sheet(studentData);
+            XLSX.utils.book_append_sheet(wb, ws, '学生数据');
+        }
+        
+        // 分数数据
+        if (scores.length > 0) {
+            const scoreData = scores.map(s => {
+                const student = students.find(st => st.id === s.studentId);
+                let project = levelProjects.find(p => p.id === s.projectId) || projects.find(p => p.id === s.projectId);
+                return {
+                    '学号': student?.studentId || '未知',
+                    '姓名': student?.name || '未知',
+                    '班级': student?.class || '-',
+                    '项目': s.projectName || project?.name || '未知',
+                    '分数': s.score,
+                    '满分': s.fullMark || project?.fullMark || 100,
+                    '得分率': ((s.score / (s.fullMark || project?.fullMark || 100)) * 100).toFixed(1) + '%'
+                };
+            });
+            const ws = XLSX.utils.json_to_sheet(scoreData);
+            XLSX.utils.book_append_sheet(wb, ws, '成绩数据');
+        }
+        
+        // 项目数据
+        if (projects.length > 0 || levelProjects.length > 0) {
+            const allProjects = [...projects, ...levelProjects];
+            const projectData = allProjects.map(p => ({
+                '项目名称': p.name,
+                '满分': p.fullMark,
+                '权重': (p.weight * 100).toFixed(1) + '%',
+                '关联级别': p.levelId ? (levels.find(l => l.id === p.levelId)?.name || '-') : '全局'
+            }));
+            const ws = XLSX.utils.json_to_sheet(projectData);
+            XLSX.utils.book_append_sheet(wb, ws, '项目数据');
+        }
+        
+        XLSX.writeFile(wb, `完整数据报表_${new Date().toISOString().split('T')[0]}.xlsx`);
+        showAlert('数据导出成功', 'success');
+        addActivity('导出完整数据报表', 'success');
+    } catch (error) {
+        console.error('导出失败:', error);
+        showAlert('导出失败', 'danger');
+    } finally {
+        hideFullscreenLoader();
+    }
+}
+
+// ========== 清空数据确认 ==========
+function showClearDataConfirm() {
+    showConfirmDialog(
+        '⚠️ 清空所有数据',
+        '此操作将永久删除所有数据（包括学生、项目、分数、考勤等），且不可恢复！确定要继续吗？',
+        '确认清空',
+        '取消',
+        async () => {
+            showFullscreenLoader('正在清空数据...');
+            try {
+                const collections = ['students', 'projects', 'scores', 'levels', 'levelProjects', 'attendance', 'announcements'];
+                for (const colName of collections) {
+                    const snapshot = await db.collection(colName).get();
+                    const batch = db.batch();
+                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                }
+                showAlert('所有数据已清空', 'warning');
+                loadAllData();
+                addActivity('清空所有数据', 'warning');
+            } catch (error) {
+                console.error('清空失败:', error);
+                showAlert('清空失败: ' + error.message, 'danger');
+            } finally {
+                hideFullscreenLoader();
+            }
+        }
+    );
+}
+
+// ========== 更新系统信息 ==========
+function updateSystemInfo() {
+    const lastUpdateEl = document.getElementById('last-update-time');
+    const dataStatsEl = document.getElementById('data-stats-summary');
+    
+    if (lastUpdateEl) {
+        lastUpdateEl.textContent = new Date().toLocaleString('zh-CN');
+    }
+    
+    if (dataStatsEl) {
+        dataStatsEl.textContent = `学生${students.length}人 · 项目${projects.length + levelProjects.length}个 · 分数${scores.length}条 · 级别${levels.length}个`;
+    }
+}
+
+// ========== 更新确认删除类型 ==========
+// 在原有的 confirmDelete 函数的 switch 语句中添加：
+// case 'announcement':
+//     collectionName = 'announcements';
+//     successMessage = '公告删除成功';
+//     break;
+
+// ========== 更新 initUIEvents 函数 ==========
+// 在原有 initUIEvents 函数末尾添加：
+
+// 加载考勤按钮
+document.getElementById('load-attendance-btn')?.addEventListener('click', loadAttendance);
+
+// 保存考勤（状态变化时自动保存）
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('attendance-status') || e.target.classList.contains('attendance-remark')) {
+        debounce(saveAttendance, 500)();
+    }
+});
+
+// 导出考勤按钮
+document.getElementById('export-attendance-btn')?.addEventListener('click', function() {
+    const date = document.getElementById('attendance-date')?.value || new Date().toISOString().split('T')[0];
+    const statusElements = document.querySelectorAll('.attendance-status');
+    const data = [];
+    
+    statusElements.forEach(select => {
+        const studentId = select.dataset.studentId;
+        const student = students.find(s => s.id === studentId);
+        const remark = document.querySelector(`.attendance-remark[data-student-id="${studentId}"]`)?.value || '';
+        
+        data.push({
+            '日期': date,
+            '学号': student?.studentId || '-',
+            '姓名': student?.name || '-',
+            '班级': student?.class || '-',
+            '状态': select.value === 'present' ? '出席' : select.value === 'absent' ? '缺席' : select.value === 'late' ? '迟到' : '请假',
+            '备注': remark
+        });
+    });
+    
+    if (data.length === 0) {
+        showAlert('请先加载考勤数据', 'warning');
+        return;
+    }
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '考勤记录');
+    XLSX.writeFile(wb, `考勤记录_${date}.xlsx`);
+    showAlert('考勤记录导出成功', 'success');
+});
+
+// 保存公告按钮
+document.getElementById('save-announcement-btn')?.addEventListener('click', saveAnnouncement);
+
+// 考勤班级筛选
+document.getElementById('attendance-class-filter')?.addEventListener('change', loadAttendance);
+
+// 恢复文件输入
+document.getElementById('restore-file-input')?.addEventListener('change', restoreAllData);
+
+// ========== 更新 updateClassSelect 函数 ==========
+// 在原有的 updateClassSelect 函数中添加：
+function updateAttendanceClassFilter() {
+    const filter = document.getElementById('attendance-class-filter');
+    if (filter) {
+        const currentValue = filter.value;
+        filter.innerHTML = '<option value="">所有班级</option>';
+        const uniqueClasses = [...new Set(students.map(s => s.class))].sort();
+        uniqueClasses.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls;
+            option.textContent = cls;
+            if (cls === currentValue) option.selected = true;
+            filter.appendChild(option);
+        });
+    }
+}
+
+// 在 loadAllData 函数中添加：
+function enhancedLoadAllData() {
+    loadLevels();
+    loadStudents();
+    loadProjects();
+    loadScores();
+    loadAnnouncements();
+    
+    setTimeout(() => {
+        updateDashboard();
+        updateSystemInfo();
+        updateAttendanceClassFilter();
+        
+        const dashboardTab = document.getElementById('dashboard-tab');
+        if (dashboardTab && dashboardTab.classList.contains('active')) {
+            updateScoreDistributionChart();
+            updateProjectComparisonChart();
+        }
+    }, 300);
+}
+
+// ========== Tab切换时加载对应数据 ==========
+// 在原有的 tab 切换事件中添加：
+document.querySelector('[data-bs-target="#attendance-tab"]')?.addEventListener('click', function() {
+    setTimeout(() => {
+        updateAttendanceClassFilter();
+        loadAttendance();
+    }, 300);
+});
+
+document.querySelector('[data-bs-target="#announcements-tab"]')?.addEventListener('click', function() {
+    setTimeout(loadAnnouncements, 300);
+});
+
+document.querySelector('[data-bs-target="#settings-tab"]')?.addEventListener('click', function() {
+    setTimeout(updateSystemInfo, 300);
+});
+
+// ========== 替换原有的 loadAllData 调用 ==========
+// 将原来调用 loadAllData() 的地方替换为 enhancedLoadAllData()
+// 在 auth.onAuthStateChanged 中的 loadAllData() 替换为 enhancedLoadAllData()
+
+// ========== 初始化考勤日期 ==========
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('attendance-date');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+    
+    // 延迟加载公告
+    setTimeout(() => {
+        const announcementsTab = document.getElementById('announcements-tab');
+        if (announcementsTab && announcementsTab.classList.contains('active')) {
+            loadAnnouncements();
+        }
+    }, 500);
+});
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
