@@ -3346,6 +3346,197 @@ body {
 .steps-connector .step-line.completed {
     background: #10b981;
 }
+
+        /* ==================== 📈 成绩趋势图专属样式 ==================== */
+
+/* 趋势图容器 */
+.trend-chart-wrapper {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.trend-chart-wrapper:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.trend-chart-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4, #10b981);
+    opacity: 0.6;
+}
+
+.trend-chart-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trend-chart-title i {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 1.3rem;
+}
+
+.trend-chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+}
+
+/* 趋势指标卡片 */
+.trend-indicators {
+    display: flex;
+    gap: 12px;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.trend-indicator {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.8rem 1rem;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    text-align: center;
+    transition: var(--transition-smooth);
+}
+
+.trend-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.trend-indicator .indicator-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.trend-indicator .indicator-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.trend-indicator .indicator-change {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.trend-indicator .indicator-change.up {
+    color: #10b981;
+}
+
+.trend-indicator .indicator-change.down {
+    color: #ef4444;
+}
+
+.trend-indicator .indicator-change.stable {
+    color: #f59e0b;
+}
+
+/* 趋势图选择器 */
+.trend-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.trend-controls .form-select {
+    max-width: 200px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+}
+
+.trend-period-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.trend-period-btn:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.trend-period-btn.active {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* 学生趋势图特殊样式 */
+.student-trend-section {
+    margin-top: 2rem;
+    animation: fadeIn 0.6s ease;
+}
+
+.student-trend-section .trend-chart-container {
+    height: 300px;
+}
+
+/* 趋势图提示框美化 */
+.trend-tooltip {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 12px !important;
+    padding: 10px 14px !important;
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .trend-chart-container {
+        height: 220px;
+    }
+    
+    .trend-indicators {
+        flex-direction: column;
+    }
+    
+    .trend-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .trend-controls .form-select {
+        max-width: 100%;
+    }
+}
 </style>
 </head>
     
@@ -3422,7 +3613,35 @@ body {
 </div>
                             </div>
                         </div>
-                        
+
+                        <div class="student-trend-section mt-4">
+    <div class="trend-chart-wrapper">
+        <div class="trend-chart-title">
+            <i class="fas fa-chart-line"></i>
+            <span id="student-trend-title">个人成绩趋势</span>
+        </div>
+        <div class="trend-chart-container">
+            <canvas id="studentTrendChart"></canvas>
+        </div>
+        <div class="trend-indicators" id="student-trend-indicators">
+            <div class="trend-indicator">
+                <div class="indicator-label">最佳项目</div>
+                <div class="indicator-value" id="st-best-project" style="font-size:1rem;">--</div>
+                <div class="indicator-change up" id="st-best-score">--</div>
+            </div>
+            <div class="trend-indicator">
+                <div class="indicator-label">需提升项目</div>
+                <div class="indicator-value" id="st-worst-project" style="font-size:1rem;">--</div>
+                <div class="indicator-change down" id="st-worst-score">--</div>
+            </div>
+            <div class="trend-indicator">
+                <div class="indicator-label">进步空间</div>
+                <div class="indicator-value" id="st-improvement">--</div>
+                <div class="indicator-change stable">可达更高</div>
+            </div>
+        </div>
+    </div>
+</div>
                         <div class="text-center mt-3">
                             <button id="new-query-btn" class="btn btn-outline-primary">
                                 <i class="fas fa-redo me-1"></i>新的查询
@@ -3747,7 +3966,62 @@ body {
         </div>
     </div>
 </div>
-
+<!-- 成绩趋势分析 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="trend-chart-wrapper">
+            <div class="trend-chart-title">
+                <i class="fas fa-chart-line"></i>
+                <span>成绩趋势分析</span>
+                <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">实时</span>
+            </div>
+            
+            <!-- 趋势控制栏 -->
+            <div class="trend-controls">
+                <select class="form-select" id="trend-level-select">
+                    <option value="">所有级别</option>
+                </select>
+                <select class="form-select" id="trend-class-select">
+                    <option value="">所有班级</option>
+                </select>
+                <div>
+                    <button class="trend-period-btn active" data-period="all">全部</button>
+                    <button class="trend-period-btn" data-period="month">本月</button>
+                    <button class="trend-period-btn" data-period="week">本周</button>
+                </div>
+            </div>
+            
+            <!-- 趋势图 -->
+            <div class="trend-chart-container">
+                <canvas id="scoreTrendChart"></canvas>
+            </div>
+            
+            <!-- 趋势指标 -->
+            <div class="trend-indicators" id="trend-indicators">
+                <div class="trend-indicator">
+                    <div class="indicator-label">整体平均分</div>
+                    <div class="indicator-value" id="indicator-avg">--</div>
+                    <div class="indicator-change stable" id="indicator-avg-change">--</div>
+                </div>
+                <div class="trend-indicator">
+                    <div class="indicator-label">及格率</div>
+                    <div class="indicator-value" id="indicator-pass-rate">--</div>
+                    <div class="indicator-change stable" id="indicator-pass-change">--</div>
+                </div>
+                <div class="trend-indicator">
+                    <div class="indicator-label">最高分</div>
+                    <div class="indicator-value" id="indicator-max">--</div>
+                    <div class="indicator-change stable" id="indicator-max-change">--</div>
+                </div>
+                <div class="trend-indicator">
+                    <div class="indicator-label">参与人数</div>
+                    <div class="indicator-value" id="indicator-count">--</div>
+                    <div class="indicator-change stable" id="indicator-count-change">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- 学生管理 -->
                 <div class="tab-pane fade" id="students-tab">
                     <div class="card fade-in">
@@ -4707,6 +4981,9 @@ let currentAttendanceId = null;
 let activeCheckinSession = null;
 let studentAttendanceUser = null;
         let members = [];  // 协会会员列表（独立于评分系统）
+        let scoreTrendChart = null;
+let studentTrendChart = null;
+let trendPeriod = 'all';
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -5613,21 +5890,20 @@ function removeToast(toast) {
 
         // 加载所有数据
         function loadAllData() {
-            loadAttendances();
+    loadAttendances();
     loadLevels();
     loadStudents();
-            loadMembers();
+    loadMembers();
     loadProjects();
     loadScores();
     
-    // 延迟更新仪表盘和图表，确保DOM已准备好
     setTimeout(() => {
         updateDashboard();
-        // 只在仪表盘激活时更新图表
         const dashboardTab = document.getElementById('dashboard-tab');
         if (dashboardTab && dashboardTab.classList.contains('active')) {
             updateScoreDistributionChart();
             updateProjectComparisonChart();
+            updateScoreTrendChart(); // 新增
         }
     }, 300);
 }
@@ -10019,6 +10295,473 @@ function filterMembers() {
         </tr>
     `).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">无匹配会员</td></tr>';
 }
+
+// ==================== 仪表盘趋势图 ====================
+
+// 初始化趋势控制
+function initTrendControls() {
+    // 级别选择器
+    const levelSelect = document.getElementById('trend-level-select');
+    if (levelSelect) {
+        levelSelect.innerHTML = '<option value="">所有级别</option>';
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level.id;
+            option.textContent = level.name;
+            levelSelect.appendChild(option);
+        });
+        levelSelect.addEventListener('change', updateScoreTrendChart);
+    }
+    
+    // 班级选择器
+    const classSelect = document.getElementById('trend-class-select');
+    if (classSelect) {
+        classSelect.innerHTML = '<option value="">所有班级</option>';
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls;
+            option.textContent = cls;
+            classSelect.appendChild(option);
+        });
+        classSelect.addEventListener('change', updateScoreTrendChart);
+    }
+    
+    // 时间段按钮
+    document.querySelectorAll('.trend-period-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.trend-period-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            trendPeriod = this.dataset.period;
+            updateScoreTrendChart();
+        });
+    });
+}
+
+// 更新仪表盘趋势图
+function updateScoreTrendChart() {
+    const canvas = document.getElementById('scoreTrendChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // 销毁旧图表
+    if (scoreTrendChart) {
+        try { scoreTrendChart.destroy(); } catch(e) {}
+        scoreTrendChart = null;
+    }
+    
+    // 获取筛选条件
+    const selectedLevel = document.getElementById('trend-level-select')?.value || '';
+    const selectedClass = document.getElementById('trend-class-select')?.value || '';
+    
+    // 过滤分数数据
+    let filteredScores = [...scores];
+    
+    // 按时间过滤
+    const now = new Date();
+    if (trendPeriod === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        filteredScores = filteredScores.filter(s => {
+            const date = s.recordedAt?.toDate();
+            return date && date >= weekAgo;
+        });
+    } else if (trendPeriod === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        filteredScores = filteredScores.filter(s => {
+            const date = s.recordedAt?.toDate();
+            return date && date >= monthAgo;
+        });
+    }
+    
+    // 按级别/班级过滤
+    if (selectedLevel || selectedClass) {
+        const studentIds = students
+            .filter(s => {
+                let match = true;
+                if (selectedLevel) match = match && s.levelId === selectedLevel;
+                if (selectedClass) match = match && s.class === selectedClass;
+                return match;
+            })
+            .map(s => s.id);
+        const studentIdSet = new Set(studentIds);
+        filteredScores = filteredScores.filter(s => studentIdSet.has(s.studentId));
+    }
+    
+    // 按项目分组计算平均分
+    const projectScores = {};
+    filteredScores.forEach(score => {
+        const projectName = score.projectName || '未知项目';
+        if (!projectScores[projectName]) {
+            projectScores[projectName] = { total: 0, count: 0, fullMark: score.fullMark || 100 };
+        }
+        const fullMark = score.fullMark || 100;
+        if (fullMark > 0) {
+            projectScores[projectName].total += (score.score / fullMark) * 100;
+            projectScores[projectName].count++;
+        }
+    });
+    
+    // 构建图表数据
+    const labels = Object.keys(projectScores);
+    const data = labels.map(name => {
+        const ps = projectScores[name];
+        return ps.count > 0 ? (ps.total / ps.count) : 0;
+    });
+    const counts = labels.map(name => projectScores[name].count);
+    
+    // 如果没有数据
+    if (labels.length === 0) {
+        canvas.parentElement.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-chart-line fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                <p class="text-muted">暂无符合条件的成绩数据</p>
+                <p class="small text-muted">请录入更多成绩后查看趋势</p>
+            </div>
+        `;
+        updateTrendIndicators(null);
+        return;
+    }
+    
+    // 渐变色方案
+    const gradientColors = labels.map((_, i) => {
+        const hue = (i * 40 + 240) % 360;
+        return `hsla(${hue}, 70%, 60%, 0.7)`;
+    });
+    
+    const borderColors = labels.map((_, i) => {
+        const hue = (i * 40 + 240) % 360;
+        return `hsla(${hue}, 70%, 50%, 1)`;
+    });
+    
+    // 创建图表
+    try {
+        scoreTrendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '平均得分率 (%)',
+                    data: data,
+                    backgroundColor: gradientColors,
+                    borderColor: borderColors,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleFont: { size: 13, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                return [
+                                    `平均得分率: ${context.raw.toFixed(1)}%`,
+                                    `参与人数: ${counts[index]} 人`
+                                ];
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            },
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.04)',
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 10 },
+                            maxRotation: 45,
+                            minRotation: 0,
+                        },
+                        grid: {
+                            display: false,
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart',
+                }
+            }
+        });
+        
+        // 更新指标
+        updateTrendIndicators(data, counts, filteredScores);
+        
+    } catch (error) {
+        console.error('创建趋势图失败:', error);
+    }
+}
+
+// 更新趋势指标
+function updateTrendIndicators(data, counts, filteredScores) {
+    if (!data || data.length === 0) {
+        document.getElementById('indicator-avg').textContent = '--';
+        document.getElementById('indicator-pass-rate').textContent = '--';
+        document.getElementById('indicator-max').textContent = '--';
+        document.getElementById('indicator-count').textContent = '--';
+        return;
+    }
+    
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    const passRate = data.filter(d => d >= 60).length / data.length * 100;
+    const max = Math.max(...data);
+    const totalCount = counts ? counts.reduce((a, b) => a + b, 0) : 0;
+    
+    document.getElementById('indicator-avg').textContent = avg.toFixed(1) + '%';
+    document.getElementById('indicator-pass-rate').textContent = passRate.toFixed(1) + '%';
+    document.getElementById('indicator-max').textContent = max.toFixed(1) + '%';
+    document.getElementById('indicator-count').textContent = totalCount;
+    
+    // 设置变化趋势（基于整体数据）
+    const changeEls = [
+        document.getElementById('indicator-avg-change'),
+        document.getElementById('indicator-pass-change'),
+        document.getElementById('indicator-max-change'),
+        document.getElementById('indicator-count-change'),
+    ];
+    
+    changeEls.forEach(el => {
+        if (el) {
+            el.textContent = trendPeriod === 'all' ? '全部数据' : 
+                            trendPeriod === 'month' ? '近30天' : '近7天';
+            el.className = 'indicator-change stable';
+        }
+    });
+}
+
+// ==================== 学生个人趋势图 ====================
+
+// 更新学生趋势图
+function updateStudentTrendChart(studentId) {
+    const canvas = document.getElementById('studentTrendChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // 销毁旧图表
+    if (studentTrendChart) {
+        try { studentTrendChart.destroy(); } catch(e) {}
+        studentTrendChart = null;
+    }
+    
+    // 获取学生成绩
+    const studentScores = scores.filter(s => s.studentId === studentId);
+    
+    if (studentScores.length === 0) {
+        canvas.parentElement.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-chart-line fa-2x text-muted mb-2" style="opacity: 0.3;"></i>
+                <p class="text-muted">暂无成绩记录</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 按时间排序
+    studentScores.sort((a, b) => {
+        const dateA = a.recordedAt?.toDate() || new Date(0);
+        const dateB = b.recordedAt?.toDate() || new Date(0);
+        return dateA - dateB;
+    });
+    
+    // 构建数据
+    const labels = studentScores.map(s => {
+        const date = s.recordedAt?.toDate();
+        return date ? date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '未知';
+    });
+    
+    const percentages = studentScores.map(s => {
+        const fullMark = s.fullMark || 100;
+        return fullMark > 0 ? (s.score / fullMark) * 100 : 0;
+    });
+    
+    const projectNames = studentScores.map(s => s.projectName || '未知');
+    
+    // 找出最佳和最差
+    const maxIndex = percentages.indexOf(Math.max(...percentages));
+    const minIndex = percentages.indexOf(Math.min(...percentages));
+    
+    // 创建图表
+    try {
+        // 渐变色
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+        gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.5)');
+        gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');
+        
+        studentTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '得分率 (%)',
+                    data: percentages,
+                    borderColor: '#6366f1',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: percentages.map((p, i) => {
+                        if (i === maxIndex) return '#10b981';
+                        if (i === minIndex) return '#ef4444';
+                        return '#6366f1';
+                    }),
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: percentages.map((p, i) => 
+                        (i === maxIndex || i === minIndex) ? 8 : 5
+                    ),
+                    pointHoverRadius: 10,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                return projectNames[index];
+                            },
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const score = studentScores[index];
+                                return [
+                                    `得分率: ${context.raw.toFixed(1)}%`,
+                                    `分数: ${score.score}/${score.fullMark || 100}`,
+                                ];
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) { return value + '%'; },
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.04)',
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 10 },
+                        },
+                        grid: {
+                            display: false,
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutQuart',
+                }
+            }
+        });
+        
+        // 更新学生趋势指标
+        updateStudentTrendIndicators(studentScores, percentages, maxIndex, minIndex);
+        
+    } catch (error) {
+        console.error('创建学生趋势图失败:', error);
+    }
+}
+
+// 更新学生趋势指标
+function updateStudentTrendIndicators(studentScores, percentages, maxIndex, minIndex) {
+    const bestProject = studentScores[maxIndex];
+    const worstProject = studentScores[minIndex];
+    
+    if (bestProject) {
+        document.getElementById('st-best-project').textContent = bestProject.projectName || '--';
+        document.getElementById('st-best-score').textContent = percentages[maxIndex].toFixed(1) + '%';
+    }
+    
+    if (worstProject) {
+        document.getElementById('st-worst-project').textContent = worstProject.projectName || '--';
+        document.getElementById('st-worst-score').textContent = percentages[minIndex].toFixed(1) + '%';
+    }
+    
+    // 进步空间 = 100 - 当前最高分
+    const improvement = 100 - (percentages[maxIndex] || 0);
+    document.getElementById('st-improvement').textContent = '+' + improvement.toFixed(1) + '%';
+}
+
+// ==================== 在查询学生成绩时调用趋势图 ====================
+
+// 修改原有的 queryStudentScores 函数，在显示结果后添加趋势图更新
+const originalQueryStudentScores = queryStudentScores;
+queryStudentScores = async function(studentId) {
+    await originalQueryStudentScores(studentId);
+    
+    // 更新个人趋势图
+    setTimeout(() => {
+        updateStudentTrendChart(students.find(s => s.studentId === studentId)?.id);
+    }, 500);
+};
+
+// ==================== 在 loadAllData 后初始化趋势图 ====================
+
+// 修改原有的 updateDashboard 函数，添加趋势图更新
+const originalUpdateDashboard = updateDashboard;
+updateDashboard = function() {
+    originalUpdateDashboard();
+    
+    // 延迟更新趋势图，确保DOM已渲染
+    setTimeout(() => {
+        initTrendControls();
+        updateScoreTrendChart();
+    }, 600);
+};
+
+// ==================== 窗口resize时重绘趋势图 ====================
+window.addEventListener('resize', debounce(() => {
+    if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
+        updateScoreTrendChart();
+    }
+}, 500));
     </script>
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
