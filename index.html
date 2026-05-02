@@ -2883,6 +2883,11 @@ body.modal-open #student-query-page {
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#members-tab">
+        <i class="fas fa-address-book me-1"></i>会员管理
+    </a>
+</li>
+                        <li class="nav-item">
                             <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
                                 <i class="fas fa-tachometer-alt me-1"></i>仪表盘
                             </a>
@@ -2902,6 +2907,62 @@ body.modal-open #student-query-page {
         <i class="fas fa-layer-group me-1"></i>级别管理
     </a>
 </li>
+                        <!-- 会员管理 -->
+<div class="tab-pane fade" id="members-tab">
+    <div class="card fade-in">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-address-book me-2"></i>协会会员管理（点名用）</span>
+            <div>
+                <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <i class="fas fa-plus me-1"></i>添加会员
+                </button>
+                <button class="btn btn-sm btn-primary" id="export-members-btn">
+                    <i class="fas fa-file-export me-1"></i>导出
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                此名单独立于评分系统，用于管理协会全体会员的点名签到。
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="member-search" placeholder="搜索会员...">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-upload"></i></span>
+                        <input class="form-control" type="file" id="import-members-excel" accept=".xlsx, .xls">
+                        <button class="btn btn-outline-secondary" type="button" id="import-members-btn">
+                            <i class="fas fa-upload me-1"></i>批量导入
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th>组别</th>
+                            <th>学校邮箱</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="members-table-body">
+                        <!-- 会员数据动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
                         <li class="nav-item">
     <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
         <i class="fas fa-clipboard-check me-1"></i>点名系统
@@ -3654,6 +3715,102 @@ body.modal-open #student-query-page {
     </div>
 </div>
 
+                <!-- 添加会员模态框 -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加协会会员</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form">
+                    <div class="mb-3">
+                        <label for="member-name" class="form-label">姓名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="member-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="member-id" class="form-label">学号 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="member-id" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="member-class" class="form-label">班级 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="member-class" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="member-group" class="form-label">组别</label>
+                        <select class="form-select" id="member-group">
+                            <option value="">-- 选择组别 --</option>
+                            <option value="学习组">学习组</option>
+                            <option value="工作组">工作组</option>
+                            <option value="杂家——MAKER">杂家——MAKER</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="member-email" class="form-label">学校邮箱（选填）</label>
+                        <input type="email" class="form-control" id="member-email" 
+                               placeholder="用于Google账号签到匹配">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-member-btn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑会员模态框 -->
+<div class="modal fade" id="editMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑会员信息</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-member-form">
+                    <input type="hidden" id="edit-member-doc-id">
+                    <div class="mb-3">
+                        <label for="edit-member-name" class="form-label">姓名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit-member-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-member-id" class="form-label">学号 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit-member-id" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-member-class" class="form-label">班级 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit-member-class" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-member-group" class="form-label">组别</label>
+                        <select class="form-select" id="edit-member-group">
+                            <option value="">-- 选择组别 --</option>
+                            <option value="学习组">学习组</option>
+                            <option value="工作组">工作组</option>
+                            <option value="杂家——MAKER">杂家——MAKER</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-member-email" class="form-label">学校邮箱（选填）</label>
+                        <input type="email" class="form-control" id="edit-member-email">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="update-member-btn">
+                    <i class="fas fa-sync-alt me-1"></i>更新
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <!-- 删除确认模态框 -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -3871,6 +4028,7 @@ let attendanceRecords = [];
 let currentAttendanceId = null;
 let activeCheckinSession = null;
 let studentAttendanceUser = null;
+        let members = [];  // 协会会员列表（独立于评分系统）
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -4111,6 +4269,12 @@ if (generateBtn) {
 
         // 点名详情导出
         document.getElementById('export-attendance-btn').addEventListener('click', exportAttendanceDetail);
+            // 会员管理事件
+document.getElementById('save-member-btn').addEventListener('click', saveMember);
+document.getElementById('update-member-btn').addEventListener('click', updateMember);
+document.getElementById('export-members-btn').addEventListener('click', exportMembers);
+document.getElementById('import-members-btn').addEventListener('click', importMembers);
+document.getElementById('member-search').addEventListener('input', filterMembers);
             
         // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
 // 找到 initUIEvents 函数中的 tab 切换代码，替换为：
@@ -4774,6 +4938,7 @@ function removeToast(toast) {
             loadAttendances();
     loadLevels();
     loadStudents();
+            loadMembers();
     loadProjects();
     loadScores();
     
@@ -8171,7 +8336,7 @@ function renderAttendanceList() {
         }
         
         const recordCount = attendanceRecords.filter(r => r.attendanceId === attendance.id).length;
-        const totalStudents = students.length;
+        const totalStudents = members.length > 0 ? members.length : students.length;
         const percentage = totalStudents > 0 ? Math.round((recordCount / totalStudents) * 100) : 0;
         
         return `
@@ -8519,7 +8684,7 @@ function viewAttendanceDetail(attendanceId) {
         
         <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到学生</h6>
         <div class="checkin-grid">
-            ${students
+            ${(members.length > 0 ? members : students)
                 .filter(s => !checkedInStudents.find(r => r.studentId === s.id))
                 .map(s => `
                     <div class="checkin-student-card">
@@ -8549,7 +8714,8 @@ function exportAttendanceDetail() {
     const records = attendanceRecords.filter(r => r.attendanceId === currentAttendanceId);
     const checkedInStudentIds = new Set(records.map(r => r.studentId));
     
-    const data = students.map((student, index) => {
+    const allMembers = members.length > 0 ? members : students;
+    const data = allMembers.map((student, index) => {
         const record = records.find(r => r.studentId === student.id);
         return {
             '序号': index + 1,
@@ -8883,7 +9049,8 @@ async function handleStudentIdLogin(event) {
         const normalizedId = studentId.replace(/\s/g, '');
         const normalizedName = studentName.trim();
         
-        const student = students.find(s => {
+        const allMembers = members.length > 0 ? members : students;
+        const student = allMembers.find(s => {
             const sId = (s.studentId || '').replace(/\s/g, '');
             const sName = (s.name || '').trim();
             return sId === normalizedId && sName === normalizedName;
@@ -8944,6 +9111,226 @@ async function loadAttendanceDataForStudent() {
     } catch (error) {
         console.error("加载点名数据失败:", error);
     }
+}
+
+        // ==================== 会员管理（独立于点名系统） ====================
+
+// 加载会员数据
+function loadMembers() {
+    const tbody = document.getElementById('members-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+    
+    db.collection('members').orderBy('studentId').get()
+        .then(querySnapshot => {
+            members = [];
+            tbody.innerHTML = '';
+            
+            if (querySnapshot.empty) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">暂无会员数据</td></tr>';
+                return;
+            }
+            
+            querySnapshot.forEach(doc => {
+                const member = { id: doc.id, ...doc.data() };
+                members.push(member);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${member.studentId}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar me-2" style="width:32px;height:32px;background-color:${stringToColor(member.name)};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;">
+                                ${member.name.charAt(0)}
+                            </div>
+                            ${member.name}
+                        </div>
+                    </td>
+                    <td>${member.class || '-'}</td>
+                    <td>${member.group ? `<span class="badge bg-info">${member.group}</span>` : '-'}</td>
+                    <td>${member.email || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary edit-member-btn" data-id="${member.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-member-btn" data-id="${member.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                
+                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(member.id));
+                row.querySelector('.delete-member-btn').addEventListener('click', () => 
+                    showDeleteConfirm('member', member.id, `确定要删除会员 ${member.name} 吗？`)
+                );
+            });
+        })
+        .catch(error => {
+            console.error("加载会员失败:", error);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">加载失败</td></tr>';
+        });
+}
+
+// 保存会员
+function saveMember() {
+    const name = document.getElementById('member-name').value.trim();
+    const studentId = document.getElementById('member-id').value.trim();
+    const className = document.getElementById('member-class').value.trim();
+    const group = document.getElementById('member-group').value;
+    const email = document.getElementById('member-email').value.trim();
+    
+    if (!name || !studentId || !className) {
+        showAlert("请填写必填字段", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('save-member-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    
+    db.collection('members').add({
+        name,
+        studentId,
+        class: className,
+        group: group || null,
+        email: email || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    })
+    .then(() => {
+        showAlert("会员添加成功", "success");
+        document.getElementById('addMemberModal').querySelector('.btn-close').click();
+        document.getElementById('add-member-form').reset();
+        loadMembers();
+    })
+    .catch(error => {
+        showAlert("添加失败: " + error.message, "danger");
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+    });
+}
+
+// 编辑会员
+function editMember(memberId) {
+    const member = members.find(m => m.id === memberId);
+    if (!member) return;
+    
+    document.getElementById('edit-member-doc-id').value = member.id;
+    document.getElementById('edit-member-name').value = member.name;
+    document.getElementById('edit-member-id').value = member.studentId;
+    document.getElementById('edit-member-class').value = member.class || '';
+    document.getElementById('edit-member-group').value = member.group || '';
+    document.getElementById('edit-member-email').value = member.email || '';
+    
+    new bootstrap.Modal(document.getElementById('editMemberModal')).show();
+}
+
+// 更新会员
+function updateMember() {
+    const id = document.getElementById('edit-member-doc-id').value;
+    const name = document.getElementById('edit-member-name').value.trim();
+    const studentId = document.getElementById('edit-member-id').value.trim();
+    const className = document.getElementById('edit-member-class').value.trim();
+    const group = document.getElementById('edit-member-group').value;
+    const email = document.getElementById('edit-member-email').value.trim();
+    
+    if (!name || !studentId || !className) {
+        showAlert("请填写必填字段", "warning");
+        return;
+    }
+    
+    const btn = document.getElementById('update-member-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 更新中...';
+    
+    db.collection('members').doc(id).update({ name, studentId, class: className, group: group || null, email: email || null })
+        .then(() => {
+            showAlert("会员更新成功", "success");
+            document.getElementById('editMemberModal').querySelector('.btn-close').click();
+            loadMembers();
+        })
+        .catch(error => showAlert("更新失败: " + error.message, "danger"))
+        .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新'; });
+}
+
+// 导出会员
+function exportMembers() {
+    const data = members.map(m => ({
+        '学号': m.studentId, '姓名': m.name, '班级': m.class, '组别': m.group || '', '邮箱': m.email || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "协会会员");
+    XLSX.writeFile(wb, `协会会员_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showAlert("导出成功", "success");
+}
+
+// 导入会员
+function importMembers() {
+    const fileInput = document.getElementById('import-members-excel');
+    if (!fileInput.files.length) { showAlert("请选择文件", "warning"); return; }
+    
+    const btn = document.getElementById('import-members-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 导入中...';
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+        
+        const batch = db.batch();
+        jsonData.forEach(row => {
+            if (row['姓名'] && row['学号']) {
+                batch.set(db.collection('members').doc(), {
+                    name: row['姓名'].toString().trim(),
+                    studentId: row['学号'].toString().trim(),
+                    class: row['班级']?.toString().trim() || '',
+                    group: row['组别']?.toString().trim() || null,
+                    email: row['邮箱']?.toString().trim() || null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        });
+        
+        batch.commit().then(() => {
+            showAlert("导入成功", "success");
+            fileInput.value = '';
+            loadMembers();
+        }).catch(err => showAlert("导入失败: " + err.message, "danger"))
+        .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-upload me-1"></i>导入'; });
+    };
+    reader.readAsArrayBuffer(fileInput.files[0]);
+}
+
+// 筛选会员
+function filterMembers() {
+    const searchText = document.getElementById('member-search').value.toLowerCase();
+    const tbody = document.getElementById('members-table-body');
+    if (!tbody) return;
+    
+    const filtered = members.filter(m => 
+        m.name.toLowerCase().includes(searchText) || 
+        m.studentId.toLowerCase().includes(searchText)
+    );
+    
+    tbody.innerHTML = filtered.map(m => `
+        <tr>
+            <td>${m.studentId}</td>
+            <td>${m.name}</td>
+            <td>${m.class || '-'}</td>
+            <td>${m.group ? `<span class="badge bg-info">${m.group}</span>` : '-'}</td>
+            <td>${m.email || '-'}</td>
+            <td>
+                <button class="btn btn-sm btn-primary" onclick="editMember('${m.id}')"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-danger" onclick="showDeleteConfirm('member','${m.id}','确定删除 ${m.name} 吗？')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">无匹配会员</td></tr>';
 }
     </script>
     <footer class="text-center text-muted py-3">
