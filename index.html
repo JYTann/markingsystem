@@ -1938,26 +1938,67 @@ body.modal-open #student-query-page {
 
 /* ==================== 📱 打印样式 ==================== */
 @media print {
+    /* 隐藏导航栏、按钮等 */
     .navbar,
     .btn,
     #toast-container,
     .modal-backdrop,
-    .no-print {
+    .no-print,
+    .toolbar,
+    .back-to-top,
+    .fab-menu {
+        display: none !important;
+    }
+    
+    /* 隐藏作业标题等细节元素 */
+    .score-item .small,
+    .score-item .text-muted,
+    .score-item .badge,
+    .student-score-header .text-muted,
+    .student-score-header small,
+    .analysis-card,
+    .student-trend-section {
+        display: none !important;
+    }
+    
+    /* 只保留核心内容 */
+    .student-score-card,
+    .student-score-header,
+    .score-detail-table,
+    .score-detail-table tr,
+    .score-detail-table td {
+        display: block !important;
+    }
+    
+    /* 表格字体调小，确保一页显示更多 */
+    .score-detail-table td {
+        font-size: 10pt !important;
+        padding: 4px !important;
+    }
+    
+    /* 项目名称（作业标题）简化显示 */
+    .score-detail-table td:first-child {
+        font-size: 9pt !important;
+        max-width: 100px;
+        white-space: normal;
+    }
+    
+    /* 隐藏权重等信息 */
+    .score-detail-table span.small,
+    .score-detail-table .text-muted {
         display: none !important;
     }
     
     body {
-        background: white !important;
+        background: white;
+        padding: 0;
+        margin: 0;
     }
     
     .card {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-    }
-    
-    .table thead th {
-        background: #f1f5f9 !important;
-        color: #1e293b !important;
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
     }
 }
 
