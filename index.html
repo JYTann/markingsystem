@@ -5897,15 +5897,17 @@ function removeToast(toast) {
     loadProjects();
     loadScores();
     
+    // 初始化趋势图控制
     setTimeout(() => {
-        updateDashboard();
+        initTrendControls();
+        updateScoreTrendChart();
+        
         const dashboardTab = document.getElementById('dashboard-tab');
         if (dashboardTab && dashboardTab.classList.contains('active')) {
             updateScoreDistributionChart();
             updateProjectComparisonChart();
-            updateScoreTrendChart(); // 新增
         }
-    }, 300);
+    }, 500);
 }
 
         // 加载级别数据
@@ -10337,7 +10339,7 @@ function initTrendControls() {
     });
 }
 
-// 更新仪表盘趋势图
+// 更新仪表盘趋势图 - 修复版本，支持模拟数据展示
 function updateScoreTrendChart() {
     const canvas = document.getElementById('scoreTrendChart');
     if (!canvas) return;
@@ -10358,68 +10360,130 @@ function updateScoreTrendChart() {
     // 过滤分数数据
     let filteredScores = [...scores];
     
-    // 按时间过滤
-    const now = new Date();
-    if (trendPeriod === 'week') {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filteredScores = filteredScores.filter(s => {
-            const date = s.recordedAt?.toDate();
-            return date && date >= weekAgo;
-        });
-    } else if (trendPeriod === 'month') {
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        filteredScores = filteredScores.filter(s => {
-            const date = s.recordedAt?.toDate();
-            return date && date >= monthAgo;
-        });
+    // 如果没有真实数据，使用模拟数据展示图表效果
+    let useMockData = filteredScores.length === 0;
+    
+    if (!useMockData) {
+        // 按时间过滤
+        const now = new Date();
+        if (trendPeriod === 'week') {
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            filteredScores = filteredScores.filter(s => {
+                const date = s.recordedAt?.toDate();
+                return date && date >= weekAgo;
+            });
+        } else if (trendPeriod === 'month') {
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            filteredScores = filteredScores.filter(s => {
+                const date = s.recordedAt?.toDate();
+                return date && date >= monthAgo;
+            });
+        }
+        
+        // 按级别/班级过滤
+        if (selectedLevel || selectedClass) {
+            const studentIds = students
+                .filter(s => {
+                    let match = true;
+                    if (selectedLevel) match = match && s.levelId === selectedLevel;
+                    if (selectedClass) match = match && s.class === selectedClass;
+                    return match;
+                })
+                .map(s => s.id);
+            const studentIdSet = new Set(studentIds);
+            filteredScores = filteredScores.filter(s => studentIdSet.has(s.studentId));
+        }
+        
+        useMockData = filteredScores.length === 0;
     }
     
-    // 按级别/班级过滤
-    if (selectedLevel || selectedClass) {
-        const studentIds = students
-            .filter(s => {
-                let match = true;
-                if (selectedLevel) match = match && s.levelId === selectedLevel;
-                if (selectedClass) match = match && s.class === selectedClass;
-                return match;
-            })
-            .map(s => s.id);
-        const studentIdSet = new Set(studentIds);
-        filteredScores = filteredScores.filter(s => studentIdSet.has(s.studentId));
+    let labels = [];
+    let data = [];
+    let counts = [];
+    
+    if (useMockData) {
+        // 使用模拟数据展示图表效果
+        labels = ['编程基础', '团队协作', '创新设计', '技术文档', '项目展示', '课堂表现', '作业完成'];
+        data = [85.5, 72.3, 68.8, 78.2, 88.6, 75.4, 82.1];
+        counts = [25, 24, 22, 23, 24, 26, 25];
+        
+        // 在图表容器显示提示
+        canvas.parentElement.style.position = 'relative';
+        const chartContainer = canvas.parentElement;
+        
+        // 移除旧的提示
+        const oldHint = chartContainer.querySelector('.mock-data-hint');
+        if (oldHint) oldHint.remove();
+        
+        // 添加模拟数据提示
+        const hint = document.createElement('div');
+        hint.className = 'mock-data-hint';
+        hint.style.cssText = `
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(99, 102, 241, 0.9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        `;
+        hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 录入成绩后显示真实数据';
+        chartContainer.appendChild(hint);
+        
+    } else {
+        // 按项目分组计算平均分
+        const projectScores = {};
+        filteredScores.forEach(score => {
+            const projectName = score.projectName || '未知项目';
+            if (!projectScores[projectName]) {
+                projectScores[projectName] = { total: 0, count: 0, fullMark: score.fullMark || 100 };
+            }
+            const fullMark = score.fullMark || 100;
+            if (fullMark > 0) {
+                projectScores[projectName].total += (score.score / fullMark) * 100;
+                projectScores[projectName].count++;
+            }
+        });
+        
+        labels = Object.keys(projectScores);
+        data = labels.map(name => {
+            const ps = projectScores[name];
+            return ps.count > 0 ? (ps.total / ps.count) : 0;
+        });
+        counts = labels.map(name => projectScores[name].count);
+        
+        // 移除模拟数据提示
+        const chartContainer = canvas.parentElement;
+        const oldHint = chartContainer.querySelector('.mock-data-hint');
+        if (oldHint) oldHint.remove();
     }
     
-    // 按项目分组计算平均分
-    const projectScores = {};
-    filteredScores.forEach(score => {
-        const projectName = score.projectName || '未知项目';
-        if (!projectScores[projectName]) {
-            projectScores[projectName] = { total: 0, count: 0, fullMark: score.fullMark || 100 };
-        }
-        const fullMark = score.fullMark || 100;
-        if (fullMark > 0) {
-            projectScores[projectName].total += (score.score / fullMark) * 100;
-            projectScores[projectName].count++;
-        }
-    });
-    
-    // 构建图表数据
-    const labels = Object.keys(projectScores);
-    const data = labels.map(name => {
-        const ps = projectScores[name];
-        return ps.count > 0 ? (ps.total / ps.count) : 0;
-    });
-    const counts = labels.map(name => projectScores[name].count);
-    
-    // 如果没有数据
+    // 如果没有数据（包括模拟数据）
     if (labels.length === 0) {
         canvas.parentElement.innerHTML = `
             <div class="text-center py-5">
                 <i class="fas fa-chart-line fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
-                <p class="text-muted">暂无符合条件的成绩数据</p>
-                <p class="small text-muted">请录入更多成绩后查看趋势</p>
+                <p class="text-muted">暂无成绩数据</p>
+                <p class="small text-muted">请先在"分数录入"页面录入学生成绩</p>
             </div>
         `;
         updateTrendIndicators(null);
+        return;
+    }
+    
+    // 恢复canvas（如果被替换了）
+    const parent = canvas.parentElement;
+    if (parent.innerHTML !== canvas.outerHTML) {
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = 'scoreTrendChart';
+        parent.innerHTML = '';
+        parent.appendChild(newCanvas);
+        updateScoreTrendChart();
         return;
     }
     
@@ -10468,10 +10532,13 @@ function updateScoreTrendChart() {
                         callbacks: {
                             label: function(context) {
                                 const index = context.dataIndex;
-                                return [
-                                    `平均得分率: ${context.raw.toFixed(1)}%`,
-                                    `参与人数: ${counts[index]} 人`
-                                ];
+                                if (counts && counts[index]) {
+                                    return [
+                                        `平均得分率: ${context.raw.toFixed(1)}%`,
+                                        `参与人数: ${counts[index]} 人`
+                                    ];
+                                }
+                                return `平均得分率: ${context.raw.toFixed(1)}%`;
                             }
                         }
                     },
@@ -10512,20 +10579,25 @@ function updateScoreTrendChart() {
         });
         
         // 更新指标
-        updateTrendIndicators(data, counts, filteredScores);
+        updateTrendIndicators(data, counts, filteredScores, useMockData);
         
     } catch (error) {
         console.error('创建趋势图失败:', error);
     }
 }
 
-// 更新趋势指标
-function updateTrendIndicators(data, counts, filteredScores) {
+// 更新趋势指标 - 增强版
+function updateTrendIndicators(data, counts, filteredScores, isMockData = false) {
+    const avgEl = document.getElementById('indicator-avg');
+    const passRateEl = document.getElementById('indicator-pass-rate');
+    const maxEl = document.getElementById('indicator-max');
+    const countEl = document.getElementById('indicator-count');
+    
     if (!data || data.length === 0) {
-        document.getElementById('indicator-avg').textContent = '--';
-        document.getElementById('indicator-pass-rate').textContent = '--';
-        document.getElementById('indicator-max').textContent = '--';
-        document.getElementById('indicator-count').textContent = '--';
+        if (avgEl) avgEl.textContent = '--';
+        if (passRateEl) passRateEl.textContent = '--';
+        if (maxEl) maxEl.textContent = '--';
+        if (countEl) countEl.textContent = '--';
         return;
     }
     
@@ -10534,12 +10606,12 @@ function updateTrendIndicators(data, counts, filteredScores) {
     const max = Math.max(...data);
     const totalCount = counts ? counts.reduce((a, b) => a + b, 0) : 0;
     
-    document.getElementById('indicator-avg').textContent = avg.toFixed(1) + '%';
-    document.getElementById('indicator-pass-rate').textContent = passRate.toFixed(1) + '%';
-    document.getElementById('indicator-max').textContent = max.toFixed(1) + '%';
-    document.getElementById('indicator-count').textContent = totalCount;
+    if (avgEl) avgEl.textContent = avg.toFixed(1) + '%';
+    if (passRateEl) passRateEl.textContent = passRate.toFixed(1) + '%';
+    if (maxEl) maxEl.textContent = max.toFixed(1) + '%';
+    if (countEl) countEl.textContent = totalCount;
     
-    // 设置变化趋势（基于整体数据）
+    // 设置变化趋势说明
     const changeEls = [
         document.getElementById('indicator-avg-change'),
         document.getElementById('indicator-pass-change'),
@@ -10547,11 +10619,15 @@ function updateTrendIndicators(data, counts, filteredScores) {
         document.getElementById('indicator-count-change'),
     ];
     
+    const periodText = trendPeriod === 'all' ? '全部数据' : 
+                      trendPeriod === 'month' ? '近30天' : '近7天';
+    
+    const statusText = isMockData ? '演示数据' : periodText;
+    
     changeEls.forEach(el => {
         if (el) {
-            el.textContent = trendPeriod === 'all' ? '全部数据' : 
-                            trendPeriod === 'month' ? '近30天' : '近7天';
-            el.className = 'indicator-change stable';
+            el.textContent = statusText;
+            el.className = isMockData ? 'indicator-change stable' : 'indicator-change stable';
         }
     });
 }
