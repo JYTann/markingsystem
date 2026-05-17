@@ -7069,10 +7069,9 @@ function updateScoreDistributionChart() {
     }
 }
         // --- 在 updateScoreDistributionChart 函数后面添加 ---
-
+// 更新项目对比图表 - 修复版本，支持演示数据
 let projectComparisonChart = null;
 
-// 更新项目对比图表
 function updateProjectComparisonChart() {
     // 先检查仪表盘tab是否激活
     const dashboardTab = document.getElementById('dashboard-tab');
@@ -7094,8 +7093,9 @@ function updateProjectComparisonChart() {
     
     // 获取所有项目（包括级别项目）
     const allProjects = [...projects, ...levelProjects];
-    const projectStats = [];
+    let projectStats = [];
     
+    // 统计真实数据
     allProjects.forEach(project => {
         const projectScores = scores.filter(s => s.projectId === project.id);
         if (projectScores.length > 0) {
@@ -7109,6 +7109,48 @@ function updateProjectComparisonChart() {
         }
     });
     
+    // 如果没有真实数据，使用演示数据
+    let useMockData = projectStats.length === 0;
+    
+    if (useMockData) {
+        // 演示数据 - 展示协会常见评分项目
+        projectStats = [
+            { name: '编程基础', average: 85.5, count: 28 },
+            { name: '网页设计', average: 78.3, count: 26 },
+            { name: '团队协作', average: 82.6, count: 30 },
+            { name: '创新思维', average: 73.8, count: 25 },
+            { name: '技术文档', average: 80.2, count: 24 },
+            { name: '项目展示', average: 88.4, count: 27 },
+            { name: '课堂表现', average: 76.5, count: 30 },
+            { name: '作业完成', average: 79.8, count: 28 }
+        ];
+        
+        // 移除旧的演示提示
+        const chartContainer = canvas.parentElement;
+        const oldHint = chartContainer.querySelector('.mock-chart-hint');
+        if (oldHint) oldHint.remove();
+        
+        // 添加演示数据提示
+        const hint = document.createElement('div');
+        hint.className = 'mock-chart-hint';
+        hint.style.cssText = `
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(99, 102, 241, 0.9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        `;
+        hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 创建项目并录入成绩后显示真实数据';
+        chartContainer.appendChild(hint);
+    }
+    
     if (projectStats.length === 0) {
         const container = canvas.parentElement;
         if (container) {
@@ -7116,15 +7158,42 @@ function updateProjectComparisonChart() {
                 <div class="text-center py-4">
                     <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
                     <p class="mt-2 text-muted">暂无项目对比数据</p>
+                    <p class="small text-muted">请先在"评分项目"或"级别管理"中添加项目，然后录入分数</p>
                 </div>
             `;
         }
         return;
     }
     
+    // 恢复canvas（如果被替换了）
+    const parent = canvas.parentElement;
+    if (parent.innerHTML !== canvas.outerHTML && !parent.querySelector('canvas')) {
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = 'projectComparisonChart';
+        parent.innerHTML = '';
+        parent.appendChild(newCanvas);
+        updateProjectComparisonChart();
+        return;
+    }
+    
     // 按平均分排序，取前8个
     projectStats.sort((a, b) => b.average - a.average);
     const topProjects = projectStats.slice(0, 8);
+    
+    // 根据得分率设置不同的柱状图颜色
+    const barColors = topProjects.map(p => {
+        if (p.average >= 80) return 'rgba(16, 185, 129, 0.7)';  // 绿色 - 优秀
+        if (p.average >= 70) return 'rgba(99, 102, 241, 0.7)'; // 紫色 - 良好
+        if (p.average >= 60) return 'rgba(245, 158, 11, 0.7)';  // 橙色 - 及格
+        return 'rgba(239, 68, 68, 0.7)';                         // 红色 - 不及格
+    });
+    
+    const borderColors = topProjects.map(p => {
+        if (p.average >= 80) return 'rgba(16, 185, 129, 1)';
+        if (p.average >= 70) return 'rgba(99, 102, 241, 1)';
+        if (p.average >= 60) return 'rgba(245, 158, 11, 1)';
+        return 'rgba(239, 68, 68, 1)';
+    });
     
     try {
         projectComparisonChart = new Chart(ctx, {
@@ -7134,33 +7203,93 @@ function updateProjectComparisonChart() {
                 datasets: [{
                     label: '平均得分率 (%)',
                     data: topProjects.map(p => p.average),
-                    backgroundColor: 'rgba(102, 126, 234, 0.7)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 1,
-                    borderRadius: 8
+                    backgroundColor: barColors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        titleFont: { size: 13, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const project = topProjects[index];
+                                return [
+                                    `平均得分率: ${context.raw.toFixed(1)}%`,
+                                    `参与人数: ${project.count} 人`
+                                ];
+                            },
+                            footer: function(context) {
+                                const value = context[0].raw;
+                                if (value >= 80) return '🏆 表现优秀';
+                                if (value >= 70) return '👍 表现良好';
+                                if (value >= 60) return '📚 成绩及格';
+                                return '💪 有待提升';
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false,
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
                         max: 100,
+                        title: {
+                            display: true,
+                            text: '平均得分率 (%)',
+                            font: { size: 11, weight: 'bold' },
+                            color: '#64748b'
+                        },
                         ticks: {
                             callback: function(value) {
                                 return value + '%';
-                            }
+                            },
+                            stepSize: 20,
+                            font: { size: 10 }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.06)',
+                            drawBorder: false,
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '评分项目',
+                            font: { size: 11, weight: 'bold' },
+                            color: '#64748b'
+                        },
+                        ticks: {
+                            font: { size: 11 },
+                            maxRotation: 45,
+                            minRotation: 0,
+                        },
+                        grid: {
+                            display: false,
                         }
                     }
                 },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `平均得分率: ${context.raw.toFixed(1)}%`;
-                            }
-                        }
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart',
+                },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10
                     }
                 }
             }
