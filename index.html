@@ -14030,15 +14030,6 @@ function showReportFromShare() {
  * 生成简化版报告 HTML（专门用于分享链接，避免依赖复杂函数）
  */
 function generateSimpleReportHTML(data) {
-        // 兼容两种数据格式
-    const studentList = data.studentAverages || data.students || [];
-    const projects = data.reportProjects || data.projects || [];
-    const selectedClass = data.selectedClass || '';
-    const groupByLevel = data.groupByLevel || false;
-    
-    if (studentList.length === 0) {
-        return '<div style="text-align:center;padding:50px;">暂无数据</div>';
-    }
     const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
     
     const totalStudents = studentAverages.length;
