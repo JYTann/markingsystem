@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- 在 head 标签中添加 Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/lz-string.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
     <style>
     :root {
@@ -13884,37 +13885,9 @@ document.addEventListener('DOMContentLoaded', function() {
  * @returns {string} 编码后的字符串
  */
 function encodeReportData(data) {
-    try {
-        // 只保留必要的数据，减少 URL 长度
-        const minimalData = {
-            s: data.studentAverages.map(s => ({
-                n: s.student.name,
-                sid: s.student.studentId,
-                c: s.student.class,
-                l: s.levelName,
-                a: s.average,
-                sc: s.scores.map(sc => ({
-                    pn: sc.projectName,
-                    sc: sc.score,
-                    fm: sc.fullMark,
-                    pc: sc.percentage
-                }))
-            })),
-            p: data.reportProjects.map(p => ({
-                n: p.name,
-                fm: p.fullMark,
-                w: p.weight
-            })),
-            cl: data.selectedClass,
-            gb: data.groupByLevel
-        };
-        const jsonStr = JSON.stringify(minimalData);
-        // 直接使用 encodeURIComponent，不经过 Base64
-        return encodeURIComponent(jsonStr);
-    } catch (e) {
-        console.error('编码失败:', e);
-        return '';
-    }
+    const jsonStr = JSON.stringify(data);
+    // 使用 LZString 压缩（比 Base64 短很多）
+    return LZString.compressToEncodedURIComponent(jsonStr);
 }
 
 /**
@@ -13924,32 +13897,9 @@ function encodeReportData(data) {
  */
 function decodeReportData(encoded) {
     try {
-        // 步骤1：URL 解码（因为生成时用了 encodeURIComponent）
-        const jsonStr = decodeURIComponent(encoded);
-        // 步骤2：JSON 解析
-        const decoded = JSON.parse(jsonStr);
-        
-        // 转换回原始格式
-        return {
-            studentAverages: decoded.s.map(s => ({
-                student: {
-                    name: s.n,
-                    studentId: s.sid,
-                    class: s.c
-                },
-                levelName: s.l,
-                average: s.a,
-                scores: s.sc.map(sc => ({
-                    projectName: sc.pn,
-                    score: sc.sc,
-                    fullMark: sc.fm,
-                    percentage: sc.pc
-                }))
-            })),
-            reportProjects: decoded.p,
-            selectedClass: decoded.cl,
-            groupByLevel: decoded.gb
-        };
+        const jsonStr = LZString.decompressFromEncodedURIComponent(encoded);
+        if (!jsonStr) return null;
+        return JSON.parse(jsonStr);
     } catch (e) {
         console.error('解码失败:', e);
         return null;
@@ -13961,10 +13911,15 @@ function decodeReportData(encoded) {
  * @returns {string} 分享链接
  */
 function generateShareLink(data) {
-    const jsonStr = JSON.stringify(data);
-    const encoded = encodeURIComponent(jsonStr);
+    const encoded = encodeReportData(data);
     const url = new URL(window.location.href);
     url.searchParams.set('r', encoded);
+    
+    // 检查长度（超过 2000 才警告）
+    if (url.href.length > 2000) {
+        console.warn('链接长度:', url.href.length);
+        return null;
+    }
     return url.href;
 }
 
@@ -14282,15 +14237,14 @@ function addShareButtonToReportTab() {
             
             const reportData = { studentAverages, reportProjects, selectedClass, groupByLevel };
             const shareLink = generateShareLink(reportData);
-            
-            // 检查链接长度
-            if (shareLink.length > 2000) {
-                showAlert('数据过大，无法生成分享链接（请减少学生数量或项目数）', 'warning');
-                return;
-            }
-            
-            await navigator.clipboard.writeText(shareLink);
-            showAlert('✅ 分享链接已复制到剪贴板！', 'success');
+
+if (!shareLink) {
+    showAlert('数据过大，无法生成分享链接（请减少学生数量或项目数）', 'warning');
+    return;
+}
+
+await navigator.clipboard.writeText(shareLink);
+showAlert('✅ 分享链接已复制到剪贴板！', 'success');
             
             setTimeout(() => {
                 prompt('请将以下链接发送给他人（已自动复制）：', shareLink);
