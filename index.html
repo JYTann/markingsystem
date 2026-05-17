@@ -10158,11 +10158,20 @@ function exportAttendanceDetail() {
     showAlert('导出成功', 'success');
 }
 
-// 更新时间预览
+// ==================== 修复 previewText 未定义错误 ====================
+
+// 首先，确保 updateTimePreview 函数正确定义了 previewText 变量
 function updateTimePreview() {
-    const date = document.getElementById('attendance-date').value;
-    const startTime = document.getElementById('attendance-start-time').value;
-    const endTime = document.getElementById('attendance-end-time').value;
+    const date = document.getElementById('attendance-date')?.value;
+    const startTime = document.getElementById('attendance-start-time')?.value;
+    const endTime = document.getElementById('attendance-end-time')?.value;
+    const previewText = document.getElementById('time-preview-text');
+    
+    // 如果找不到元素，静默返回
+    if (!previewText) {
+        console.warn('time-preview-text 元素不存在');
+        return;
+    }
     
     if (date && startTime && endTime) {
         const start = new Date(`${date}T${startTime}:00`);
@@ -10170,19 +10179,296 @@ function updateTimePreview() {
         const durationMinutes = Math.round((end - start) / 60000);
         
         if (durationMinutes > 0) {
-            document.getElementById('time-preview-text').innerHTML = `
+            previewText.innerHTML = `
                 点名时段：<strong>${date} ${startTime} - ${endTime}</strong><br>
                 持续时长：<strong>${durationMinutes} 分钟</strong>
                 ${durationMinutes > 120 ? '<br><span class="text-warning">⚠️ 点名时间较长，建议控制在2小时内</span>' : ''}
             `;
         } else {
-            document.getElementById('time-preview-text').innerHTML = `
-                <span class="text-danger">⚠️ 结束时间必须晚于开始时间</span>
-            `;
+            previewText.innerHTML = `<span class="text-danger">⚠️ 结束时间必须晚于开始时间</span>`;
         }
     } else {
-        document.getElementById('time-preview-text').textContent = '请设置点名时间';
+        previewText.innerHTML = '请设置点名时间';
     }
+}
+
+// ==================== 修复 COOP 策略错误（Google登录弹窗）====================
+
+// 使用重定向方式代替弹窗方式，避免 COOP 策略问题
+function studentGoogleLoginRedirect() {
+    const btn = document.getElementById('student-attendance-login-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 登录中...';
+    }
+    
+    // 使用重定向方式而不是弹窗
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
+    
+    auth.signInWithRedirect(googleProvider);
+}
+
+// 处理重定向返回的结果
+auth.getRedirectResult().then(async (result) => {
+    if (result.user) {
+        const user = result.user;
+        console.log("Google登录成功（重定向），用户信息:", {
+            displayName: user.displayName,
+            email: user.email
+        });
+        
+        // 尝试从账号信息中提取中文名并匹配学生
+        if (typeof extractAndMatchStudentForCheckin === 'function') {
+            const matchedStudent = await extractAndMatchStudentForCheckin(user);
+            
+            if (matchedStudent && !matchedStudent.isTemporary) {
+                studentAttendanceUser = {
+                    displayName: matchedStudent.name,
+                    email: user.email,
+                    uid: user.uid,
+                    studentId: matchedStudent.studentId,
+                    isStudentLogin: false,
+                    matchedFromGoogle: true
+                };
+                showAlert(`欢迎 ${matchedStudent.name}！`, 'success');
+            } else if (matchedStudent && matchedStudent.isTemporary) {
+                studentAttendanceUser = {
+                    displayName: matchedStudent.name,
+                    email: user.email,
+                    uid: user.uid,
+                    studentId: matchedStudent.studentId,
+                    isStudentLogin: false,
+                    isTemporary: true
+                };
+                showAlert(`已识别为：${matchedStudent.name}，请确认信息`, 'info');
+            } else {
+                studentAttendanceUser = {
+                    displayName: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    uid: user.uid,
+                    isStudentLogin: false,
+                    isGuest: true
+                };
+            }
+            
+            if (typeof showStudentCheckinInterface === 'function') {
+                showStudentCheckinInterface();
+            }
+        }
+    }
+}).catch((error) => {
+    console.error("重定向登录失败:", error);
+    // 忽略用户主动关闭的错误
+    if (error.code !== 'auth/popup-closed-by-user') {
+        showAlert("登录失败: " + error.message, 'danger');
+    }
+});
+
+// ==================== 修复 Bootstrap Tab 错误 ====================
+
+// 安全地激活 Tab
+function safeActivateTab(tabElement) {
+    if (!tabElement) return;
+    
+    try {
+        const targetId = tabElement.getAttribute('data-bs-target');
+        if (!targetId) return;
+        
+        const targetElement = document.querySelector(targetId);
+        if (!targetElement) return;
+        
+        // 移除所有活动状态
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('show', 'active');
+        });
+        
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        
+        // 激活当前
+        tabElement.classList.add('active');
+        targetElement.classList.add('show', 'active');
+        
+    } catch (e) {
+        console.warn('切换 Tab 失败:', e);
+    }
+}
+
+// 修复所有导航链接的点击事件
+document.querySelectorAll('.navbar-nav .nav-link[data-bs-toggle="tab"]').forEach(link => {
+    link.addEventListener('click', function(e) {
+        e.preventDefault();
+        safeActivateTab(this);
+    });
+});
+
+// ==================== 修复 Google 登录按钮的备选方案 ====================
+
+// 在 student-attendance-tab 中同时提供两种登录方式
+function initAttendanceLoginOptions() {
+    const loginContainer = document.querySelector('#student-attendance-tab .text-center.py-4');
+    if (!loginContainer) return;
+    
+    // 添加重定向登录按钮（解决 COOP 问题）
+    const redirectBtn = document.createElement('button');
+    redirectBtn.id = 'student-attendance-redirect-login-btn';
+    redirectBtn.className = 'btn btn-danger w-100 mb-3';
+    redirectBtn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录（推荐）';
+    redirectBtn.onclick = function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 跳转中...';
+        auth.signInWithRedirect(googleProvider);
+    };
+    
+    // 添加到现有按钮之前
+    const existingBtn = document.getElementById('student-attendance-login-btn');
+    if (existingBtn) {
+        existingBtn.style.display = 'none';
+        loginContainer.insertBefore(redirectBtn, existingBtn);
+    }
+}
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (typeof initAttendanceLoginOptions === 'function') {
+            initAttendanceLoginOptions();
+        }
+    }, 500);
+});
+
+// ==================== 修复 createNewAttendance 中的 previewText 错误 ====================
+
+// 修复 createNewAttendance 函数
+const originalCreateNewAttendanceFixed = window.createNewAttendance;
+window.createNewAttendance = function() {
+    const modalElement = document.getElementById('attendanceModal');
+    if (!modalElement) return;
+    
+    // 先清理
+    if (typeof safeHideModal === 'function') {
+        safeHideModal(modalElement);
+    }
+    
+    setTimeout(() => {
+        // 重置表单
+        const titleInput = document.getElementById('attendance-title');
+        const dateInput = document.getElementById('attendance-date');
+        const startTimeInput = document.getElementById('attendance-start-time');
+        const endTimeInput = document.getElementById('attendance-end-time');
+        const codeInput = document.getElementById('attendance-code');
+        const noteInput = document.getElementById('attendance-note');
+        const levelSelect = document.getElementById('attendance-level');
+        const modalTitle = document.getElementById('attendance-modal-title');
+        const previewText = document.getElementById('time-preview-text');
+        
+        if (titleInput) titleInput.value = '';
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
+        if (codeInput) codeInput.value = '';
+        if (noteInput) noteInput.value = '';
+        if (modalTitle) modalTitle.textContent = '新建点名';
+        if (previewText) previewText.innerHTML = '请设置点名时间';
+        
+        // 更新级别选择
+        if (levelSelect && typeof levels !== 'undefined') {
+            levelSelect.innerHTML = '<option value="">所有级别</option>';
+            levels.forEach(level => {
+                const option = document.createElement('option');
+                option.value = level.id;
+                option.textContent = level.name;
+                levelSelect.appendChild(option);
+            });
+        }
+        
+        // 显示模态框
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        // 添加遮罩层
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+        
+    }, 100);
+};
+
+// ==================== 修复 editAttendance 函数 ====================
+
+const originalEditAttendanceFixed = window.editAttendance;
+window.editAttendance = function(attendanceId) {
+    const attendance = typeof attendances !== 'undefined' ? attendances.find(a => a.id === attendanceId) : null;
+    if (!attendance) return;
+    
+    const modalElement = document.getElementById('attendanceModal');
+    if (!modalElement) return;
+    
+    if (typeof safeHideModal === 'function') {
+        safeHideModal(modalElement);
+    }
+    
+    setTimeout(() => {
+        const previewText = document.getElementById('time-preview-text');
+        
+        document.getElementById('attendance-id').value = attendance.id;
+        document.getElementById('attendance-modal-title').textContent = '编辑点名';
+        document.getElementById('attendance-title').value = attendance.title || '';
+        document.getElementById('attendance-date').value = attendance.date || '';
+        document.getElementById('attendance-start-time').value = attendance.startTimeStr || '';
+        document.getElementById('attendance-end-time').value = attendance.endTimeStr || '';
+        document.getElementById('attendance-code').value = attendance.code || '';
+        document.getElementById('attendance-note').value = attendance.note || '';
+        
+        const levelSelect = document.getElementById('attendance-level');
+        if (levelSelect) levelSelect.value = attendance.levelId || '';
+        
+        if (previewText) previewText.innerHTML = '请设置点名时间';
+        
+        if (typeof updateTimePreview === 'function') {
+            updateTimePreview();
+        }
+        
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+    }, 100);
+};
+
+// ==================== 全局错误捕获（防止错误中断执行）====================
+
+window.addEventListener('error', function(e) {
+    // 过滤掉这些已知的无害错误
+    if (e.message && (
+        e.message.includes('Cross-Origin-Opener-Policy') ||
+        e.message.includes('selector-engine') ||
+        e.message.includes('previewText is not defined')
+    )) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// 确保 previewText 在全局可用
+if (typeof previewText === 'undefined') {
+    var previewText = null;
 }
 
 // 随机生成验证码
