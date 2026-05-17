@@ -9111,369 +9111,100 @@ async function downloadProfessionalPDF(data) {
         return;
     }
 
-    showFullscreenLoader('正在生成 PDF...');
+    showFullscreenLoader('正在生成 PDF，请稍候...');
+    
+    // 生成报告 HTML（使用已存在的 createProfessionalReportHTML）
+    const reportHTML = createProfessionalReportHTML(data);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = reportHTML;
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.style.width = '1400px';
+    tempDiv.style.backgroundColor = '#ffffff';
+    document.body.appendChild(tempDiv);
     
     try {
-        const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
-        const title = selectedClass ? `${selectedClass} 成绩报告` : '全协会成绩报告';
-        const dateStr = new Date().toLocaleDateString('zh-CN');
-        
-        // 计算统计信息
-        const totalStudents = studentAverages.length;
-        const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
-        const passCount = studentAverages.filter(s => s.average >= 60).length;
-        const passRate = totalStudents > 0 ? (passCount / totalStudents * 100).toFixed(1) : 0;
-        
-        // 按级别分组
-        let groups = [];
-        if (groupByLevel) {
-            const levelMap = new Map();
-            studentAverages.forEach(s => {
-                const levelName = s.levelName || '未设置级别';
-                if (!levelMap.has(levelName)) levelMap.set(levelName, []);
-                levelMap.get(levelName).push(s);
-            });
-            groups = Array.from(levelMap.entries());
-        } else {
-            groups = [['全部学生', studentAverages]];
-        }
-        
-        // 创建 PDF 文档（横向 A4）
-        const pdfDoc = await PDFLib.PDFDocument.create();
-        
-        // ========== 注册 fontkit 并加载中文字体 ==========
-        // 注册 fontkit（必须）
-        pdfDoc.registerFontkit(window.fontkit);
-        
-        // 加载中文字体（使用 jsDelivr CDN 上的 Noto Sans CJK）
-        let fontRegular, fontBold;
-        try {
-            // 方案1：使用 Google Fonts 的 Noto Sans SC（需要正确加载）
-            // 方案2：使用系统字体文件（需要上传到你的服务器）
-            // 这里使用一个可用的 CDN 字体
-            const fontUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Regular.otf';
-            const fontBoldUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Bold.otf';
-            
-            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
-            const fontBoldBytes = await fetch(fontBoldUrl).then(res => res.arrayBuffer());
-            
-            fontRegular = await pdfDoc.embedFont(fontBytes);
-            fontBold = await pdfDoc.embedFont(fontBoldBytes);
-            console.log('中文字体加载成功');
-        } catch (e) {
-            console.warn('加载中文字体失败，使用默认字体', e);
-            // 降级：使用 Helvetica（中文会显示为空白，但至少不报错）
-            fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-            fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-        }
-        
-        // 表格列定义
-        const columns = [
-            { title: '排名', width: 35, align: 'center' },
-            { title: '学号', width: 70, align: 'center' },
-            { title: '姓名', width: 70, align: 'left' },
-            { title: '班级', width: 60, align: 'center' },
-            ...(groupByLevel ? [] : [{ title: '级别', width: 60, align: 'center' }]),
-            ...reportProjects.map(p => ({
-                title: `${p.name}\n${p.fm}分/${(p.w * 100).toFixed(0)}%`,
-                width: 70,
-                align: 'center'
-            })),
-            { title: '总平均', width: 55, align: 'center' }
-        ];
-        
-        const totalWidth = columns.reduce((sum, col) => sum + col.width, 0);
-        const startX = (841.89 - totalWidth) / 2;  // A4 横向宽度 841.89
-        
-        // 为每个级别组生成页面
-        for (const [levelName, students] of groups) {
-            // 准备表格数据
-            const tableData = students.map((item, idx) => {
-                const row = [
-                    { value: (idx + 1).toString(), align: 'center' },
-                    { value: item.student.studentId, align: 'center' },
-                    { value: item.student.name, align: 'left' },
-                    { value: item.student.class, align: 'center' }
-                ];
-                if (!groupByLevel) {
-                    row.push({ value: item.levelName || '-', align: 'center' });
-                }
-                reportProjects.forEach(p => {
-                    const score = item.scores.find(s => s.projectName === p.name);
-                    row.push({
-                        value: score ? `${score.score}/${score.fullMark}` : '-',
-                        align: 'center'
-                    });
-                });
-                row.push({
-                    value: `${item.average.toFixed(1)}%`,
-                    align: 'center'
-                });
-                return row;
-            });
-            
-            // 添加新页面
-            let page = pdfDoc.addPage([841.89, 595.28]);  // A4 横向
-            let currentY = 550;
-            
-            // ========== 页眉 ==========
-            page.drawText(SCHOOL_CONFIG.name, {
-                x: 50,
-                y: currentY - 10,
-                size: 14,
-                font: fontBold,
-                color: PDFLib.rgb(0.2, 0.2, 0.5)
-            });
-            
-            page.drawText(title, {
-                x: 750,
-                y: currentY - 15,
-                size: 11,
-                font: fontBold,
-                color: PDFLib.rgb(0.2, 0.2, 0.5),
-                textAlign: 'right'
-            });
-            
-            page.drawText(`生成：${dateStr}`, {
-                x: 750,
-                y: currentY - 28,
-                size: 7,
-                font: fontRegular,
-                color: PDFLib.rgb(0.5, 0.5, 0.5),
-                textAlign: 'right'
-            });
-            
-            currentY -= 55;
-            
-            // ========== 统计卡片 ==========
-            const stats = [
-                { label: '学生人数', value: totalStudents, color: [0.39, 0.39, 0.89] },
-                { label: '平均成绩', value: avgScore.toFixed(1) + '%', color: [0.06, 0.73, 0.55] },
-                { label: '及格率', value: passRate + '%', color: [0.96, 0.62, 0.07] },
-                { label: '评分项目', value: reportProjects.length, color: [0.55, 0.35, 0.96] }
-            ];
-            
-            let statX = startX;
-            const statWidth = totalWidth / 4 - 10;
-            for (const stat of stats) {
-                page.drawRectangle({
-                    x: statX,
-                    y: currentY - 40,
-                    width: statWidth,
-                    height: 35,
-                    color: PDFLib.rgb(stat.color[0], stat.color[1], stat.color[2])
-                });
-                page.drawText(stat.value.toString(), {
-                    x: statX + statWidth / 2,
-                    y: currentY - 20,
-                    size: 14,
-                    font: fontBold,
-                    color: PDFLib.rgb(1, 1, 1),
-                    textAlign: 'center'
-                });
-                page.drawText(stat.label, {
-                    x: statX + statWidth / 2,
-                    y: currentY - 32,
-                    size: 7,
-                    font: fontRegular,
-                    color: PDFLib.rgb(1, 1, 1),
-                    textAlign: 'center'
-                });
-                statX += statWidth + 10;
-            }
-            
-            currentY -= 55;
-            
-            // ========== 级别标题 ==========
-            if (groupByLevel) {
-                page.drawRectangle({
-                    x: startX,
-                    y: currentY - 18,
-                    width: totalWidth,
-                    height: 16,
-                    color: PDFLib.rgb(0.2, 0.2, 0.4)
-                });
-                page.drawText(`${levelName}  (共 ${students.length} 人)`, {
-                    x: startX + 10,
-                    y: currentY - 7,
-                    size: 9,
-                    font: fontBold,
-                    color: PDFLib.rgb(1, 1, 1)
-                });
-                currentY -= 22;
-            }
-            
-            // ========== 表头 ==========
-            let headerY = currentY;
-            let x = startX;
-            for (let i = 0; i < columns.length; i++) {
-                const col = columns[i];
-                page.drawRectangle({
-                    x: x,
-                    y: headerY - 18,
-                    width: col.width,
-                    height: 18,
-                    borderColor: PDFLib.rgb(0.7, 0.7, 0.7),
-                    borderWidth: 0.3,
-                    color: PDFLib.rgb(0.95, 0.95, 0.97)
-                });
-                
-                const lines = col.title.split('\n');
-                if (lines.length === 2) {
-                    page.drawText(lines[0], {
-                        x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 6,
-                        size: 7,
-                        font: fontBold,
-                        textAlign: 'center'
-                    });
-                    page.drawText(lines[1], {
-                        x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 14,
-                        size: 6,
-                        font: fontRegular,
-                        textAlign: 'center'
-                    });
-                } else {
-                    page.drawText(col.title, {
-                        x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 6,
-                        size: 7,
-                        font: fontBold,
-                        textAlign: 'center'
-                    });
-                }
-                x += col.width;
-            }
-            
-            currentY = headerY - 18;
-            
-            // ========== 数据行 ==========
-            let rowY = currentY;
-            let rowCount = 0;
-            
-            for (const row of tableData) {
-                rowY -= 16;
-                rowCount++;
-                
-                if (rowY < 50) {
-                    page = pdfDoc.addPage([841.89, 595.28]);
-                    rowY = 530;
-                    
-                    // 新页面的简化页眉
-                    page.drawText(`${title} (续)`, {
-                        x: 50,
-                        y: 570,
-                        size: 9,
-                        font: fontBold,
-                        color: PDFLib.rgb(0.2, 0.2, 0.5)
-                    });
-                    
-                    // 重新绘制表头
-                    let newX = startX;
-                    let newHeaderY = 545;
-                    for (let i = 0; i < columns.length; i++) {
-                        const col = columns[i];
-                        page.drawRectangle({
-                            x: newX,
-                            y: newHeaderY - 18,
-                            width: col.width,
-                            height: 18,
-                            borderColor: PDFLib.rgb(0.7, 0.7, 0.7),
-                            borderWidth: 0.3,
-                            color: PDFLib.rgb(0.95, 0.95, 0.97)
-                        });
-                        const lines = col.title.split('\n');
-                        if (lines.length === 2) {
-                            page.drawText(lines[0], {
-                                x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 6,
-                                size: 7,
-                                font: fontBold,
-                                textAlign: 'center'
-                            });
-                            page.drawText(lines[1], {
-                                x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 14,
-                                size: 6,
-                                font: fontRegular,
-                                textAlign: 'center'
-                            });
-                        } else {
-                            page.drawText(col.title, {
-                                x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 6,
-                                size: 7,
-                                font: fontBold,
-                                textAlign: 'center'
-                            });
-                        }
-                        newX += col.width;
+        // 使用 html2canvas 截图，增加 scale 提高清晰度
+        const canvas = await html2canvas(tempDiv, {
+            scale: 2.5,
+            useCORS: true,
+            logging: false,
+            windowWidth: 1400,
+            backgroundColor: '#ffffff',
+            onclone: (clonedDoc, element) => {
+                // 确保克隆的文档中字体正确
+                const style = clonedDoc.createElement('style');
+                style.textContent = `
+                    * { font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif !important; }
+                    .score-table { width: 100%; border-collapse: collapse; }
+                    .score-table th, .score-table td { 
+                        padding: 8px 10px; 
+                        border: 1px solid #ddd;
+                        text-align: center;
+                        vertical-align: middle;
                     }
-                    rowY = newHeaderY - 18;
-                }
-                
-                const bgColor = rowCount % 2 === 0 ? PDFLib.rgb(0.98, 0.98, 0.98) : PDFLib.rgb(1, 1, 1);
-                x = startX;
-                
-                for (let i = 0; i < columns.length; i++) {
-                    const col = columns[i];
-                    const cell = row[i];
-                    
-                    page.drawRectangle({
-                        x: x,
-                        y: rowY - 16,
-                        width: col.width,
-                        height: 16,
-                        borderColor: PDFLib.rgb(0.85, 0.85, 0.85),
-                        borderWidth: 0.3,
-                        color: bgColor
-                    });
-                    
-                    let textColor = PDFLib.rgb(0.2, 0.2, 0.2);
-                    if (i === columns.length - 1) {
-                        const avgValue = parseFloat(cell.value);
-                        if (avgValue >= 80) textColor = PDFLib.rgb(0.06, 0.73, 0.55);
-                        else if (avgValue < 60) textColor = PDFLib.rgb(0.94, 0.27, 0.27);
+                    .score-table th {
+                        background: #f8fafc;
+                        font-weight: 700;
                     }
-                    
-                    page.drawText(cell.value, {
-                        x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: rowY - 5,
-                        size: 6.5,
-                        font: fontRegular,
-                        color: textColor,
-                        textAlign: 'center'
-                    });
-                    x += col.width;
-                }
+                    .table-wrapper {
+                        overflow-x: auto;
+                        max-width: 100%;
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
             }
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = jspdf;
+        
+        // 使用横向 A4
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = pdfWidth - 20;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        let remainingHeight = imgHeight;
+        let sourceY = 0;
+        let pageCount = 0;
+        
+        while (remainingHeight > 0) {
+            if (pageCount > 0) pdf.addPage();
             
-            // 页脚
-            page.drawText(`${SCHOOL_CONFIG.footer} | © ${new Date().getFullYear()} ${SCHOOL_CONFIG.name}`, {
-                x: startX,
-                y: 20,
-                size: 6,
-                font: fontRegular,
-                color: PDFLib.rgb(0.6, 0.6, 0.6)
-            });
+            const pageImgHeight = Math.min(remainingHeight, pdfHeight - 20);
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = (pageImgHeight / imgHeight) * canvas.height;
+            
+            const pageCtx = pageCanvas.getContext('2d');
+            pageCtx.drawImage(canvas, 0, sourceY, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+            
+            pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgWidth, pageImgHeight);
+            
+            sourceY += pageCanvas.height;
+            remainingHeight -= pageImgHeight;
+            pageCount++;
         }
         
-        // 保存 PDF
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
+        const title = data.selectedClass ? data.selectedClass : 
+                      data.selectedLevel ? getLevelNameById(data.selectedLevel) : '全协会';
         const fileName = `${SCHOOL_CONFIG.name}_${title}_成绩报告_${new Date().toISOString().split('T')[0]}.pdf`;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        pdf.save(fileName);
         
         showAlert('PDF 报告下载成功', 'success');
     } catch (error) {
         console.error('PDF 生成失败:', error);
         showAlert('PDF 生成失败: ' + error.message, 'danger');
     } finally {
+        document.body.removeChild(tempDiv);
         hideFullscreenLoader();
     }
 }
