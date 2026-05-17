@@ -9100,7 +9100,7 @@ function generateProfessionalScoreTable(data) {
 }
 
 /**
- * 下载专业版 PDF
+ * 下载专业版 PDF（横向 A4，完整显示所有项目）
  */
 async function downloadProfessionalPDF(data) {
     if (!data) {
@@ -9110,27 +9110,61 @@ async function downloadProfessionalPDF(data) {
     
     showFullscreenLoader('正在生成 PDF，请稍候...');
     
+    // 生成报告 HTML
     const reportHTML = createProfessionalReportHTML(data);
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = reportHTML;
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.top = '0';
-    tempDiv.style.width = '1200px';
+    // 设置一个较宽的宽度，确保表格完整渲染
+    tempDiv.style.width = '1400px';
     document.body.appendChild(tempDiv);
     
     try {
+        // 使用 html2canvas 渲染整个报告
         const canvas = await html2canvas(tempDiv, {
             scale: 2,
             useCORS: true,
             logging: false,
-            windowWidth: 1200,
-            backgroundColor: '#ffffff'
+            windowWidth: 1400,
+            backgroundColor: '#ffffff',
+            onclone: (clonedDoc, element) => {
+                // 确保克隆的文档中表格样式正确
+                const style = clonedDoc.createElement('style');
+                style.textContent = `
+                    .score-table { width: 100%; border-collapse: collapse; }
+                    .score-table th, .score-table td { 
+                        padding: 8px 10px; 
+                        border: 1px solid #ddd;
+                        text-align: center;
+                        vertical-align: middle;
+                    }
+                    .score-table th {
+                        background: #f8fafc;
+                        font-weight: 700;
+                        position: sticky;
+                        top: 0;
+                    }
+                    .table-wrapper {
+                        overflow-x: auto;
+                        max-width: 100%;
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
+            }
         });
         
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        // 使用横向 A4 纸张（landscape）
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgWidth = pdfWidth - 20;
@@ -9172,7 +9206,6 @@ async function downloadProfessionalPDF(data) {
         hideFullscreenLoader();
     }
 }
-
 /**
  * 下载专业版 Excel
  */
