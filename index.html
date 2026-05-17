@@ -5126,6 +5126,17 @@ let trendPeriod = 'all';
     if (checkSharedReport()) {
         return; // 有分享链接，直接显示报告，不再执行任何初始化
     }
+
+               window.addEventListener('load', function() {
+        // 修复：手动初始化所有带有 data-bs-toggle="tab" 的元素
+        var triggerTabList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tab"]'))
+        triggerTabList.forEach(function(triggerEl) {
+            try {
+                new bootstrap.Tab(triggerEl);
+            } catch(e) { console.warn(e); }
+        });
+        console.log('✅ 所有Tab组件已重新初始化');
+    });
     
     // ========== 没有分享链接，正常初始化 ==========
     
