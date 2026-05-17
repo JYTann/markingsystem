@@ -13885,9 +13885,33 @@ document.addEventListener('DOMContentLoaded', function() {
  * @returns {string} 编码后的字符串
  */
 function encodeReportData(data) {
-    const jsonStr = JSON.stringify(data);
-    // 使用 LZString 压缩（比 Base64 短很多）
-    return LZString.compressToEncodedURIComponent(jsonStr);
+    // 使用更短的键名
+    const minimalData = {
+        s: data.studentAverages.map(s => ({
+            n: s.student.name,
+            i: s.student.studentId,
+            c: s.student.class,
+            l: s.levelName,
+            a: s.average,
+            sc: s.scores.map(sc => ({
+                p: sc.projectName,
+                s: sc.score,
+                f: sc.fullMark,
+                r: sc.percentage
+            }))
+        })),
+        p: data.reportProjects.map(p => ({
+            n: p.name,
+            f: p.fullMark,
+            w: p.weight
+        })),
+        cl: data.selectedClass,
+        gb: data.groupByLevel
+    };
+    
+    const jsonStr = JSON.stringify(minimalData);
+    // 直接 URI 编码（不压缩）
+    return encodeURIComponent(jsonStr);
 }
 
 /**
