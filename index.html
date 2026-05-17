@@ -8422,7 +8422,7 @@ async function showReportInWindow() {
     reportWindow.document.close();
     
     // 将数据挂载到新窗口
-    reportWindow._reportData = data;
+    reportwindow._currentReportData = data;
     reportWindow._schoolConfig = SCHOOL_CONFIG;
     
     // 添加分享功能到新窗口
@@ -8451,10 +8451,10 @@ async function showReportInWindow() {
             
             // 下载 PDF 和 Excel 函数
             reportWindow._downloadPDF = function() {
-                downloadProfessionalPDF(window._reportData);
+                downloadProfessionalPDF(window._currentReportData);
             };
             reportWindow._downloadExcel = function() {
-                downloadProfessionalExcel(window._reportData);
+                downloadProfessionalExcel(window._currentReportData);
             };
             
         } catch (e) {
