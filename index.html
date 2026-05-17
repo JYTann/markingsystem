@@ -9342,9 +9342,341 @@ function createReportCardHTML(data) {
     </div>`;
 }
 
-        // ==================== 点名系统功能 ====================
+// ==================== 点名统计功能 ====================
 
-// 加载点名数据
+// 当前选中的点名ID
+let selectedAttendanceId = null;
+
+// 更新点名统计 - 根据选中的点名显示详细统计
+function updateAttendanceStats(attendanceId) {
+    const statsContainer = document.getElementById('attendance-stats');
+    if (!statsContainer) return;
+    
+    const attendance = attendances.find(a => a.id === attendanceId);
+    if (!attendance) {
+        statsContainer.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-chart-bar fa-2x mb-2" style="opacity: 0.3;"></i>
+                <p class="mb-0">选择点名查看统计</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 获取该点名的签到记录
+    const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
+    const checkedInIds = new Set(records.map(r => r.studentId));
+    
+    // 获取该点名指定的级别学生（如果有指定级别）
+    let targetStudents = [];
+    if (attendance.levelId) {
+        targetStudents = students.filter(s => s.levelId === attendance.levelId);
+    } else {
+        targetStudents = students;
+    }
+    
+    const totalStudents = targetStudents.length;
+    const checkedInCount = targetStudents.filter(s => checkedInIds.has(s.id)).length;
+    const absentCount = totalStudents - checkedInCount;
+    const attendanceRate = totalStudents > 0 ? (checkedInCount / totalStudents * 100).toFixed(1) : 0;
+    
+    // 获取级别名称
+    const levelName = attendance.levelId ? 
+        (levels.find(l => l.id === attendance.levelId)?.name || '指定级别') : '全体成员';
+    
+    // 按班级统计
+    const classStats = {};
+    targetStudents.forEach(student => {
+        const className = student.class || '未知班级';
+        if (!classStats[className]) {
+            classStats[className] = { total: 0, checkedIn: 0 };
+        }
+        classStats[className].total++;
+        if (checkedInIds.has(student.id)) {
+            classStats[className].checkedIn++;
+        }
+    });
+    
+    // 按级别统计
+    const levelStats = {};
+    targetStudents.forEach(student => {
+        const levelNameVal = student.levelName || '未设置';
+        if (!levelStats[levelNameVal]) {
+            levelStats[levelNameVal] = { total: 0, checkedIn: 0 };
+        }
+        levelStats[levelNameVal].total++;
+        if (checkedInIds.has(student.id)) {
+            levelStats[levelNameVal].checkedIn++;
+        }
+    });
+    
+    // 构建统计HTML
+    let statsHTML = `
+        <div class="attendance-stats-content">
+            <!-- 整体统计卡片 -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="stat-mini-card" style="background: linear-gradient(135deg, #10b981, #34d399); border-radius: 12px; padding: 12px; text-align: center; color: white;">
+                        <div style="font-size: 1.8rem; font-weight: 700;">${checkedInCount}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.9;">已签到</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-mini-card" style="background: linear-gradient(135deg, #ef4444, #f87171); border-radius: 12px; padding: 12px; text-align: center; color: white;">
+                        <div style="font-size: 1.8rem; font-weight: 700;">${absentCount}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.9;">未签到</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 出勤率进度条 -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small">出勤率</span>
+                    <span class="small fw-bold">${attendanceRate}%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" style="width: ${attendanceRate}%; background: linear-gradient(90deg, #10b981, #34d399);"></div>
+                </div>
+            </div>
+            
+            <!-- 点名基本信息 -->
+            <div class="info-box p-2 mb-3" style="background: #f8fafc; border-radius: 12px;">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small text-muted"><i class="fas fa-tag me-1"></i>点名标题</span>
+                    <span class="small fw-bold">${attendance.title || '-'}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small text-muted"><i class="fas fa-calendar me-1"></i>日期</span>
+                    <span class="small">${attendance.date || '-'}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small text-muted"><i class="fas fa-clock me-1"></i>时段</span>
+                    <span class="small">${attendance.startTimeStr || '-'} - ${attendance.endTimeStr || '-'}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="small text-muted"><i class="fas fa-users me-1"></i>范围</span>
+                    <span class="small">${levelName}</span>
+                </div>
+            </div>
+    `;
+    
+    // 班级统计表格
+    if (Object.keys(classStats).length > 0) {
+        statsHTML += `
+            <div class="mb-3">
+                <div class="small fw-bold mb-2"><i class="fas fa-school me-1"></i>按班级统计</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless small">
+                        <thead>
+                            <tr><th>班级</th><th>总人数</th><th>已签到</th><th>出勤率</th></tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(classStats).map(([className, stats]) => {
+                                const rate = stats.total > 0 ? (stats.checkedIn / stats.total * 100).toFixed(0) : 0;
+                                return `
+                                    <tr>
+                                        <td>${className}</td>
+                                        <td>${stats.total}</td>
+                                        <td>${stats.checkedIn}</td>
+                                        <td>
+                                            <div style="width: 50px; display: inline-block;">
+                                                <div class="progress" style="height: 4px;">
+                                                    <div class="progress-bar bg-${rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}" style="width: ${rate}%"></div>
+                                                </div>
+                                            </div>
+                                            <span class="ms-1">${rate}%</span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 级别统计表格
+    if (Object.keys(levelStats).length > 0 && !attendance.levelId) {
+        statsHTML += `
+            <div class="mb-3">
+                <div class="small fw-bold mb-2"><i class="fas fa-layer-group me-1"></i>按级别统计</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless small">
+                        <thead>
+                            <tr><th>级别</th><th>总人数</th><th>已签到</th><th>出勤率</th></tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(levelStats).map(([levelNameVal, stats]) => {
+                                const rate = stats.total > 0 ? (stats.checkedIn / stats.total * 100).toFixed(0) : 0;
+                                return `
+                                    <tr>
+                                        <td>${levelNameVal}</td>
+                                        <td>${stats.total}</td>
+                                        <td>${stats.checkedIn}</td>
+                                        <td>
+                                            <div style="width: 50px; display: inline-block;">
+                                                <div class="progress" style="height: 4px;">
+                                                    <div class="progress-bar bg-${rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}" style="width: ${rate}%"></div>
+                                                </div>
+                                            </div>
+                                            <span class="ms-1">${rate}%</span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 最近签到时间
+    const sortedRecords = [...records].sort((a, b) => {
+        const dateA = a.checkinTime?.toDate() || new Date(0);
+        const dateB = b.checkinTime?.toDate() || new Date(0);
+        return dateB - dateA;
+    });
+    
+    if (sortedRecords.length > 0) {
+        const latest = sortedRecords[0];
+        const latestTime = latest.checkinTime?.toDate().toLocaleTimeString() || '未知';
+        statsHTML += `
+            <div class="small text-muted text-center pt-2 border-top">
+                <i class="fas fa-clock me-1"></i>最近签到: ${latestTime}
+            </div>
+        `;
+    }
+    
+    statsHTML += `</div>`;
+    statsContainer.innerHTML = statsHTML;
+}
+
+// 修改渲染点名列表函数，添加选中高亮和统计联动
+function renderAttendanceList() {
+    const container = document.getElementById('attendance-list');
+    if (!container) return;
+    
+    if (attendances.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                <p>暂无点名记录，点击"新建点名"开始</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = attendances.map(attendance => {
+        const now = new Date();
+        const startTime = attendance.startTime?.toDate();
+        const endTime = attendance.endTime?.toDate();
+        
+        let status = 'completed';
+        let statusClass = 'completed';
+        let statusText = '已结束';
+        
+        if (now < startTime) {
+            status = 'upcoming';
+            statusClass = 'upcoming';
+            statusText = '即将开始';
+        } else if (now >= startTime && now <= endTime) {
+            status = 'active';
+            statusClass = 'active';
+            statusText = '进行中';
+        }
+        
+        if (attendance.cancelled) {
+            status = 'cancelled';
+            statusClass = 'cancelled';
+            statusText = '已取消';
+        }
+        
+        const recordCount = attendanceRecords.filter(r => r.attendanceId === attendance.id).length;
+        
+        // 获取该点名指定的级别学生数量
+        let targetStudents = [];
+        if (attendance.levelId) {
+            targetStudents = students.filter(s => s.levelId === attendance.levelId);
+        } else {
+            targetStudents = students;
+        }
+        const totalStudents = targetStudents.length;
+        const percentage = totalStudents > 0 ? Math.round((recordCount / totalStudents) * 100) : 0;
+        
+        // 高亮选中的点名
+        const isSelected = selectedAttendanceId === attendance.id;
+        const selectedClass = isSelected ? 'border border-primary shadow-sm' : '';
+        
+        return `
+            <div class="attendance-card mb-3 p-3 ${selectedClass}" style="border-radius: 16px; cursor: pointer; transition: all 0.2s ease;" 
+                 onclick="selectAttendance('${attendance.id}')">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1 fw-bold">${attendance.title}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>${attendance.date || ''}
+                            <i class="fas fa-clock ms-2 me-1"></i>${attendance.startTimeStr || ''} - ${attendance.endTimeStr || ''}
+                        </small>
+                    </div>
+                    <span class="attendance-status ${statusClass}">
+                        <span class="attendance-status-dot"></span>
+                        ${statusText}
+                    </span>
+                </div>
+                
+                ${attendance.code ? `
+                <div class="mb-2">
+                    <small class="text-muted">验证码：</small>
+                    <code style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 1rem; letter-spacing: 3px;">
+                        ${attendance.code}
+                    </code>
+                </div>
+                ` : ''}
+                
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-user-check me-1"></i>已签到：${recordCount}/${totalStudents}
+                    </small>
+                    <div class="attendance-progress flex-grow-1">
+                        <div class="attendance-progress-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <small class="text-muted">${percentage}%</small>
+                </div>
+                
+                ${attendance.note ? `<small class="text-muted d-block mb-2"><i class="fas fa-sticky-note me-1"></i>${attendance.note}</small>` : ''}
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); viewAttendanceDetail('${attendance.id}')">
+                        <i class="fas fa-eye me-1"></i>查看详情
+                    </button>
+                    ${status !== 'completed' ? `
+                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editAttendance('${attendance.id}')">
+                        <i class="fas fa-edit me-1"></i>编辑
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); cancelAttendance('${attendance.id}')">
+                        <i class="fas fa-times me-1"></i>取消
+                    </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteAttendance('${attendance.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 选择点名并显示统计
+function selectAttendance(attendanceId) {
+    selectedAttendanceId = attendanceId;
+    renderAttendanceList(); // 重新渲染以高亮选中的点名
+    updateAttendanceStats(attendanceId);
+}
+
+// 在加载点名数据后，如果有选中的点名，更新统计
 function loadAttendances() {
     db.collection('attendances').orderBy('createdAt', 'desc').get()
         .then(querySnapshot => {
@@ -9354,13 +9686,18 @@ function loadAttendances() {
             });
             renderAttendanceList();
             loadAttendanceRecords();
+            
+            // 如果有选中的点名，更新统计
+            if (selectedAttendanceId) {
+                updateAttendanceStats(selectedAttendanceId);
+            }
         })
         .catch(error => {
             console.error("加载点名数据失败:", error);
         });
 }
 
-// 加载点名记录
+// 在加载点名记录后刷新统计
 function loadAttendanceRecords() {
     db.collection('attendanceRecords').get()
         .then(querySnapshot => {
@@ -9370,12 +9707,16 @@ function loadAttendanceRecords() {
             });
             renderAttendanceList();
             updateCurrentSessionInfo();
+            
+            // 刷新统计
+            if (selectedAttendanceId) {
+                updateAttendanceStats(selectedAttendanceId);
+            }
         })
         .catch(error => {
             console.error("加载点名记录失败:", error);
         });
 }
-
 // 渲染点名列表
 function renderAttendanceList() {
     const container = document.getElementById('attendance-list');
