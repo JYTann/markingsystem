@@ -13924,7 +13924,8 @@ function encodeReportData(data) {
  */
 function decodeReportData(encoded) {
     try {
-        const jsonStr = decodeURIComponent(encoded);
+        const base64Decoded = atob(encoded);
+    const jsonStr = decodeURIComponent(base64Decoded);
         const decoded = JSON.parse(jsonStr);
         
         // 转换回原始格式
