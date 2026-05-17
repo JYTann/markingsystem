@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- 在 head 标签中添加 Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
     <style>
     :root {
     --primary: #6366f1;
@@ -9110,7 +9111,7 @@ async function downloadProfessionalPDF(data) {
         return;
     }
 
-    showFullscreenLoader('正在生成 PDF（支持中文）...');
+    showFullscreenLoader('正在生成 PDF...');
     
     try {
         const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
@@ -9139,15 +9140,17 @@ async function downloadProfessionalPDF(data) {
         
         // 创建 PDF 文档（横向 A4）
         const pdfDoc = await PDFLib.PDFDocument.create();
-        const pageWidth = 841.89;
-        const pageHeight = 595.28;
         
-        // ========== 加载中文字体 ==========
-        // 使用开源字体 NotoSansSC（需要托管在你的服务器或使用 CDN）
-        // 方案1：使用 CDN 上的字体文件
+        // ========== 注册 fontkit 并加载中文字体 ==========
+        // 注册 fontkit（必须）
+        pdfDoc.registerFontkit(window.fontkit);
+        
+        // 加载中文字体（使用 jsDelivr CDN 上的 Noto Sans CJK）
         let fontRegular, fontBold;
         try {
-            // 尝试加载中文字体（Noto Sans SC）
+            // 方案1：使用 Google Fonts 的 Noto Sans SC（需要正确加载）
+            // 方案2：使用系统字体文件（需要上传到你的服务器）
+            // 这里使用一个可用的 CDN 字体
             const fontUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Regular.otf';
             const fontBoldUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Bold.otf';
             
@@ -9156,9 +9159,10 @@ async function downloadProfessionalPDF(data) {
             
             fontRegular = await pdfDoc.embedFont(fontBytes);
             fontBold = await pdfDoc.embedFont(fontBoldBytes);
+            console.log('中文字体加载成功');
         } catch (e) {
-            console.warn('加载中文字体失败，使用默认字体（中文可能显示异常）', e);
-            // 降级：使用 Helvetica（不支持中文）
+            console.warn('加载中文字体失败，使用默认字体', e);
+            // 降级：使用 Helvetica（中文会显示为空白，但至少不报错）
             fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
             fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
         }
@@ -9179,7 +9183,7 @@ async function downloadProfessionalPDF(data) {
         ];
         
         const totalWidth = columns.reduce((sum, col) => sum + col.width, 0);
-        const startX = (pageWidth - totalWidth) / 2;
+        const startX = (841.89 - totalWidth) / 2;  // A4 横向宽度 841.89
         
         // 为每个级别组生成页面
         for (const [levelName, students] of groups) {
@@ -9209,43 +9213,37 @@ async function downloadProfessionalPDF(data) {
             });
             
             // 添加新页面
-            let page = pdfDoc.addPage([pageWidth, pageHeight]);
-            let currentY = pageHeight - 40;
+            let page = pdfDoc.addPage([841.89, 595.28]);  // A4 横向
+            let currentY = 550;
             
             // ========== 页眉 ==========
             page.drawText(SCHOOL_CONFIG.name, {
-                x: 40,
+                x: 50,
                 y: currentY - 10,
-                size: 16,
+                size: 14,
                 font: fontBold,
-                color: PDFLib.rgb(0.2, 0.2, 0.6)
-            });
-            
-            page.drawText(SCHOOL_CONFIG.nameEn, {
-                x: 40,
-                y: currentY - 25,
-                size: 8,
-                font: fontRegular,
-                color: PDFLib.rgb(0.4, 0.4, 0.4)
+                color: PDFLib.rgb(0.2, 0.2, 0.5)
             });
             
             page.drawText(title, {
-                x: pageWidth - 150,
+                x: 750,
                 y: currentY - 15,
-                size: 12,
+                size: 11,
                 font: fontBold,
-                color: PDFLib.rgb(0.2, 0.2, 0.6)
+                color: PDFLib.rgb(0.2, 0.2, 0.5),
+                textAlign: 'right'
             });
             
-            page.drawText(`生成日期：${dateStr}`, {
-                x: pageWidth - 150,
+            page.drawText(`生成：${dateStr}`, {
+                x: 750,
                 y: currentY - 28,
-                size: 8,
+                size: 7,
                 font: fontRegular,
-                color: PDFLib.rgb(0.5, 0.5, 0.5)
+                color: PDFLib.rgb(0.5, 0.5, 0.5),
+                textAlign: 'right'
             });
             
-            currentY -= 60;
+            currentY -= 55;
             
             // ========== 统计卡片 ==========
             const stats = [
@@ -9260,23 +9258,23 @@ async function downloadProfessionalPDF(data) {
             for (const stat of stats) {
                 page.drawRectangle({
                     x: statX,
-                    y: currentY - 45,
+                    y: currentY - 40,
                     width: statWidth,
-                    height: 40,
+                    height: 35,
                     color: PDFLib.rgb(stat.color[0], stat.color[1], stat.color[2])
                 });
                 page.drawText(stat.value.toString(), {
                     x: statX + statWidth / 2,
-                    y: currentY - 22,
-                    size: 16,
+                    y: currentY - 20,
+                    size: 14,
                     font: fontBold,
                     color: PDFLib.rgb(1, 1, 1),
                     textAlign: 'center'
                 });
                 page.drawText(stat.label, {
                     x: statX + statWidth / 2,
-                    y: currentY - 35,
-                    size: 8,
+                    y: currentY - 32,
+                    size: 7,
                     font: fontRegular,
                     color: PDFLib.rgb(1, 1, 1),
                     textAlign: 'center'
@@ -9284,25 +9282,25 @@ async function downloadProfessionalPDF(data) {
                 statX += statWidth + 10;
             }
             
-            currentY -= 60;
+            currentY -= 55;
             
             // ========== 级别标题 ==========
             if (groupByLevel) {
                 page.drawRectangle({
                     x: startX,
-                    y: currentY - 20,
+                    y: currentY - 18,
                     width: totalWidth,
-                    height: 18,
+                    height: 16,
                     color: PDFLib.rgb(0.2, 0.2, 0.4)
                 });
                 page.drawText(`${levelName}  (共 ${students.length} 人)`, {
                     x: startX + 10,
-                    y: currentY - 8,
-                    size: 10,
+                    y: currentY - 7,
+                    size: 9,
                     font: fontBold,
                     color: PDFLib.rgb(1, 1, 1)
                 });
-                currentY -= 25;
+                currentY -= 22;
             }
             
             // ========== 表头 ==========
@@ -9312,11 +9310,11 @@ async function downloadProfessionalPDF(data) {
                 const col = columns[i];
                 page.drawRectangle({
                     x: x,
-                    y: headerY - 20,
+                    y: headerY - 18,
                     width: col.width,
-                    height: 20,
+                    height: 18,
                     borderColor: PDFLib.rgb(0.7, 0.7, 0.7),
-                    borderWidth: 0.5,
+                    borderWidth: 0.3,
                     color: PDFLib.rgb(0.95, 0.95, 0.97)
                 });
                 
@@ -9324,23 +9322,23 @@ async function downloadProfessionalPDF(data) {
                 if (lines.length === 2) {
                     page.drawText(lines[0], {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 8,
-                        size: 8,
+                        y: headerY - 6,
+                        size: 7,
                         font: fontBold,
                         textAlign: 'center'
                     });
                     page.drawText(lines[1], {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 17,
-                        size: 7,
+                        y: headerY - 14,
+                        size: 6,
                         font: fontRegular,
                         textAlign: 'center'
                     });
                 } else {
                     page.drawText(col.title, {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
-                        y: headerY - 8,
-                        size: 8,
+                        y: headerY - 6,
+                        size: 7,
                         font: fontBold,
                         textAlign: 'center'
                     });
@@ -9348,71 +9346,71 @@ async function downloadProfessionalPDF(data) {
                 x += col.width;
             }
             
-            currentY = headerY - 20;
+            currentY = headerY - 18;
             
             // ========== 数据行 ==========
             let rowY = currentY;
             let rowCount = 0;
             
             for (const row of tableData) {
-                rowY -= 18;
+                rowY -= 16;
                 rowCount++;
                 
                 if (rowY < 50) {
-                    page = pdfDoc.addPage([pageWidth, pageHeight]);
-                    rowY = pageHeight - 40;
+                    page = pdfDoc.addPage([841.89, 595.28]);
+                    rowY = 530;
                     
                     // 新页面的简化页眉
                     page.drawText(`${title} (续)`, {
-                        x: 40,
-                        y: pageHeight - 20,
-                        size: 10,
+                        x: 50,
+                        y: 570,
+                        size: 9,
                         font: fontBold,
-                        color: PDFLib.rgb(0.2, 0.2, 0.6)
+                        color: PDFLib.rgb(0.2, 0.2, 0.5)
                     });
                     
                     // 重新绘制表头
                     let newX = startX;
-                    let newHeaderY = pageHeight - 50;
+                    let newHeaderY = 545;
                     for (let i = 0; i < columns.length; i++) {
                         const col = columns[i];
                         page.drawRectangle({
                             x: newX,
-                            y: newHeaderY - 20,
+                            y: newHeaderY - 18,
                             width: col.width,
-                            height: 20,
+                            height: 18,
                             borderColor: PDFLib.rgb(0.7, 0.7, 0.7),
-                            borderWidth: 0.5,
+                            borderWidth: 0.3,
                             color: PDFLib.rgb(0.95, 0.95, 0.97)
                         });
                         const lines = col.title.split('\n');
                         if (lines.length === 2) {
                             page.drawText(lines[0], {
                                 x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 8,
-                                size: 8,
+                                y: newHeaderY - 6,
+                                size: 7,
                                 font: fontBold,
                                 textAlign: 'center'
                             });
                             page.drawText(lines[1], {
                                 x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 17,
-                                size: 7,
+                                y: newHeaderY - 14,
+                                size: 6,
                                 font: fontRegular,
                                 textAlign: 'center'
                             });
                         } else {
                             page.drawText(col.title, {
                                 x: newX + (col.align === 'center' ? col.width / 2 : 4),
-                                y: newHeaderY - 8,
-                                size: 8,
+                                y: newHeaderY - 6,
+                                size: 7,
                                 font: fontBold,
                                 textAlign: 'center'
                             });
                         }
                         newX += col.width;
                     }
-                    rowY = newHeaderY - 20;
+                    rowY = newHeaderY - 18;
                 }
                 
                 const bgColor = rowCount % 2 === 0 ? PDFLib.rgb(0.98, 0.98, 0.98) : PDFLib.rgb(1, 1, 1);
@@ -9424,9 +9422,9 @@ async function downloadProfessionalPDF(data) {
                     
                     page.drawRectangle({
                         x: x,
-                        y: rowY - 18,
+                        y: rowY - 16,
                         width: col.width,
-                        height: 18,
+                        height: 16,
                         borderColor: PDFLib.rgb(0.85, 0.85, 0.85),
                         borderWidth: 0.3,
                         color: bgColor
@@ -9442,7 +9440,7 @@ async function downloadProfessionalPDF(data) {
                     page.drawText(cell.value, {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
                         y: rowY - 5,
-                        size: 7.5,
+                        size: 6.5,
                         font: fontRegular,
                         color: textColor,
                         textAlign: 'center'
@@ -9455,7 +9453,7 @@ async function downloadProfessionalPDF(data) {
             page.drawText(`${SCHOOL_CONFIG.footer} | © ${new Date().getFullYear()} ${SCHOOL_CONFIG.name}`, {
                 x: startX,
                 y: 20,
-                size: 7,
+                size: 6,
                 font: fontRegular,
                 color: PDFLib.rgb(0.6, 0.6, 0.6)
             });
