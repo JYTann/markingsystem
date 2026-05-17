@@ -7069,133 +7069,139 @@ function updateScoreDistributionChart() {
     }
 }
         // --- 在 updateScoreDistributionChart 函数后面添加 ---
-// 更新项目对比图表 - 修复版本，支持演示数据
+// 更新项目对比图表 - 修复递归调用问题
 let projectComparisonChart = null;
+let isUpdatingProjectChart = false; // 防止递归的标志
 
 function updateProjectComparisonChart() {
-    // 先检查仪表盘tab是否激活
-    const dashboardTab = document.getElementById('dashboard-tab');
-    if (!dashboardTab || !dashboardTab.classList.contains('active')) {
-        return; // 仪表盘未激活，不更新图表
+    // 防止递归调用
+    if (isUpdatingProjectChart) {
+        return;
     }
+    isUpdatingProjectChart = true;
     
-    const canvas = document.getElementById('projectComparisonChart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    if (projectComparisonChart) {
-        try {
-            projectComparisonChart.destroy();
-        } catch(e) {}
-    }
-    
-    // 获取所有项目（包括级别项目）
-    const allProjects = [...projects, ...levelProjects];
-    let projectStats = [];
-    
-    // 统计真实数据
-    allProjects.forEach(project => {
-        const projectScores = scores.filter(s => s.projectId === project.id);
-        if (projectScores.length > 0) {
-            const avgScore = projectScores.reduce((sum, s) => sum + s.score, 0) / projectScores.length;
-            const avgPercentage = project.fullMark > 0 ? (avgScore / project.fullMark) * 100 : 0;
-            projectStats.push({
-                name: project.name,
-                average: avgPercentage,
-                count: projectScores.length
-            });
+    try {
+        // 先检查仪表盘tab是否激活
+        const dashboardTab = document.getElementById('dashboard-tab');
+        if (!dashboardTab || !dashboardTab.classList.contains('active')) {
+            isUpdatingProjectChart = false;
+            return;
         }
-    });
-    
-    // 如果没有真实数据，使用演示数据
-    let useMockData = projectStats.length === 0;
-    
-    if (useMockData) {
-        // 演示数据 - 展示协会常见评分项目
-        projectStats = [
-            { name: '编程基础', average: 85.5, count: 28 },
-            { name: '网页设计', average: 78.3, count: 26 },
-            { name: '团队协作', average: 82.6, count: 30 },
-            { name: '创新思维', average: 73.8, count: 25 },
-            { name: '技术文档', average: 80.2, count: 24 },
-            { name: '项目展示', average: 88.4, count: 27 },
-            { name: '课堂表现', average: 76.5, count: 30 },
-            { name: '作业完成', average: 79.8, count: 28 }
-        ];
         
-        // 移除旧的演示提示
+        const canvas = document.getElementById('projectComparisonChart');
+        if (!canvas) {
+            isUpdatingProjectChart = false;
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            isUpdatingProjectChart = false;
+            return;
+        }
+        
+        if (projectComparisonChart) {
+            try {
+                projectComparisonChart.destroy();
+            } catch(e) {}
+            projectComparisonChart = null;
+        }
+        
+        // 获取所有项目（包括级别项目）
+        const allProjects = [...projects, ...levelProjects];
+        let projectStats = [];
+        
+        // 统计真实数据
+        allProjects.forEach(project => {
+            const projectScores = scores.filter(s => s.projectId === project.id);
+            if (projectScores.length > 0) {
+                const avgScore = projectScores.reduce((sum, s) => sum + s.score, 0) / projectScores.length;
+                const avgPercentage = project.fullMark > 0 ? (avgScore / project.fullMark) * 100 : 0;
+                projectStats.push({
+                    name: project.name,
+                    average: avgPercentage,
+                    count: projectScores.length
+                });
+            }
+        });
+        
+        // 如果没有真实数据，使用演示数据
+        let useMockData = projectStats.length === 0;
+        
         const chartContainer = canvas.parentElement;
-        const oldHint = chartContainer.querySelector('.mock-chart-hint');
-        if (oldHint) oldHint.remove();
         
-        // 添加演示数据提示
-        const hint = document.createElement('div');
-        hint.className = 'mock-chart-hint';
-        hint.style.cssText = `
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(99, 102, 241, 0.9);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            z-index: 10;
-            backdrop-filter: blur(4px);
-            pointer-events: none;
-        `;
-        hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 创建项目并录入成绩后显示真实数据';
-        chartContainer.appendChild(hint);
-    }
-    
-    if (projectStats.length === 0) {
-        const container = canvas.parentElement;
-        if (container) {
-            container.innerHTML = `
+        if (useMockData) {
+            // 演示数据
+            projectStats = [
+                { name: '编程基础', average: 85.5, count: 28 },
+                { name: '网页设计', average: 78.3, count: 26 },
+                { name: '团队协作', average: 82.6, count: 30 },
+                { name: '创新思维', average: 73.8, count: 25 },
+                { name: '技术文档', average: 80.2, count: 24 },
+                { name: '项目展示', average: 88.4, count: 27 },
+                { name: '课堂表现', average: 76.5, count: 30 },
+                { name: '作业完成', average: 79.8, count: 28 }
+            ];
+            
+            // 添加演示数据提示
+            const oldHint = chartContainer.querySelector('.mock-chart-hint');
+            if (!oldHint) {
+                const hint = document.createElement('div');
+                hint.className = 'mock-chart-hint';
+                hint.style.cssText = `
+                    position: absolute;
+                    bottom: 10px;
+                    right: 10px;
+                    background: rgba(99, 102, 241, 0.9);
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 0.7rem;
+                    font-weight: 500;
+                    z-index: 10;
+                    backdrop-filter: blur(4px);
+                    pointer-events: none;
+                `;
+                hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 创建项目并录入成绩后显示真实数据';
+                chartContainer.appendChild(hint);
+            }
+        } else {
+            // 移除演示提示
+            const oldHint = chartContainer.querySelector('.mock-chart-hint');
+            if (oldHint) oldHint.remove();
+        }
+        
+        if (projectStats.length === 0) {
+            chartContainer.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
                     <p class="mt-2 text-muted">暂无项目对比数据</p>
                     <p class="small text-muted">请先在"评分项目"或"级别管理"中添加项目，然后录入分数</p>
                 </div>
             `;
+            isUpdatingProjectChart = false;
+            return;
         }
-        return;
-    }
-    
-    // 恢复canvas（如果被替换了）
-    const parent = canvas.parentElement;
-    if (parent.innerHTML !== canvas.outerHTML && !parent.querySelector('canvas')) {
-        const newCanvas = document.createElement('canvas');
-        newCanvas.id = 'projectComparisonChart';
-        parent.innerHTML = '';
-        parent.appendChild(newCanvas);
-        updateProjectComparisonChart();
-        return;
-    }
-    
-    // 按平均分排序，取前8个
-    projectStats.sort((a, b) => b.average - a.average);
-    const topProjects = projectStats.slice(0, 8);
-    
-    // 根据得分率设置不同的柱状图颜色
-    const barColors = topProjects.map(p => {
-        if (p.average >= 80) return 'rgba(16, 185, 129, 0.7)';  // 绿色 - 优秀
-        if (p.average >= 70) return 'rgba(99, 102, 241, 0.7)'; // 紫色 - 良好
-        if (p.average >= 60) return 'rgba(245, 158, 11, 0.7)';  // 橙色 - 及格
-        return 'rgba(239, 68, 68, 0.7)';                         // 红色 - 不及格
-    });
-    
-    const borderColors = topProjects.map(p => {
-        if (p.average >= 80) return 'rgba(16, 185, 129, 1)';
-        if (p.average >= 70) return 'rgba(99, 102, 241, 1)';
-        if (p.average >= 60) return 'rgba(245, 158, 11, 1)';
-        return 'rgba(239, 68, 68, 1)';
-    });
-    
-    try {
+        
+        // 按平均分排序，取前8个
+        projectStats.sort((a, b) => b.average - a.average);
+        const topProjects = projectStats.slice(0, 8);
+        
+        // 根据得分率设置不同的柱状图颜色
+        const barColors = topProjects.map(p => {
+            if (p.average >= 80) return 'rgba(16, 185, 129, 0.7)';
+            if (p.average >= 70) return 'rgba(99, 102, 241, 0.7)';
+            if (p.average >= 60) return 'rgba(245, 158, 11, 0.7)';
+            return 'rgba(239, 68, 68, 0.7)';
+        });
+        
+        const borderColors = topProjects.map(p => {
+            if (p.average >= 80) return 'rgba(16, 185, 129, 1)';
+            if (p.average >= 70) return 'rgba(99, 102, 241, 1)';
+            if (p.average >= 60) return 'rgba(245, 158, 11, 1)';
+            return 'rgba(239, 68, 68, 1)';
+        });
+        
         projectComparisonChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -7259,10 +7265,6 @@ function updateProjectComparisonChart() {
                             },
                             stepSize: 20,
                             font: { size: 10 }
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.06)',
-                            drawBorder: false,
                         }
                     },
                     x: {
@@ -7276,26 +7278,20 @@ function updateProjectComparisonChart() {
                             font: { size: 11 },
                             maxRotation: 45,
                             minRotation: 0,
-                        },
-                        grid: {
-                            display: false,
                         }
                     }
                 },
                 animation: {
-                    duration: 1000,
+                    duration: 800,
                     easing: 'easeOutQuart',
-                },
-                layout: {
-                    padding: {
-                        top: 10,
-                        bottom: 10
-                    }
                 }
             }
         });
+        
     } catch (error) {
         console.error("创建项目对比图表失败: ", error);
+    } finally {
+        isUpdatingProjectChart = false;
     }
 }
 
@@ -10468,168 +10464,191 @@ function initTrendControls() {
     });
 }
 
-// 更新仪表盘趋势图 - 修复版本，支持模拟数据展示
+// 更新仪表盘趋势图 - 修复递归调用问题
+let scoreTrendChart = null;
+let isUpdatingTrendChart = false; // 防止递归的标志
+
 function updateScoreTrendChart() {
-    const canvas = document.getElementById('scoreTrendChart');
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // 销毁旧图表
-    if (scoreTrendChart) {
-        try { scoreTrendChart.destroy(); } catch(e) {}
-        scoreTrendChart = null;
-    }
-    
-    // 获取筛选条件
-    const selectedLevel = document.getElementById('trend-level-select')?.value || '';
-    const selectedClass = document.getElementById('trend-class-select')?.value || '';
-    
-    // 过滤分数数据
-    let filteredScores = [...scores];
-    
-    // 如果没有真实数据，使用模拟数据展示图表效果
-    let useMockData = filteredScores.length === 0;
-    
-    if (!useMockData) {
-        // 按时间过滤
-        const now = new Date();
-        if (trendPeriod === 'week') {
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            filteredScores = filteredScores.filter(s => {
-                const date = s.recordedAt?.toDate();
-                return date && date >= weekAgo;
-            });
-        } else if (trendPeriod === 'month') {
-            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            filteredScores = filteredScores.filter(s => {
-                const date = s.recordedAt?.toDate();
-                return date && date >= monthAgo;
-            });
-        }
-        
-        // 按级别/班级过滤
-        if (selectedLevel || selectedClass) {
-            const studentIds = students
-                .filter(s => {
-                    let match = true;
-                    if (selectedLevel) match = match && s.levelId === selectedLevel;
-                    if (selectedClass) match = match && s.class === selectedClass;
-                    return match;
-                })
-                .map(s => s.id);
-            const studentIdSet = new Set(studentIds);
-            filteredScores = filteredScores.filter(s => studentIdSet.has(s.studentId));
-        }
-        
-        useMockData = filteredScores.length === 0;
-    }
-    
-    let labels = [];
-    let data = [];
-    let counts = [];
-    
-    if (useMockData) {
-        // 使用模拟数据展示图表效果
-        labels = ['编程基础', '团队协作', '创新设计', '技术文档', '项目展示', '课堂表现', '作业完成'];
-        data = [85.5, 72.3, 68.8, 78.2, 88.6, 75.4, 82.1];
-        counts = [25, 24, 22, 23, 24, 26, 25];
-        
-        // 在图表容器显示提示
-        canvas.parentElement.style.position = 'relative';
-        const chartContainer = canvas.parentElement;
-        
-        // 移除旧的提示
-        const oldHint = chartContainer.querySelector('.mock-data-hint');
-        if (oldHint) oldHint.remove();
-        
-        // 添加模拟数据提示
-        const hint = document.createElement('div');
-        hint.className = 'mock-data-hint';
-        hint.style.cssText = `
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(99, 102, 241, 0.9);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            z-index: 10;
-            backdrop-filter: blur(4px);
-            pointer-events: none;
-        `;
-        hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 录入成绩后显示真实数据';
-        chartContainer.appendChild(hint);
-        
-    } else {
-        // 按项目分组计算平均分
-        const projectScores = {};
-        filteredScores.forEach(score => {
-            const projectName = score.projectName || '未知项目';
-            if (!projectScores[projectName]) {
-                projectScores[projectName] = { total: 0, count: 0, fullMark: score.fullMark || 100 };
-            }
-            const fullMark = score.fullMark || 100;
-            if (fullMark > 0) {
-                projectScores[projectName].total += (score.score / fullMark) * 100;
-                projectScores[projectName].count++;
-            }
-        });
-        
-        labels = Object.keys(projectScores);
-        data = labels.map(name => {
-            const ps = projectScores[name];
-            return ps.count > 0 ? (ps.total / ps.count) : 0;
-        });
-        counts = labels.map(name => projectScores[name].count);
-        
-        // 移除模拟数据提示
-        const chartContainer = canvas.parentElement;
-        const oldHint = chartContainer.querySelector('.mock-data-hint');
-        if (oldHint) oldHint.remove();
-    }
-    
-    // 如果没有数据（包括模拟数据）
-    if (labels.length === 0) {
-        canvas.parentElement.innerHTML = `
-            <div class="text-center py-5">
-                <i class="fas fa-chart-line fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
-                <p class="text-muted">暂无成绩数据</p>
-                <p class="small text-muted">请先在"分数录入"页面录入学生成绩</p>
-            </div>
-        `;
-        updateTrendIndicators(null);
+    // 防止递归调用
+    if (isUpdatingTrendChart) {
         return;
     }
+    isUpdatingTrendChart = true;
     
-    // 恢复canvas（如果被替换了）
-    const parent = canvas.parentElement;
-    if (parent.innerHTML !== canvas.outerHTML) {
-        const newCanvas = document.createElement('canvas');
-        newCanvas.id = 'scoreTrendChart';
-        parent.innerHTML = '';
-        parent.appendChild(newCanvas);
-        updateScoreTrendChart();
-        return;
-    }
-    
-    // 渐变色方案
-    const gradientColors = labels.map((_, i) => {
-        const hue = (i * 40 + 240) % 360;
-        return `hsla(${hue}, 70%, 60%, 0.7)`;
-    });
-    
-    const borderColors = labels.map((_, i) => {
-        const hue = (i * 40 + 240) % 360;
-        return `hsla(${hue}, 70%, 50%, 1)`;
-    });
-    
-    // 创建图表
     try {
-        scoreTrendChart = new Chart(ctx, {
+        const canvas = document.getElementById('scoreTrendChart');
+        if (!canvas) {
+            isUpdatingTrendChart = false;
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            isUpdatingTrendChart = false;
+            return;
+        }
+        
+        // 销毁旧图表
+        if (scoreTrendChart) {
+            try { 
+                scoreTrendChart.destroy(); 
+            } catch(e) {
+                console.warn('销毁图表失败:', e);
+            }
+            scoreTrendChart = null;
+        }
+        
+        // 获取筛选条件
+        const selectedLevel = document.getElementById('trend-level-select')?.value || '';
+        const selectedClass = document.getElementById('trend-class-select')?.value || '';
+        
+        // 过滤分数数据
+        let filteredScores = [...scores];
+        
+        // 如果没有真实数据，使用模拟数据展示图表效果
+        let useMockData = filteredScores.length === 0;
+        
+        if (!useMockData) {
+            // 按时间过滤
+            const now = new Date();
+            if (trendPeriod === 'week') {
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                filteredScores = filteredScores.filter(s => {
+                    const date = s.recordedAt?.toDate();
+                    return date && date >= weekAgo;
+                });
+            } else if (trendPeriod === 'month') {
+                const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                filteredScores = filteredScores.filter(s => {
+                    const date = s.recordedAt?.toDate();
+                    return date && date >= monthAgo;
+                });
+            }
+            
+            // 按级别/班级过滤
+            if (selectedLevel || selectedClass) {
+                const studentIds = students
+                    .filter(s => {
+                        let match = true;
+                        if (selectedLevel) match = match && s.levelId === selectedLevel;
+                        if (selectedClass) match = match && s.class === selectedClass;
+                        return match;
+                    })
+                    .map(s => s.id);
+                const studentIdSet = new Set(studentIds);
+                filteredScores = filteredScores.filter(s => studentIdSet.has(s.studentId));
+            }
+            
+            useMockData = filteredScores.length === 0;
+        }
+        
+        let labels = [];
+        let data = [];
+        let counts = [];
+        
+        // 获取图表容器
+        const chartContainer = canvas.parentElement;
+        
+        if (useMockData) {
+            // 使用模拟数据展示图表效果
+            labels = ['编程基础', '团队协作', '创新设计', '技术文档', '项目展示', '课堂表现', '作业完成'];
+            data = [85.5, 72.3, 68.8, 78.2, 88.6, 75.4, 82.1];
+            counts = [25, 24, 22, 23, 24, 26, 25];
+            
+            // 添加模拟数据提示（不重复添加）
+            const oldHint = chartContainer.querySelector('.mock-data-hint');
+            if (!oldHint) {
+                const hint = document.createElement('div');
+                hint.className = 'mock-data-hint';
+                hint.style.cssText = `
+                    position: absolute;
+                    bottom: 10px;
+                    right: 10px;
+                    background: rgba(99, 102, 241, 0.9);
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-size: 0.7rem;
+                    font-weight: 500;
+                    z-index: 10;
+                    backdrop-filter: blur(4px);
+                    pointer-events: none;
+                `;
+                hint.innerHTML = '<i class="fas fa-chart-simple me-1"></i>演示数据 | 录入成绩后显示真实数据';
+                chartContainer.appendChild(hint);
+            }
+        } else {
+            // 按项目分组计算平均分
+            const projectScores = {};
+            filteredScores.forEach(score => {
+                const projectName = score.projectName || '未知项目';
+                if (!projectScores[projectName]) {
+                    projectScores[projectName] = { total: 0, count: 0, fullMark: score.fullMark || 100 };
+                }
+                const fullMark = score.fullMark || 100;
+                if (fullMark > 0) {
+                    projectScores[projectName].total += (score.score / fullMark) * 100;
+                    projectScores[projectName].count++;
+                }
+            });
+            
+            labels = Object.keys(projectScores);
+            data = labels.map(name => {
+                const ps = projectScores[name];
+                return ps.count > 0 ? (ps.total / ps.count) : 0;
+            });
+            counts = labels.map(name => projectScores[name].count);
+            
+            // 移除模拟数据提示
+            const oldHint = chartContainer.querySelector('.mock-data-hint');
+            if (oldHint) oldHint.remove();
+        }
+        
+        // 如果没有数据
+        if (labels.length === 0) {
+            chartContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                    <p class="text-muted">暂无成绩数据</p>
+                    <p class="small text-muted">请先在"分数录入"页面录入学生成绩</p>
+                </div>
+            `;
+            updateTrendIndicators(null);
+            isUpdatingTrendChart = false;
+            return;
+        }
+        
+        // 确保canvas仍然存在（如果被替换了，需要重新创建）
+        let currentCanvas = document.getElementById('scoreTrendChart');
+        if (!currentCanvas || currentCanvas.parentElement !== chartContainer) {
+            // 创建新的canvas
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = 'scoreTrendChart';
+            chartContainer.innerHTML = '';
+            chartContainer.appendChild(newCanvas);
+            currentCanvas = newCanvas;
+        }
+        
+        // 重新获取context
+        const newCtx = currentCanvas.getContext('2d');
+        if (!newCtx) {
+            isUpdatingTrendChart = false;
+            return;
+        }
+        
+        // 渐变色方案
+        const gradientColors = labels.map((_, i) => {
+            const hue = (i * 40 + 240) % 360;
+            return `hsla(${hue}, 70%, 60%, 0.7)`;
+        });
+        
+        const borderColors = labels.map((_, i) => {
+            const hue = (i * 40 + 240) % 360;
+            return `hsla(${hue}, 70%, 50%, 1)`;
+        });
+        
+        // 创建图表
+        scoreTrendChart = new Chart(newCtx, {
             type: 'bar',
             data: {
                 labels: labels,
@@ -10701,7 +10720,7 @@ function updateScoreTrendChart() {
                     }
                 },
                 animation: {
-                    duration: 1000,
+                    duration: 800,
                     easing: 'easeOutQuart',
                 }
             }
@@ -10712,9 +10731,10 @@ function updateScoreTrendChart() {
         
     } catch (error) {
         console.error('创建趋势图失败:', error);
+    } finally {
+        isUpdatingTrendChart = false;
     }
 }
-
 // 更新趋势指标 - 增强版
 function updateTrendIndicators(data, counts, filteredScores, isMockData = false) {
     const avgEl = document.getElementById('indicator-avg');
