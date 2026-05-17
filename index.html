@@ -9105,37 +9105,25 @@ function generateProfessionalScoreTable(data) {
 // ==================== 使用 pdf-lib 直接生成 PDF（支持任意多列，不压缩） ====================
 
 async function downloadProfessionalPDF(data) {
-    // 可选：加载 Logo 图片
-    let logoBase64 = null;
-    try {
-        const imgResponse = await fetch('https://i.postimg.cc/qqV3NyJB/logo-01.png');
-        const imgBlob = await imgResponse.blob();
-        logoBase64 = await new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(imgBlob);
-        });
-    } catch(e) { console.warn('Logo 加载失败'); }
-    
     if (!data) {
         showAlert('没有可下载的报告数据', 'warning');
         return;
     }
 
-    showFullscreenLoader('正在生成 PDF（直接绘制模式）...');
+    showFullscreenLoader('正在生成 PDF（支持中文）...');
     
     try {
         const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
         const title = selectedClass ? `${selectedClass} 成绩报告` : '全协会成绩报告';
         const dateStr = new Date().toLocaleDateString('zh-CN');
         
-        // 计算总人数和平均分
+        // 计算统计信息
         const totalStudents = studentAverages.length;
         const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
         const passCount = studentAverages.filter(s => s.average >= 60).length;
         const passRate = totalStudents > 0 ? (passCount / totalStudents * 100).toFixed(1) : 0;
         
-        // 按级别分组（如果需要）
+        // 按级别分组
         let groups = [];
         if (groupByLevel) {
             const levelMap = new Map();
@@ -9151,13 +9139,29 @@ async function downloadProfessionalPDF(data) {
         
         // 创建 PDF 文档（横向 A4）
         const pdfDoc = await PDFLib.PDFDocument.create();
-        const pageWidth = 841.89;   // A4 横向宽度（points）
-        const pageHeight = 595.28;  // A4 横向高度（points）
+        const pageWidth = 841.89;
+        const pageHeight = 595.28;
         
-        // 注册字体
-        const fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
-        const fontNormal = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-        const fontSmall = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+        // ========== 加载中文字体 ==========
+        // 使用开源字体 NotoSansSC（需要托管在你的服务器或使用 CDN）
+        // 方案1：使用 CDN 上的字体文件
+        let fontRegular, fontBold;
+        try {
+            // 尝试加载中文字体（Noto Sans SC）
+            const fontUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Regular.otf';
+            const fontBoldUrl = 'https://cdn.jsdelivr.net/npm/noto-sans-cjk-jp-subset@1.0.2/NotoSansCJKjp-Bold.otf';
+            
+            const fontBytes = await fetch(fontUrl).then(res => res.arrayBuffer());
+            const fontBoldBytes = await fetch(fontBoldUrl).then(res => res.arrayBuffer());
+            
+            fontRegular = await pdfDoc.embedFont(fontBytes);
+            fontBold = await pdfDoc.embedFont(fontBoldBytes);
+        } catch (e) {
+            console.warn('加载中文字体失败，使用默认字体（中文可能显示异常）', e);
+            // 降级：使用 Helvetica（不支持中文）
+            fontRegular = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+            fontBold = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+        }
         
         // 表格列定义
         const columns = [
@@ -9174,7 +9178,6 @@ async function downloadProfessionalPDF(data) {
             { title: '总平均', width: 55, align: 'center' }
         ];
         
-        // 计算表格总宽度
         const totalWidth = columns.reduce((sum, col) => sum + col.width, 0);
         const startX = (pageWidth - totalWidth) / 2;
         
@@ -9209,57 +9212,42 @@ async function downloadProfessionalPDF(data) {
             let page = pdfDoc.addPage([pageWidth, pageHeight]);
             let currentY = pageHeight - 40;
             
-            // ========== 页眉区域 ==========
-            // Logo（如果有）
-            if (logoBase64) {
-                try {
-                    const logoImage = await pdfDoc.embedPng(logoBase64);
-                    page.drawImage(logoImage, {
-                        x: 40,
-                        y: currentY - 45,
-                        width: 45,
-                        height: 45
-                    });
-                } catch(e) { console.warn('Logo 绘制失败'); }
-            }
-            
-            // 社团名称
+            // ========== 页眉 ==========
             page.drawText(SCHOOL_CONFIG.name, {
-                x: logoBase64 ? 95 : 40,
+                x: 40,
                 y: currentY - 10,
-                size: 14,
+                size: 16,
                 font: fontBold,
                 color: PDFLib.rgb(0.2, 0.2, 0.6)
             });
             
-            // 英文名
             page.drawText(SCHOOL_CONFIG.nameEn, {
-                x: logoBase64 ? 95 : 40,
+                x: 40,
                 y: currentY - 25,
                 size: 8,
-                font: fontNormal,
+                font: fontRegular,
                 color: PDFLib.rgb(0.4, 0.4, 0.4)
             });
             
-            // 报告标题和日期
             page.drawText(title, {
-                x: pageWidth - 120,
+                x: pageWidth - 150,
                 y: currentY - 15,
                 size: 12,
                 font: fontBold,
                 color: PDFLib.rgb(0.2, 0.2, 0.6)
             });
+            
             page.drawText(`生成日期：${dateStr}`, {
-                x: pageWidth - 120,
+                x: pageWidth - 150,
                 y: currentY - 28,
                 size: 8,
-                font: fontNormal,
+                font: fontRegular,
                 color: PDFLib.rgb(0.5, 0.5, 0.5)
             });
             
-            currentY -= 65;
+            currentY -= 60;
             
-            // ========== 统计卡片区域 ==========
+            // ========== 统计卡片 ==========
             const stats = [
                 { label: '学生人数', value: totalStudents, color: [0.39, 0.39, 0.89] },
                 { label: '平均成绩', value: avgScore.toFixed(1) + '%', color: [0.06, 0.73, 0.55] },
@@ -9270,17 +9258,13 @@ async function downloadProfessionalPDF(data) {
             let statX = startX;
             const statWidth = totalWidth / 4 - 10;
             for (const stat of stats) {
-                // 卡片背景
                 page.drawRectangle({
                     x: statX,
                     y: currentY - 45,
                     width: statWidth,
                     height: 40,
-                    color: PDFLib.rgb(stat.color[0], stat.color[1], stat.color[2]),
-                    borderColor: PDFLib.rgb(0.9, 0.9, 0.9),
-                    borderWidth: 0.5
+                    color: PDFLib.rgb(stat.color[0], stat.color[1], stat.color[2])
                 });
-                // 数值
                 page.drawText(stat.value.toString(), {
                     x: statX + statWidth / 2,
                     y: currentY - 22,
@@ -9289,12 +9273,11 @@ async function downloadProfessionalPDF(data) {
                     color: PDFLib.rgb(1, 1, 1),
                     textAlign: 'center'
                 });
-                // 标签
                 page.drawText(stat.label, {
                     x: statX + statWidth / 2,
                     y: currentY - 35,
                     size: 8,
-                    font: fontNormal,
+                    font: fontRegular,
                     color: PDFLib.rgb(1, 1, 1),
                     textAlign: 'center'
                 });
@@ -9337,7 +9320,6 @@ async function downloadProfessionalPDF(data) {
                     color: PDFLib.rgb(0.95, 0.95, 0.97)
                 });
                 
-                // 处理多行标题
                 const lines = col.title.split('\n');
                 if (lines.length === 2) {
                     page.drawText(lines[0], {
@@ -9351,7 +9333,7 @@ async function downloadProfessionalPDF(data) {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
                         y: headerY - 17,
                         size: 7,
-                        font: fontNormal,
+                        font: fontRegular,
                         textAlign: 'center'
                     });
                 } else {
@@ -9376,12 +9358,11 @@ async function downloadProfessionalPDF(data) {
                 rowY -= 18;
                 rowCount++;
                 
-                // 如果超出页面底部，添加新页面
                 if (rowY < 50) {
                     page = pdfDoc.addPage([pageWidth, pageHeight]);
-                    rowY = pageHeight - 30;
+                    rowY = pageHeight - 40;
                     
-                    // 新页面重新绘制页眉（简化）
+                    // 新页面的简化页眉
                     page.drawText(`${title} (续)`, {
                         x: 40,
                         y: pageHeight - 20,
@@ -9417,7 +9398,7 @@ async function downloadProfessionalPDF(data) {
                                 x: newX + (col.align === 'center' ? col.width / 2 : 4),
                                 y: newHeaderY - 17,
                                 size: 7,
-                                font: fontNormal,
+                                font: fontRegular,
                                 textAlign: 'center'
                             });
                         } else {
@@ -9434,10 +9415,9 @@ async function downloadProfessionalPDF(data) {
                     rowY = newHeaderY - 20;
                 }
                 
-                // 根据行号设置背景色（斑马纹）
                 const bgColor = rowCount % 2 === 0 ? PDFLib.rgb(0.98, 0.98, 0.98) : PDFLib.rgb(1, 1, 1);
-                
                 x = startX;
+                
                 for (let i = 0; i < columns.length; i++) {
                     const col = columns[i];
                     const cell = row[i];
@@ -9452,9 +9432,8 @@ async function downloadProfessionalPDF(data) {
                         color: bgColor
                     });
                     
-                    // 设置文字颜色（高分绿色，不及格红色）
                     let textColor = PDFLib.rgb(0.2, 0.2, 0.2);
-                    if (i === columns.length - 1) { // 总平均列
+                    if (i === columns.length - 1) {
                         const avgValue = parseFloat(cell.value);
                         if (avgValue >= 80) textColor = PDFLib.rgb(0.06, 0.73, 0.55);
                         else if (avgValue < 60) textColor = PDFLib.rgb(0.94, 0.27, 0.27);
@@ -9464,7 +9443,7 @@ async function downloadProfessionalPDF(data) {
                         x: x + (col.align === 'center' ? col.width / 2 : 4),
                         y: rowY - 5,
                         size: 7.5,
-                        font: fontNormal,
+                        font: fontRegular,
                         color: textColor,
                         textAlign: 'center'
                     });
@@ -9472,12 +9451,12 @@ async function downloadProfessionalPDF(data) {
                 }
             }
             
-            // ========== 页脚 ==========
+            // 页脚
             page.drawText(`${SCHOOL_CONFIG.footer} | © ${new Date().getFullYear()} ${SCHOOL_CONFIG.name}`, {
                 x: startX,
                 y: 20,
                 size: 7,
-                font: fontNormal,
+                font: fontRegular,
                 color: PDFLib.rgb(0.6, 0.6, 0.6)
             });
         }
