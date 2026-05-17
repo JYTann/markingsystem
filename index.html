@@ -13924,11 +13924,10 @@ function encodeReportData(data) {
  */
 function decodeReportData(encoded) {
     try {
-        const base64Decoded = atob(encoded);
-    const jsonStr = decodeURIComponent(base64Decoded);
+        // 直接 URL 解码
+        const jsonStr = decodeURIComponent(encoded);
         const decoded = JSON.parse(jsonStr);
         
-        // 转换回原始格式
         return {
             studentAverages: decoded.s.map(s => ({
                 student: {
@@ -13954,14 +13953,14 @@ function decodeReportData(encoded) {
         return null;
     }
 }
-
 /**
  * 生成分享链接
  * @param {Object} data - 报告数据
  * @returns {string} 分享链接
  */
 function generateShareLink(data) {
-    const encoded = encodeReportData(data);
+    const jsonStr = JSON.stringify(data);
+    const encoded = encodeURIComponent(jsonStr);
     const url = new URL(window.location.href);
     url.searchParams.set('r', encoded);
     return url.href;
