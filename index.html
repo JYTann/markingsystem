@@ -8384,14 +8384,14 @@ async function generateReport() {
 }
 
 /**
- * 在新窗口中显示专业版报告
+ * 在新窗口中显示专业版报告（自动调整窗口大小）
  */
 function showReportInWindow() {
     const data = window._currentReportData;
     if (!data) return;
     
     const reportHTML = createProfessionalReportHTML(data);
-    const reportWindow = window.open('', '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes,toolbar=yes');
+    const reportWindow = window.open('', '_blank', 'scrollbars=no,resizable=yes,toolbar=yes');
     
     if (!reportWindow) {
         showAlert("请允许弹出窗口以查看报告", "warning");
@@ -8401,17 +8401,38 @@ function showReportInWindow() {
     reportWindow.document.write(reportHTML);
     reportWindow.document.close();
     
-    // 将数据挂载到新窗口，供下载使用
-    reportWindow._reportData = data;
-    reportWindow._schoolConfig = SCHOOL_CONFIG;
-    reportWindow._downloadPDF = function() {
-        downloadProfessionalPDF(window._reportData);
-    };
-    reportWindow._downloadExcel = function() {
-        downloadProfessionalExcel(window._reportData);
-    };
+    // 等待内容加载完成后，自动调整窗口大小
+    setTimeout(() => {
+        try {
+            // 获取内容的实际宽度和高度
+            const body = reportWindow.document.body;
+            const html = reportWindow.document.documentElement;
+            const contentWidth = Math.max(
+                body.scrollWidth, body.offsetWidth,
+                html.clientWidth, html.scrollWidth, html.offsetWidth
+            );
+            const contentHeight = Math.max(
+                body.scrollHeight, body.offsetHeight,
+                html.clientHeight, html.scrollHeight, html.offsetHeight
+            );
+            
+            // 加上一些边距（标题栏、工具栏等）
+            const windowWidth = Math.min(contentWidth + 50, screen.width - 50);
+            const windowHeight = Math.min(contentHeight + 100, screen.height - 50);
+            
+            // 调整窗口大小
+            reportWindow.resizeTo(windowWidth, windowHeight);
+            
+            // 居中显示
+            const left = (screen.width - windowWidth) / 2;
+            const top = (screen.height - windowHeight) / 2;
+            reportWindow.moveTo(left, top);
+            
+        } catch (e) {
+            console.warn('自动调整窗口大小失败:', e);
+        }
+    }, 100);
 }
-
 /**
  * 生成专业版报告 HTML（带完整样式、Logo、固定表头、横向滚动）
  */
