@@ -8386,7 +8386,7 @@ async function generateReport() {
 /**
  * 在新窗口中显示专业版报告（自动调整窗口大小）
  */
-function showReportInWindow() {
+async function showReportInWindow() {
     const data = window._currentReportData;
     if (!data) return;
     
@@ -8408,7 +8408,7 @@ function showReportInWindow() {
     // 添加分享功能到新窗口
     setTimeout(() => {
         try {
-            const shareLink = generateShareLink(data);
+            const shareLink = await generateShareLink(data);
             
             // 在工具栏中添加分享按钮
             const toolbar = reportWindow.document.querySelector('.toolbar');
@@ -14201,7 +14201,7 @@ function addShareButtonToReportTab() {
             studentAverages.sort((a, b) => b.average - a.average);
             
             const reportData = { studentAverages, reportProjects, selectedClass, selectedLevel, groupByLevel };
-            const shareLink = generateShareLink(reportData);
+            const shareLink = await generateShareLink(reportData);
             
             await navigator.clipboard.writeText(shareLink);
             showAlert('✅ 分享链接已复制到剪贴板！', 'success');
