@@ -6846,6 +6846,448 @@ function addScoreToTable(score) {
     row.querySelector('.delete-score').addEventListener('click', () => showDeleteConfirm('score', score.id, '确定要删除此分数记录吗？'));
 }
 
+        // ==================== 重复分数记录检测与防止功能 ====================
+
+/**
+ * 检查某个学生是否已经有一个项目的分数记录
+ * @param {string} studentId - 学生文档ID
+ * @param {string} projectId - 项目ID
+ * @returns {Promise<boolean>} 是否存在
+ */
+async function checkDuplicateScore(studentId, projectId) {
+    try {
+        const existingScores = await db.collection('scores')
+            .where('studentId', '==', studentId)
+            .where('projectId', '==', projectId)
+            .get();
+        return !existingScores.empty;
+    } catch (error) {
+        console.error('检查重复分数失败:', error);
+        return false;
+    }
+}
+
+/**
+ * 获取某个学生某个项目的已有分数记录
+ * @param {string} studentId - 学生文档ID
+ * @param {string} projectId - 项目ID
+ * @returns {Promise<Array>} 已有的分数记录数组
+ */
+async function getExistingScores(studentId, projectId) {
+    try {
+        const existingScores = await db.collection('scores')
+            .where('studentId', '==', studentId)
+            .where('projectId', '==', projectId)
+            .get();
+        return existingScores.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error('获取已有分数失败:', error);
+        return [];
+    }
+}
+
+/**
+ * 删除重复的分数记录（保留最新的一条）
+ * @param {string} studentId - 学生文档ID
+ * @param {string} projectId - 项目ID
+ * @returns {Promise<number>} 删除的记录数
+ */
+async function cleanDuplicateScores(studentId, projectId) {
+    try {
+        const existingScores = await db.collection('scores')
+            .where('studentId', '==', studentId)
+            .where('projectId', '==', projectId)
+            .get();
+        
+        if (existingScores.size <= 1) return 0;
+        
+        // 按时间排序，保留最新的
+        const docs = existingScores.docs.map(doc => ({
+            id: doc.id,
+            recordedAt: doc.data().recordedAt?.toDate() || new Date(0)
+        }));
+        docs.sort((a, b) => b.recordedAt - a.recordedAt);
+        
+        const toDelete = docs.slice(1); // 保留第一个（最新），删除其余
+        const batch = db.batch();
+        toDelete.forEach(doc => {
+            batch.delete(db.collection('scores').doc(doc.id));
+        });
+        await batch.commit();
+        
+        return toDelete.length;
+    } catch (error) {
+        console.error('清理重复分数失败:', error);
+        return 0;
+    }
+}
+
+/**
+ * 清理全校所有学生的重复分数记录
+ * @returns {Promise<{totalCleaned: number, studentsAffected: number}>}
+ */
+async function cleanAllDuplicateScores() {
+    showFullscreenLoader('正在扫描并清理重复分数记录...');
+    
+    try {
+        // 获取所有分数记录
+        const scoresSnapshot = await db.collection('scores').get();
+        const allScores = scoresSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            recordedAt: doc.data().recordedAt?.toDate() || new Date(0)
+        }));
+        
+        // 按 studentId + projectId 分组
+        const groups = new Map();
+        allScores.forEach(score => {
+            const key = `${score.studentId}|${score.projectId}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(score);
+        });
+        
+        let totalCleaned = 0;
+        let studentsAffected = 0;
+        const batch = db.batch();
+        let batchCount = 0;
+        
+        for (const [key, scores] of groups) {
+            if (scores.length <= 1) continue;
+            
+            // 按时间排序，保留最新的
+            scores.sort((a, b) => b.recordedAt - a.recordedAt);
+            const toDelete = scores.slice(1);
+            
+            toDelete.forEach(score => {
+                batch.delete(db.collection('scores').doc(score.id));
+                batchCount++;
+                totalCleaned++;
+            });
+            
+            studentsAffected++;
+            
+            // 每500条提交一次
+            if (batchCount >= 500) {
+                await batch.commit();
+                batchCount = 0;
+            }
+        }
+        
+        // 提交剩余
+        if (batchCount > 0) {
+            await batch.commit();
+        }
+        
+        // 重新加载数据
+        await loadScores();
+        
+        return { totalCleaned, studentsAffected };
+    } catch (error) {
+        console.error('清理所有重复分数失败:', error);
+        throw error;
+    } finally {
+        hideFullscreenLoader();
+    }
+}
+
+/**
+ * 为指定学生清理重复分数
+ * @param {string} studentId - 学生文档ID
+ * @returns {Promise<{cleaned: number, details: Array}>}
+ */
+async function cleanStudentDuplicateScores(studentId) {
+    try {
+        const studentScores = await db.collection('scores')
+            .where('studentId', '==', studentId)
+            .get();
+        
+        // 按 projectId 分组
+        const groups = new Map();
+        studentScores.docs.forEach(doc => {
+            const data = doc.data();
+            const key = data.projectId;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push({ id: doc.id, ...data, recordedAt: data.recordedAt?.toDate() || new Date(0) });
+        });
+        
+        let cleaned = 0;
+        const details = [];
+        
+        for (const [projectId, scores] of groups) {
+            if (scores.length <= 1) continue;
+            
+            scores.sort((a, b) => b.recordedAt - a.recordedAt);
+            const toDelete = scores.slice(1);
+            const batch = db.batch();
+            toDelete.forEach(score => {
+                batch.delete(db.collection('scores').doc(score.id));
+            });
+            await batch.commit();
+            
+            cleaned += toDelete.length;
+            details.push({
+                projectId,
+                keptScore: scores[0],
+                deletedCount: toDelete.length
+            });
+        }
+        
+        await loadScores();
+        return { cleaned, details };
+    } catch (error) {
+        console.error('清理学生重复分数失败:', error);
+        throw error;
+    }
+}
+
+// ==================== 修改保存分数函数，添加重复检测 ====================
+
+// 保存修改后的 saveScore 函数（替换原有的）
+const originalSaveScore = saveScore;
+window.saveScore = async function() {
+    const studentId = document.getElementById('score-student-select').value;
+    const projectId = document.getElementById('score-project-select').value;
+    const scoreValue = parseFloat(document.getElementById('score-input').value);
+    
+    if (!studentId || !projectId || isNaN(scoreValue)) {
+        showAlert("请选择学生、项目并输入分数", "warning");
+        return;
+    }
+    
+    // 从级别项目中获取满分信息
+    const selectedOption = document.getElementById('score-project-select').selectedOptions[0];
+    if (!selectedOption) {
+        showAlert("请选择项目", "warning");
+        return;
+    }
+    const fullMark = parseFloat(selectedOption.dataset.fullMark);
+    const weight = parseFloat(selectedOption.dataset.weight);
+    
+    if (scoreValue > fullMark) {
+        showAlert(`分数不能超过项目满分 ${fullMark}`, "warning");
+        return;
+    }
+    
+    // ========== 新增：检查是否已有该项目的分数 ==========
+    const hasDuplicate = await checkDuplicateScore(studentId, projectId);
+    const student = students.find(s => s.id === studentId);
+    const projectName = selectedOption.textContent.split(' (满分:')[0];
+    
+    if (hasDuplicate) {
+        const existingScores = await getExistingScores(studentId, projectId);
+        const latestScore = existingScores[0];
+        
+        // 弹出确认框，询问是否覆盖或添加新记录
+        const userConfirm = confirm(
+            `⚠️ 该学生已有「${projectName}」的分数记录：\n\n` +
+            `现有分数：${latestScore.score}/${latestScore.fullMark || fullMark}\n` +
+            `录入时间：${latestScore.recordedAt?.toDate().toLocaleString() || '未知'}\n\n` +
+            `新分数：${scoreValue}/${fullMark}\n\n` +
+            `请选择操作：\n` +
+            `• 点击「确定」→ 覆盖原分数（更新记录）\n` +
+            `• 点击「取消」→ 保留原分数（不保存）`
+        );
+        
+        if (!userConfirm) {
+            showAlert("已取消保存", "info");
+            return;
+        }
+        
+        // 用户选择覆盖，更新原记录而不是新增
+        const btn = document.getElementById('save-score-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 更新中...';
+        
+        try {
+            await db.collection('scores').doc(latestScore.id).update({
+                score: scoreValue,
+                fullMark: fullMark,
+                weight: weight,
+                recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showAlert(`已更新 ${student?.name} 的「${projectName}」分数为 ${scoreValue}/${fullMark}`, "success");
+            document.getElementById('score-input').value = '';
+            await loadScores();
+            addActivity(`更新 ${student?.name} 的 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
+        } catch (error) {
+            console.error("更新分数失败: ", error);
+            showAlert("更新分数失败", "danger");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save me-1"></i>保存分数';
+        }
+        return;
+    }
+    
+    // 没有重复，正常新增
+    const btn = document.getElementById('save-score-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
+    
+    try {
+        await db.collection('scores').add({
+            studentId,
+            projectId,
+            projectName: projectName,
+            score: scoreValue,
+            fullMark: fullMark,
+            weight: weight,
+            recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showAlert(`分数保存成功: ${student?.name} - ${projectName} = ${scoreValue}/${fullMark}`, "success");
+        document.getElementById('score-input').value = '';
+        await loadScores();
+        addActivity(`为 ${student?.name} 录入 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
+    } catch (error) {
+        console.error("保存分数失败: ", error);
+        showAlert("保存分数失败", "danger");
+        addActivity("保存分数失败", "danger");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存分数';
+    }
+};
+
+// ==================== 添加一键清理重复记录的管理按钮 ====================
+
+// 在页面中添加清理按钮（在分数录入页面的合适位置）
+function addCleanDuplicateButton() {
+    const scoresTab = document.getElementById('scores-tab');
+    if (!scoresTab) return;
+    
+    // 检查按钮是否已存在
+    if (document.getElementById('clean-duplicates-btn')) return;
+    
+    const cleanButtonHTML = `
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="card bg-warning bg-opacity-10 border-warning">
+                    <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            <span class="small">检测到可能存在重复分数记录？</span>
+                        </div>
+                        <button id="clean-duplicates-btn" class="btn btn-sm btn-warning">
+                            <i class="fas fa-broom me-1"></i>一键清理重复记录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 找到合适的位置插入（在现有控件上方）
+    const existingRow = scoresTab.querySelector('.row.mb-3:first-child');
+    if (existingRow) {
+        existingRow.insertAdjacentHTML('beforebegin', cleanButtonHTML);
+    }
+    
+    // 绑定事件
+    const cleanBtn = document.getElementById('clean-duplicates-btn');
+    if (cleanBtn) {
+        cleanBtn.addEventListener('click', async () => {
+            const confirmed = confirm(
+                '⚠️ 警告：此操作将扫描所有学生的分数记录，\n' +
+                '删除同一学生同一项目中重复的旧记录（保留最新的一条）。\n\n' +
+                '此操作不可撤销，是否继续？'
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                const result = await cleanAllDuplicateScores();
+                if (result.totalCleaned === 0) {
+                    showAlert('未发现重复分数记录，数据很干净！', 'success');
+                } else {
+                    showAlert(`清理完成！共删除 ${result.totalCleaned} 条重复记录，涉及 ${result.studentsAffected} 名学生。`, 'success');
+                    addActivity(`一键清理重复分数记录: 删除 ${result.totalCleaned} 条`, 'info');
+                }
+                await loadScores();
+            } catch (error) {
+                console.error('清理失败:', error);
+                showAlert('清理失败: ' + error.message, 'danger');
+            }
+        });
+    }
+}
+
+// 在学生管理页面添加“清理该学生重复分数”的按钮
+function addStudentCleanButton() {
+    // 修改 addStudentToTable 函数，在操作按钮区域添加清理按钮
+    // 由于原函数已存在，这里通过监听表格动态添加
+    const observer = new MutationObserver(() => {
+        document.querySelectorAll('.clean-student-duplicates').forEach(btn => {
+            if (btn.hasListener) return;
+            btn.hasListener = true;
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const studentId = btn.dataset.studentId;
+                const studentName = btn.dataset.studentName;
+                
+                const confirmed = confirm(
+                    `是否清理「${studentName}」的重复分数记录？\n\n` +
+                    `此操作将保留每个项目的最新分数，删除旧的重复记录。`
+                );
+                
+                if (!confirmed) return;
+                
+                try {
+                    const result = await cleanStudentDuplicateScores(studentId);
+                    if (result.cleaned === 0) {
+                        showAlert(`「${studentName}」没有重复分数记录`, 'info');
+                    } else {
+                        showAlert(`「${studentName}」清理完成，共删除 ${result.cleaned} 条重复记录`, 'success');
+                        addActivity(`清理学生 ${studentName} 的重复分数: ${result.cleaned} 条`, 'info');
+                    }
+                    await loadScores();
+                } catch (error) {
+                    showAlert('清理失败: ' + error.message, 'danger');
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.getElementById('students-table-body'), { childList: true, subtree: true });
+}
+
+// 修改 addStudentToTable 函数，添加清理按钮
+const originalAddStudentToTable = addStudentToTable;
+window.addStudentToTable = function(student) {
+    // 调用原函数
+    originalAddStudentToTable(student);
+    
+    // 添加清理重复记录的按钮
+    setTimeout(() => {
+        const row = document.querySelector(`#students-table-body tr td:first-child:contains('${student.studentId}')`)?.closest('tr');
+        if (row) {
+            const actionCell = row.querySelector('td:last-child');
+            if (actionCell && !actionCell.querySelector('.clean-student-duplicates')) {
+                const cleanBtn = document.createElement('button');
+                cleanBtn.className = 'btn btn-sm btn-warning ms-1 clean-student-duplicates';
+                cleanBtn.dataset.studentId = student.id;
+                cleanBtn.dataset.studentName = student.name;
+                cleanBtn.innerHTML = '<i class="fas fa-broom"></i>';
+                cleanBtn.title = '清理重复分数记录';
+                actionCell.appendChild(cleanBtn);
+            }
+        }
+    }, 100);
+};
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (typeof addCleanDuplicateButton === 'function') {
+            addCleanDuplicateButton();
+        }
+        if (typeof addStudentCleanButton === 'function') {
+            addStudentCleanButton();
+        }
+    }, 2000);
+});
+
         // 保存分数
         // 保存分数 - 修改版本
 function saveScore() {
