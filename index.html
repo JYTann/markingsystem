@@ -13828,29 +13828,42 @@ document.addEventListener('DOMContentLoaded', function() {
  * @param {Object} data - 报告数据
  * @returns {string} 编码后的字符串
  */
+// ==================== 报告分享功能（修复版） ====================
+
+/**
+ * 将报告数据编码为 URL 参数
+ */
 function encodeReportData(data) {
     try {
         // 只保留必要的数据，减少 URL 长度
         const minimalData = {
-            students: data.studentAverages.map(s => ({
-                id: s.student.id,
-                name: s.student.name,
-                studentId: s.student.studentId,
-                class: s.student.class,
-                levelName: s.levelName,
-                average: s.average,
-                scores: s.scores
+            s: data.studentAverages.map(s => ({
+                i: s.student.id,
+                n: s.student.name,
+                sid: s.student.studentId,
+                c: s.student.class,
+                l: s.levelName,
+                a: s.average,
+                sc: s.scores.map(sc => ({
+                    pn: sc.projectName,
+                    sc: sc.score,
+                    fm: sc.fullMark,
+                    w: sc.weight,
+                    pc: sc.percentage
+                }))
             })),
-            projects: data.reportProjects,
-            selectedClass: data.selectedClass,
-            selectedLevel: data.selectedLevel,
-            groupByLevel: data.groupByLevel,
-            generatedAt: new Date().toISOString()
+            p: data.reportProjects.map(p => ({
+                n: p.name,
+                fm: p.fullMark,
+                w: p.weight
+            })),
+            cl: data.selectedClass,
+            lv: data.selectedLevel,
+            gb: data.groupByLevel
         };
+        // 使用简单的 base64 编码
         const jsonStr = JSON.stringify(minimalData);
-        // 使用 compress 压缩（简单替换）
-        const compressed = btoa(encodeURIComponent(jsonStr));
-        return compressed;
+        return btoa(encodeURIComponent(jsonStr));
     } catch (e) {
         console.error('编码失败:', e);
         return '';
@@ -13858,14 +13871,37 @@ function encodeReportData(data) {
 }
 
 /**
- * 解码 URL 参数中的报告数据
- * @param {string} encoded - 编码后的字符串
- * @returns {Object|null} 解码后的数据
+ * 解码 URL 参数中的报告数据，并转换为原始格式
  */
 function decodeReportData(encoded) {
     try {
         const jsonStr = decodeURIComponent(atob(encoded));
-        return JSON.parse(jsonStr);
+        const decoded = JSON.parse(jsonStr);
+        
+        // 转换回原始格式
+        return {
+            studentAverages: decoded.s.map(s => ({
+                student: {
+                    id: s.i,
+                    name: s.n,
+                    studentId: s.sid,
+                    class: s.c
+                },
+                levelName: s.l,
+                average: s.a,
+                scores: s.sc.map(sc => ({
+                    projectName: sc.pn,
+                    score: sc.sc,
+                    fullMark: sc.fm,
+                    weight: sc.w,
+                    percentage: sc.pc
+                }))
+            })),
+            reportProjects: decoded.p,
+            selectedClass: decoded.cl,
+            selectedLevel: decoded.lv,
+            groupByLevel: decoded.gb
+        };
     } catch (e) {
         console.error('解码失败:', e);
         return null;
@@ -13874,13 +13910,11 @@ function decodeReportData(encoded) {
 
 /**
  * 生成分享链接
- * @param {Object} data - 报告数据
- * @returns {string} 分享链接
  */
 function generateShareLink(data) {
     const encoded = encodeReportData(data);
     const url = new URL(window.location.href);
-    url.searchParams.set('report', encoded);
+    url.searchParams.set('r', encoded);  // 使用短参数名 r
     return url.href;
 }
 
@@ -13889,20 +13923,12 @@ function generateShareLink(data) {
  */
 function checkSharedReport() {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedReport = urlParams.get('report');
+    const encodedReport = urlParams.get('r');  // 使用短参数名 r
     
     if (encodedReport) {
         const data = decodeReportData(encodedReport);
-        if (data && data.students) {
-            // 恢复数据格式
-            window._sharedReportData = {
-                studentAverages: data.students,
-                reportProjects: data.projects,
-                selectedClass: data.selectedClass,
-                selectedLevel: data.selectedLevel,
-                groupByLevel: data.groupByLevel
-            };
-            // 直接显示报告
+        if (data && data.studentAverages && data.studentAverages.length > 0) {
+            window._sharedReportData = data;
             showReportFromShare();
             return true;
         }
@@ -13911,16 +13937,18 @@ function checkSharedReport() {
 }
 
 /**
- * 从分享链接显示报告
+ * 从分享链接显示报告（简化版，避免重复调用 createProfessionalReportHTML）
  */
 function showReportFromShare() {
     if (!window._sharedReportData) return;
     
-    // 隐藏学生查询页面，显示报告容器
-    document.getElementById('student-query-page').style.display = 'none';
-    document.getElementById('main-system').style.display = 'none';
+    // 隐藏学生查询页面和主系统
+    const studentPage = document.getElementById('student-query-page');
+    const mainSystem = document.getElementById('main-system');
+    if (studentPage) studentPage.style.display = 'none';
+    if (mainSystem) mainSystem.style.display = 'none';
     
-    // 创建全屏报告容器
+    // 创建或获取分享容器
     let shareContainer = document.getElementById('shared-report-container');
     if (!shareContainer) {
         shareContainer = document.createElement('div');
@@ -13939,45 +13967,171 @@ function showReportFromShare() {
         document.body.appendChild(shareContainer);
     }
     
-    const reportHTML = createProfessionalReportHTML(window._sharedReportData);
-    shareContainer.innerHTML = reportHTML;
+    // 直接生成简化版报告 HTML（避免依赖复杂的 createProfessionalReportHTML）
+    shareContainer.innerHTML = generateSimpleReportHTML(window._sharedReportData);
     shareContainer.style.display = 'block';
     
     // 添加关闭按钮
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '<i class="fas fa-times"></i> 关闭报告';
-    closeBtn.style.cssText = `
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 10001;
-        background: #ef4444;
-        color: white;
-        border: none;
-        border-radius: 50px;
-        padding: 12px 24px;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        transition: all 0.2s;
-    `;
-    closeBtn.onmouseover = () => closeBtn.style.transform = 'scale(1.05)';
-    closeBtn.onmouseout = () => closeBtn.style.transform = 'scale(1)';
-    closeBtn.onclick = () => {
-        shareContainer.style.display = 'none';
-        document.getElementById('student-query-page').style.display = 'block';
-        location.href = location.pathname; // 清除 URL 参数
-    };
-    shareContainer.appendChild(closeBtn);
+    let closeBtn = document.getElementById('share-close-btn');
+    if (!closeBtn) {
+        closeBtn = document.createElement('button');
+        closeBtn.id = 'share-close-btn';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i> 关闭报告';
+        closeBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10001;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        `;
+        closeBtn.onmouseover = () => closeBtn.style.transform = 'scale(1.05)';
+        closeBtn.onmouseout = () => closeBtn.style.transform = 'scale(1)';
+        closeBtn.onclick = () => {
+            shareContainer.style.display = 'none';
+            if (studentPage) studentPage.style.display = 'block';
+            if (mainSystem) mainSystem.style.display = 'none';
+            // 清除 URL 参数
+            const newUrl = window.location.pathname;
+            window.history.pushState({}, '', newUrl);
+            window._sharedReportData = null;
+        };
+        shareContainer.appendChild(closeBtn);
+    }
 }
-        function addShareButtonToReportTab() {
+
+/**
+ * 生成简化版报告 HTML（专门用于分享链接，避免依赖复杂函数）
+ */
+function generateSimpleReportHTML(data) {
+    const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
+    
+    const totalStudents = studentAverages.length;
+    const avgScore = totalStudents > 0 ? studentAverages.reduce((sum, s) => sum + s.average, 0) / totalStudents : 0;
+    const passCount = studentAverages.filter(s => s.average >= 60).length;
+    const passRate = totalStudents > 0 ? (passCount / totalStudents * 100).toFixed(1) : 0;
+    const title = selectedClass ? `${selectedClass} 成绩报告` : '成绩报告';
+    
+    // 生成表格行
+    const generateRows = () => {
+        let rows = '';
+        studentAverages.forEach((item, idx) => {
+            const rank = idx + 1;
+            rows += `
+                <tr style="${idx % 2 === 0 ? 'background:#fafafa;' : ''}">
+                    <td style="padding:10px; border:1px solid #ddd; text-align:center;">${rank}</td>
+                    <td style="padding:10px; border:1px solid #ddd;">${item.student.studentId}</td>
+                    <td style="padding:10px; border:1px solid #ddd;">${item.student.name}</td>
+                    <td style="padding:10px; border:1px solid #ddd; text-align:center;">
+                        <span style="background:#667eea;color:white;padding:2px 10px;border-radius:20px;font-size:0.8rem;">${item.student.class}</span>
+                    </td>
+                    ${!groupByLevel ? `<td style="padding:10px; border:1px solid #ddd; text-align:center;">${item.levelName || '-'}</td>` : ''}
+                    ${reportProjects.map(p => {
+                        const score = item.scores.find(s => s.projectName === p.name);
+                        if (score) {
+                            const pct = score.percentage;
+                            const color = pct >= 80 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#ef4444';
+                            return `<td style="padding:10px; border:1px solid #ddd; text-align:center; color:${color};">${score.score}/${score.fullMark}<br><small>(${pct.toFixed(0)}%)</small></td>`;
+                        }
+                        return `<td style="padding:10px; border:1px solid #ddd; text-align:center; color:#999;">-</td>`;
+                    }).join('')}
+                    <td style="padding:10px; border:1px solid #ddd; text-align:center; font-weight:700;">${item.average.toFixed(1)}%</td>
+                </tr>
+            `;
+        });
+        return rows;
+    };
+    
+    const tableMinWidth = Math.max(800, reportProjects.length * 100 + 300);
+    
+    return `
+        <div style="max-width:1400px; margin:0 auto; background:white; border-radius:24px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.15); font-family:'Noto Sans SC',sans-serif;">
+            <div style="background:linear-gradient(135deg, #6366f1, #8b5cf6); padding:30px 40px; color:white;">
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="Logo" style="height:60px;">
+                        <div>
+                            <h1 style="margin:0; font-size:1.5rem;">新山宽柔中学电脑协会</h1>
+                            <p style="margin:5px 0 0; opacity:0.85;">FOON YEW HIGH SCHOOL COMPUTER SOCIETY</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:1.2rem; font-weight:700;">${title}</div>
+                        <div style="font-size:0.8rem; opacity:0.8;">生成日期：${new Date().toLocaleDateString('zh-CN')}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background:#f8fafc; padding:20px 40px; border-bottom:1px solid #e2e8f0; display:flex; gap:15px; flex-wrap:wrap;">
+                <div style="background:white; border-radius:16px; padding:15px 25px; text-align:center; flex:1; min-width:120px;">
+                    <div style="font-size:1.8rem; font-weight:800; color:#6366f1;">${totalStudents}</div>
+                    <div style="font-size:0.75rem; color:#64748b;">学生人数</div>
+                </div>
+                <div style="background:white; border-radius:16px; padding:15px 25px; text-align:center; flex:1; min-width:120px;">
+                    <div style="font-size:1.8rem; font-weight:800; color:#10b981;">${avgScore.toFixed(1)}%</div>
+                    <div style="font-size:0.75rem; color:#64748b;">平均成绩</div>
+                </div>
+                <div style="background:white; border-radius:16px; padding:15px 25px; text-align:center; flex:1; min-width:120px;">
+                    <div style="font-size:1.8rem; font-weight:800; color:#f59e0b;">${passRate}%</div>
+                    <div style="font-size:0.75rem; color:#64748b;">及格率</div>
+                </div>
+                <div style="background:white; border-radius:16px; padding:15px 25px; text-align:center; flex:1; min-width:120px;">
+                    <div style="font-size:1.8rem; font-weight:800; color:#8b5cf6;">${reportProjects.length}</div>
+                    <div style="font-size:0.75rem; color:#64748b;">评分项目</div>
+                </div>
+            </div>
+            
+            <div style="padding:30px 40px;">
+                <div style="overflow-x:auto; border-radius:16px; border:1px solid #e2e8f0;">
+                    <table style="width:${tableMinWidth}px; border-collapse:collapse; font-size:0.8rem;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="padding:12px; border-bottom:2px solid #e2e8f0; text-align:center;">排名</th>
+                                <th style="padding:12px; border-bottom:2px solid #e2e8f0;">学号</th>
+                                <th style="padding:12px; border-bottom:2px solid #e2e8f0;">姓名</th>
+                                <th style="padding:12px; border-bottom:2px solid #e2e8f0; text-align:center;">班级</th>
+                                ${!groupByLevel ? '<th style="padding:12px; border-bottom:2px solid #e2e8f0; text-align:center;">级别</th>' : ''}
+                                ${reportProjects.map(p => `
+                                    <th style="padding:12px; border-bottom:2px solid #e2e8f0; text-align:center; min-width:90px;">
+                                        <div>${p.name}</div>
+                                        <small style="font-weight:normal;">${p.fullMark}分/${(p.weight*100).toFixed(0)}%</small>
+                                    </th>
+                                `).join('')}
+                                <th style="padding:12px; border-bottom:2px solid #e2e8f0; text-align:center;">总平均</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${generateRows()}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="background:#f8fafc; padding:20px; text-align:center; border-top:1px solid #e2e8f0; color:#94a3b8; font-size:0.75rem;">
+                <p>本报告由智能评分系统自动生成 | 杂家——MAKER</p>
+                <p>© ${new Date().getFullYear()} 新山宽柔中学电脑协会 - 版权所有</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * 添加分享按钮到成绩报告页面
+ */
+function addShareButtonToReportTab() {
     const reportsTab = document.getElementById('reports-tab');
     if (!reportsTab) return;
     
     const generateBtn = document.getElementById('generate-report-btn');
     if (!generateBtn) return;
     
-    // 检查是否已添加
     if (document.getElementById('share-report-btn')) return;
     
     const shareBtn = document.createElement('button');
@@ -13985,7 +14139,6 @@ function showReportFromShare() {
     shareBtn.className = 'btn btn-secondary ms-2';
     shareBtn.innerHTML = '<i class="fas fa-share-alt me-1"></i>生成分享链接';
     shareBtn.onclick = async () => {
-        // 先获取筛选条件
         const selectedClass = document.getElementById('report-class-select')?.value || '';
         const selectedLevel = document.getElementById('report-level-select')?.value || '';
         const groupByLevel = document.getElementById('report-group-by-level')?.checked || false;
@@ -14002,7 +14155,7 @@ function showReportFromShare() {
         showFullscreenLoader('正在生成分享链接...');
         
         try {
-            // 构建报告数据
+            // 构建学生成绩数据
             const studentAverages = [];
             const allProjectsMap = new Map();
             
@@ -14036,38 +14189,26 @@ function showReportFromShare() {
                 }
                 
                 const average = totalWeight > 0 ? (totalWeightedPercentage / totalWeight) : 0;
-                studentAverages.push({ student, average, scores: scoreDetails, levelId: student.levelId, levelName: student.levelName || getLevelName(student.levelId) });
+                studentAverages.push({ 
+                    student, 
+                    average, 
+                    scores: scoreDetails, 
+                    levelName: student.levelName || getLevelName(student.levelId) 
+                });
             }
             
             const reportProjects = Array.from(allProjectsMap.values()).sort((a, b) => b.weight - a.weight);
             studentAverages.sort((a, b) => b.average - a.average);
-            studentAverages.forEach((item, index) => { item.globalRank = index + 1; });
-            
-            if (groupByLevel) {
-                const levelGroups = {};
-                studentAverages.forEach(item => {
-                    const key = item.levelName || '未设置级别';
-                    if (!levelGroups[key]) levelGroups[key] = [];
-                    levelGroups[key].push(item);
-                });
-                Object.values(levelGroups).forEach(group => {
-                    group.sort((a, b) => b.average - a.average);
-                    group.forEach((item, index) => { item.levelRank = index + 1; });
-                });
-            }
             
             const reportData = { studentAverages, reportProjects, selectedClass, selectedLevel, groupByLevel };
             const shareLink = generateShareLink(reportData);
             
-            // 显示链接
-            const linkMsg = `✅ 分享链接已生成！\n\n将以下链接发送给他人，对方打开即可查看这份报告：\n\n${shareLink}\n\n链接有效期：永久（只要系统可访问）`;
-            showAlert('分享链接已复制到剪贴板', 'success');
-            navigator.clipboard.writeText(shareLink);
+            await navigator.clipboard.writeText(shareLink);
+            showAlert('✅ 分享链接已复制到剪贴板！', 'success');
             
-            // 同时显示对话框方便复制
             setTimeout(() => {
-                prompt('请复制以下链接分享给他人（链接已自动复制）：', shareLink);
-            }, 500);
+                prompt('请将以下链接发送给他人（已自动复制）：', shareLink);
+            }, 300);
             
         } catch (error) {
             console.error('生成分享链接失败:', error);
@@ -14077,19 +14218,17 @@ function showReportFromShare() {
         }
     };
     
-    // 插入按钮
-    const btnContainer = generateBtn.parentNode;
-    if (btnContainer) {
-        btnContainer.appendChild(shareBtn);
-    }
+    generateBtn.parentNode.appendChild(shareBtn);
 }
 
-// 在初始化时调用
+// 页面加载时检查分享链接
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         if (typeof addShareButtonToReportTab === 'function') {
             addShareButtonToReportTab();
         }
+        // 检查是否有分享链接
+        checkSharedReport();
     }, 2000);
 });
 // ==================== 窗口resize时重绘趋势图 ====================
