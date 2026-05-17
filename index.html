@@ -8391,7 +8391,7 @@ function showReportInWindow() {
     if (!data) return;
     
     const reportHTML = createProfessionalReportHTML(data);
-    const reportWindow = window.open('', '_blank', 'scrollbars=no,resizable=yes,toolbar=yes');
+    const reportWindow = window.open('', '_blank', 'width=1400,height=900,scrollbars=yes,resizable=yes,toolbar=yes');
     
     if (!reportWindow) {
         showAlert("请允许弹出窗口以查看报告", "warning");
@@ -8401,35 +8401,44 @@ function showReportInWindow() {
     reportWindow.document.write(reportHTML);
     reportWindow.document.close();
     
-    // 等待内容加载完成后，自动调整窗口大小
+    // 将数据挂载到新窗口
+    reportWindow._reportData = data;
+    reportWindow._schoolConfig = SCHOOL_CONFIG;
+    
+    // 添加分享功能到新窗口
     setTimeout(() => {
         try {
-            // 获取内容的实际宽度和高度
-            const body = reportWindow.document.body;
-            const html = reportWindow.document.documentElement;
-            const contentWidth = Math.max(
-                body.scrollWidth, body.offsetWidth,
-                html.clientWidth, html.scrollWidth, html.offsetWidth
-            );
-            const contentHeight = Math.max(
-                body.scrollHeight, body.offsetHeight,
-                html.clientHeight, html.scrollHeight, html.offsetHeight
-            );
+            const shareLink = generateShareLink(data);
             
-            // 加上一些边距（标题栏、工具栏等）
-            const windowWidth = Math.min(contentWidth + 50, screen.width - 50);
-            const windowHeight = Math.min(contentHeight + 100, screen.height - 50);
+            // 在工具栏中添加分享按钮
+            const toolbar = reportWindow.document.querySelector('.toolbar');
+            if (toolbar) {
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'toolbar-btn';
+                shareBtn.style.background = '#8b5cf6';
+                shareBtn.style.color = 'white';
+                shareBtn.innerHTML = '<i class="fas fa-share-alt"></i> 分享报告';
+                shareBtn.onclick = () => {
+                    // 复制链接到剪贴板
+                    navigator.clipboard.writeText(shareLink).then(() => {
+                        reportWindow.alert('✅ 分享链接已复制！\n\n将以下链接发送给他人，对方打开即可查看这份报告：\n\n' + shareLink);
+                    }).catch(() => {
+                        reportWindow.prompt('请复制以下链接分享给他人：', shareLink);
+                    });
+                };
+                toolbar.appendChild(shareBtn);
+            }
             
-            // 调整窗口大小
-            reportWindow.resizeTo(windowWidth, windowHeight);
-            
-            // 居中显示
-            const left = (screen.width - windowWidth) / 2;
-            const top = (screen.height - windowHeight) / 2;
-            reportWindow.moveTo(left, top);
+            // 下载 PDF 和 Excel 函数
+            reportWindow._downloadPDF = function() {
+                downloadProfessionalPDF(window._reportData);
+            };
+            reportWindow._downloadExcel = function() {
+                downloadProfessionalExcel(window._reportData);
+            };
             
         } catch (e) {
-            console.warn('自动调整窗口大小失败:', e);
+            console.warn('添加分享按钮失败:', e);
         }
     }, 100);
 }
@@ -9885,6 +9894,9 @@ function cleanupAllModals() {
 
 // 在页面加载时清理可能残留的遮罩层
 document.addEventListener('DOMContentLoaded', function() {
+        if (checkSharedReport()) {
+        return; // 已显示分享报告，不再执行其他初始化
+    }
     setTimeout(cleanupAllModals, 500);
 });
 
@@ -13807,6 +13819,278 @@ document.addEventListener('DOMContentLoaded', function() {
             initGoogleIdentityServices();
         }
     }, 1000);
+});
+
+        // ==================== 报告分享功能 ====================
+
+/**
+ * 将报告数据编码为 URL 参数
+ * @param {Object} data - 报告数据
+ * @returns {string} 编码后的字符串
+ */
+function encodeReportData(data) {
+    try {
+        // 只保留必要的数据，减少 URL 长度
+        const minimalData = {
+            students: data.studentAverages.map(s => ({
+                id: s.student.id,
+                name: s.student.name,
+                studentId: s.student.studentId,
+                class: s.student.class,
+                levelName: s.levelName,
+                average: s.average,
+                scores: s.scores
+            })),
+            projects: data.reportProjects,
+            selectedClass: data.selectedClass,
+            selectedLevel: data.selectedLevel,
+            groupByLevel: data.groupByLevel,
+            generatedAt: new Date().toISOString()
+        };
+        const jsonStr = JSON.stringify(minimalData);
+        // 使用 compress 压缩（简单替换）
+        const compressed = btoa(encodeURIComponent(jsonStr));
+        return compressed;
+    } catch (e) {
+        console.error('编码失败:', e);
+        return '';
+    }
+}
+
+/**
+ * 解码 URL 参数中的报告数据
+ * @param {string} encoded - 编码后的字符串
+ * @returns {Object|null} 解码后的数据
+ */
+function decodeReportData(encoded) {
+    try {
+        const jsonStr = decodeURIComponent(atob(encoded));
+        return JSON.parse(jsonStr);
+    } catch (e) {
+        console.error('解码失败:', e);
+        return null;
+    }
+}
+
+/**
+ * 生成分享链接
+ * @param {Object} data - 报告数据
+ * @returns {string} 分享链接
+ */
+function generateShareLink(data) {
+    const encoded = encodeReportData(data);
+    const url = new URL(window.location.href);
+    url.searchParams.set('report', encoded);
+    return url.href;
+}
+
+/**
+ * 检查 URL 中是否有分享的报告数据，如果有则自动显示
+ */
+function checkSharedReport() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const encodedReport = urlParams.get('report');
+    
+    if (encodedReport) {
+        const data = decodeReportData(encodedReport);
+        if (data && data.students) {
+            // 恢复数据格式
+            window._sharedReportData = {
+                studentAverages: data.students,
+                reportProjects: data.projects,
+                selectedClass: data.selectedClass,
+                selectedLevel: data.selectedLevel,
+                groupByLevel: data.groupByLevel
+            };
+            // 直接显示报告
+            showReportFromShare();
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 从分享链接显示报告
+ */
+function showReportFromShare() {
+    if (!window._sharedReportData) return;
+    
+    // 隐藏学生查询页面，显示报告容器
+    document.getElementById('student-query-page').style.display = 'none';
+    document.getElementById('main-system').style.display = 'none';
+    
+    // 创建全屏报告容器
+    let shareContainer = document.getElementById('shared-report-container');
+    if (!shareContainer) {
+        shareContainer = document.createElement('div');
+        shareContainer.id = 'shared-report-container';
+        shareContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f0f2f5;
+            z-index: 10000;
+            overflow-y: auto;
+            padding: 20px;
+        `;
+        document.body.appendChild(shareContainer);
+    }
+    
+    const reportHTML = createProfessionalReportHTML(window._sharedReportData);
+    shareContainer.innerHTML = reportHTML;
+    shareContainer.style.display = 'block';
+    
+    // 添加关闭按钮
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fas fa-times"></i> 关闭报告';
+    closeBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10001;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 24px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+    `;
+    closeBtn.onmouseover = () => closeBtn.style.transform = 'scale(1.05)';
+    closeBtn.onmouseout = () => closeBtn.style.transform = 'scale(1)';
+    closeBtn.onclick = () => {
+        shareContainer.style.display = 'none';
+        document.getElementById('student-query-page').style.display = 'block';
+        location.href = location.pathname; // 清除 URL 参数
+    };
+    shareContainer.appendChild(closeBtn);
+}
+        function addShareButtonToReportTab() {
+    const reportsTab = document.getElementById('reports-tab');
+    if (!reportsTab) return;
+    
+    const generateBtn = document.getElementById('generate-report-btn');
+    if (!generateBtn) return;
+    
+    // 检查是否已添加
+    if (document.getElementById('share-report-btn')) return;
+    
+    const shareBtn = document.createElement('button');
+    shareBtn.id = 'share-report-btn';
+    shareBtn.className = 'btn btn-secondary ms-2';
+    shareBtn.innerHTML = '<i class="fas fa-share-alt me-1"></i>生成分享链接';
+    shareBtn.onclick = async () => {
+        // 先获取筛选条件
+        const selectedClass = document.getElementById('report-class-select')?.value || '';
+        const selectedLevel = document.getElementById('report-level-select')?.value || '';
+        const groupByLevel = document.getElementById('report-group-by-level')?.checked || false;
+        
+        let filteredStudents = students;
+        if (selectedClass) filteredStudents = filteredStudents.filter(s => s.class === selectedClass);
+        if (selectedLevel) filteredStudents = filteredStudents.filter(s => s.levelId === selectedLevel);
+        
+        if (filteredStudents.length === 0) {
+            showAlert("没有找到符合条件的学生", "warning");
+            return;
+        }
+        
+        showFullscreenLoader('正在生成分享链接...');
+        
+        try {
+            // 构建报告数据
+            const studentAverages = [];
+            const allProjectsMap = new Map();
+            
+            for (const student of filteredStudents) {
+                const studentScores = scores.filter(s => s.studentId === student.id);
+                let totalWeightedPercentage = 0;
+                let totalWeight = 0;
+                const scoreDetails = [];
+                
+                for (const score of studentScores) {
+                    let project = levelProjects.find(p => p.id === score.projectId);
+                    if (!project) project = projects.find(p => p.id === score.projectId);
+                    
+                    const fullMark = score.fullMark || (project ? project.fullMark : 100);
+                    const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
+                    const projectName = score.projectName || (project ? project.name : null);
+                    
+                    if (!projectName || fullMark <= 0) continue;
+                    
+                    if (!allProjectsMap.has(projectName)) {
+                        allProjectsMap.set(projectName, { name: projectName, fullMark, weight });
+                    }
+                    
+                    if (fullMark > 0 && weight > 0) {
+                        const percentage = (score.score / fullMark) * 100;
+                        totalWeightedPercentage += percentage * weight;
+                        totalWeight += weight;
+                    }
+                    
+                    scoreDetails.push({ projectName, score: score.score, fullMark, weight, percentage: (score.score / fullMark) * 100 });
+                }
+                
+                const average = totalWeight > 0 ? (totalWeightedPercentage / totalWeight) : 0;
+                studentAverages.push({ student, average, scores: scoreDetails, levelId: student.levelId, levelName: student.levelName || getLevelName(student.levelId) });
+            }
+            
+            const reportProjects = Array.from(allProjectsMap.values()).sort((a, b) => b.weight - a.weight);
+            studentAverages.sort((a, b) => b.average - a.average);
+            studentAverages.forEach((item, index) => { item.globalRank = index + 1; });
+            
+            if (groupByLevel) {
+                const levelGroups = {};
+                studentAverages.forEach(item => {
+                    const key = item.levelName || '未设置级别';
+                    if (!levelGroups[key]) levelGroups[key] = [];
+                    levelGroups[key].push(item);
+                });
+                Object.values(levelGroups).forEach(group => {
+                    group.sort((a, b) => b.average - a.average);
+                    group.forEach((item, index) => { item.levelRank = index + 1; });
+                });
+            }
+            
+            const reportData = { studentAverages, reportProjects, selectedClass, selectedLevel, groupByLevel };
+            const shareLink = generateShareLink(reportData);
+            
+            // 显示链接
+            const linkMsg = `✅ 分享链接已生成！\n\n将以下链接发送给他人，对方打开即可查看这份报告：\n\n${shareLink}\n\n链接有效期：永久（只要系统可访问）`;
+            showAlert('分享链接已复制到剪贴板', 'success');
+            navigator.clipboard.writeText(shareLink);
+            
+            // 同时显示对话框方便复制
+            setTimeout(() => {
+                prompt('请复制以下链接分享给他人（链接已自动复制）：', shareLink);
+            }, 500);
+            
+        } catch (error) {
+            console.error('生成分享链接失败:', error);
+            showAlert('生成失败: ' + error.message, 'danger');
+        } finally {
+            hideFullscreenLoader();
+        }
+    };
+    
+    // 插入按钮
+    const btnContainer = generateBtn.parentNode;
+    if (btnContainer) {
+        btnContainer.appendChild(shareBtn);
+    }
+}
+
+// 在初始化时调用
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (typeof addShareButtonToReportTab === 'function') {
+            addShareButtonToReportTab();
+        }
+    }, 2000);
 });
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
