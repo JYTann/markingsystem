@@ -11,6 +11,7 @@
     <!-- 在 head 标签中添加 Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/lz-string.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/@pdf-lib/fontkit@0.0.4/dist/fontkit.umd.js"></script>
     <style>
     :root {
@@ -14519,6 +14520,384 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initFabMenuFixed, 500);
 }
+
+// ==================== 优化版分享功能（支持更大数据量）====================
+
+// 使用更强的压缩算法
+function encodeReportDataOptimized(data) {
+    try {
+        // 使用极简键名
+        const minimalData = {
+            s: data.studentAverages.map(s => ({
+                n: s.student.name,
+                i: s.student.studentId,
+                c: s.student.class,
+                l: s.levelName || '',
+                a: Math.round(s.average * 10) / 10,
+                sc: s.scores.map(sc => ({
+                    p: sc.projectName,
+                    s: sc.score,
+                    f: sc.fullMark
+                }))
+            })),
+            p: data.reportProjects.map(p => ({
+                n: p.name,
+                f: p.fullMark
+            })),
+            cl: data.selectedClass || '',
+            gb: data.groupByLevel || false
+        };
+        
+        const jsonStr = JSON.stringify(minimalData);
+        
+        // 使用 LZ-string 压缩（如果可用）
+        if (typeof LZString !== 'undefined' && LZString.compressToEncodedURIComponent) {
+            const compressed = LZString.compressToEncodedURIComponent(jsonStr);
+            if (compressed && compressed.length < 3000) {
+                return compressed;
+            }
+        }
+        
+        // 降级：使用标准编码并截断
+        const encoded = encodeURIComponent(jsonStr);
+        if (encoded.length > 2800) {
+            // 数据仍然太大，进行数据抽样
+            return encodeWithSampling(minimalData);
+        }
+        return encoded;
+    } catch (e) {
+        console.error('编码失败:', e);
+        return null;
+    }
+}
+
+// 数据抽样压缩（当数据太大时）
+function encodeWithSampling(minimalData) {
+    const originalCount = minimalData.s.length;
+    
+    // 如果学生超过30人，只保留前30名和随机抽样
+    if (minimalData.s.length > 30) {
+        const topStudents = minimalData.s.slice(0, 20);
+        const randomSample = minimalData.s.slice(-10);
+        minimalData.s = [...topStudents, ...randomSample];
+        minimalData._truncated = true;
+        minimalData._originalCount = originalCount;
+        minimalData._message = `仅显示前20名和后10名学生（共${originalCount}人）`;
+    }
+    
+    // 如果项目超过8个，只保留权重最高的8个
+    if (minimalData.p.length > 8) {
+        minimalData.p = minimalData.p.slice(0, 8);
+        minimalData._projectsTruncated = true;
+    }
+    
+    const jsonStr = JSON.stringify(minimalData);
+    return encodeURIComponent(jsonStr);
+}
+
+// 解码分享数据
+function decodeReportDataOptimized(encoded) {
+    try {
+        let jsonStr;
+        
+        // 尝试 LZ-string 解压
+        if (typeof LZString !== 'undefined' && LZString.decompressFromEncodedURIComponent) {
+            const decompressed = LZString.decompressFromEncodedURIComponent(encoded);
+            if (decompressed) {
+                jsonStr = decompressed;
+            }
+        }
+        
+        if (!jsonStr) {
+            jsonStr = decodeURIComponent(encoded);
+        }
+        
+        const decoded = JSON.parse(jsonStr);
+        
+        // 添加截断提示
+        const result = {
+            studentAverages: (decoded.s || []).map(s => ({
+                student: { name: s.n, studentId: s.i, class: s.c },
+                levelName: s.l,
+                average: s.a,
+                scores: (s.sc || []).map(sc => ({
+                    projectName: sc.p,
+                    score: sc.s,
+                    fullMark: sc.f,
+                    percentage: (sc.s / sc.f) * 100
+                }))
+            })),
+            reportProjects: (decoded.p || []).map(p => ({
+                name: p.n,
+                fullMark: p.f,
+                weight: 1 / (decoded.p.length || 1)
+            })),
+            selectedClass: decoded.cl || '',
+            groupByLevel: decoded.gb || false,
+            isTruncated: decoded._truncated || false,
+            truncateMessage: decoded._message || null
+        };
+        
+        return result;
+    } catch (e) {
+        console.error('解码失败:', e);
+        return null;
+    }
+}
+
+// 生成分享链接（优化版）
+function generateShareLinkOptimized(data) {
+    const encoded = encodeReportDataOptimized(data);
+    if (!encoded) return null;
+    
+    const url = new URL(window.location.href);
+    url.searchParams.set('r', encoded);
+    
+    if (url.href.length > 3000) {
+        console.warn('链接长度:', url.href.length);
+        return null;
+    }
+    return url.href;
+}
+
+// 创建二维码分享（替代长链接）
+function createQRCodeShare(link) {
+    // 移除旧的二维码容器
+    const oldQR = document.getElementById('share-qrcode-container');
+    if (oldQR) oldQR.remove();
+    
+    const qrContainer = document.createElement('div');
+    qrContainer.id = 'share-qrcode-container';
+    qrContainer.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        z-index: 100000;
+        text-align: center;
+        max-width: 320px;
+        animation: fadeInScale 0.3s ease;
+    `;
+    
+    qrContainer.innerHTML = `
+        <div style="position: relative;">
+            <button onclick="this.closest('#share-qrcode-container').remove()" 
+                    style="position: absolute; top: -15px; right: -15px; width: 32px; height: 32px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 16px;">
+                ×
+            </button>
+            <div style="font-weight: 700; margin-bottom: 15px; color: #1e293b;">
+                <i class="fas fa-qrcode me-2" style="color: #6366f1;"></i>扫码分享报告
+            </div>
+            <div id="qrcode-placeholder" style="padding: 10px; background: #f8fafc; border-radius: 16px;">
+                <div style="width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #e2e8f0; border-radius: 12px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #6366f1;"></i>
+                </div>
+            </div>
+            <p style="margin-top: 15px; font-size: 0.75rem; color: #64748b; word-break: break-all;">
+                链接长度：${link.length} 字符<br>
+                有效期：永久
+            </p>
+            <button onclick="copyShareLinkToClipboard('${link.replace(/'/g, "\\'")}')" 
+                    style="margin-top: 10px; padding: 8px 20px; background: #6366f1; color: white; border: none; border-radius: 50px; cursor: pointer;">
+                <i class="fas fa-copy me-1"></i>复制链接
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(qrContainer);
+    
+    // 动态加载 QRCode 库
+    if (typeof QRCode === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+        script.onload = () => {
+            document.getElementById('qrcode-placeholder').innerHTML = '';
+            new QRCode(document.getElementById('qrcode-placeholder'), {
+                text: link,
+                width: 200,
+                height: 200,
+                colorDark: '#1e293b',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        };
+        document.head.appendChild(script);
+    } else {
+        document.getElementById('qrcode-placeholder').innerHTML = '';
+        new QRCode(document.getElementById('qrcode-placeholder'), {
+            text: link,
+            width: 200,
+            height: 200
+        });
+    }
+    
+    // 点击遮罩关闭
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 99999;
+    `;
+    overlay.onclick = () => {
+        overlay.remove();
+        qrContainer.remove();
+    };
+    document.body.appendChild(overlay);
+    overlay.appendChild(qrContainer);
+}
+
+// 复制链接到剪贴板
+function copyShareLinkToClipboard(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        showAlert('✅ 分享链接已复制！', 'success');
+    }).catch(() => {
+        prompt('请手动复制以下链接：', link);
+    });
+}
+
+// 修改分享按钮的逻辑
+function setupShareButton() {
+    const shareBtn = document.getElementById('share-report-btn');
+    if (!shareBtn) return;
+    
+    const newShareBtn = shareBtn.cloneNode(true);
+    shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+    
+    newShareBtn.onclick = async () => {
+        const selectedClass = document.getElementById('report-class-select')?.value || '';
+        const selectedLevel = document.getElementById('report-level-select')?.value || '';
+        const groupByLevel = document.getElementById('report-group-by-level')?.checked || false;
+        
+        let filteredStudents = students;
+        if (selectedClass) filteredStudents = filteredStudents.filter(s => s.class === selectedClass);
+        if (selectedLevel) filteredStudents = filteredStudents.filter(s => s.levelId === selectedLevel);
+        
+        if (filteredStudents.length === 0) {
+            showAlert("没有找到符合条件的学生", "warning");
+            return;
+        }
+        
+        showFullscreenLoader('正在生成分享链接...');
+        
+        try {
+            const studentAverages = [];
+            const allProjectsMap = new Map();
+            
+            for (const student of filteredStudents) {
+                const studentScores = scores.filter(s => s.studentId === student.id);
+                let totalWeightedPercentage = 0;
+                let totalWeight = 0;
+                const scoreDetails = [];
+                
+                for (const score of studentScores) {
+                    let project = levelProjects.find(p => p.id === score.projectId);
+                    if (!project) project = projects.find(p => p.id === score.projectId);
+                    
+                    const fullMark = score.fullMark || (project ? project.fullMark : 100);
+                    const weight = score.weight !== undefined ? score.weight : (project ? project.weight : 0);
+                    const projectName = score.projectName || (project ? project.name : null);
+                    
+                    if (!projectName || fullMark <= 0) continue;
+                    
+                    if (!allProjectsMap.has(projectName)) {
+                        allProjectsMap.set(projectName, { name: projectName, fullMark, weight });
+                    }
+                    
+                    if (fullMark > 0 && weight > 0) {
+                        const percentage = (score.score / fullMark) * 100;
+                        totalWeightedPercentage += percentage * weight;
+                        totalWeight += weight;
+                    }
+                    
+                    scoreDetails.push({ projectName, score: score.score, fullMark });
+                }
+                
+                const average = totalWeight > 0 ? (totalWeightedPercentage / totalWeight) : 0;
+                studentAverages.push({ 
+                    student, 
+                    average, 
+                    scores: scoreDetails, 
+                    levelName: student.levelName || getLevelName(student.levelId) 
+                });
+            }
+            
+            const reportProjects = Array.from(allProjectsMap.values()).sort((a, b) => b.weight - a.weight);
+            studentAverages.sort((a, b) => b.average - a.average);
+            
+            const reportData = { studentAverages, reportProjects, selectedClass, groupByLevel };
+            const shareLink = generateShareLinkOptimized(reportData);
+            
+            if (!shareLink) {
+                // 如果链接太长，提示使用二维码或导出PDF
+                showAlert('数据较大，已生成二维码分享方式', 'info');
+                // 尝试用二维码分享短链接（通过临时存储）
+                const tempId = 'temp_' + Date.now();
+                sessionStorage.setItem(tempId, JSON.stringify({
+                    data: reportData,
+                    expire: Date.now() + 3600000
+                }));
+                const shortLink = `${window.location.origin}${window.location.pathname}?temp=${tempId}`;
+                createQRCodeShare(shortLink);
+                return;
+            }
+            
+            // 询问分享方式
+            const shareMethod = confirm('分享方式：\n\n点击「确定」→ 复制链接\n点击「取消」→ 生成二维码');
+            
+            if (shareMethod) {
+                await navigator.clipboard.writeText(shareLink);
+                showAlert('✅ 分享链接已复制到剪贴板！', 'success');
+                setTimeout(() => {
+                    prompt('链接已复制，也可手动复制：', shareLink);
+                }, 300);
+            } else {
+                createQRCodeShare(shareLink);
+            }
+            
+        } catch (error) {
+            console.error('生成分享链接失败:', error);
+            showAlert('生成失败: ' + error.message, 'danger');
+        } finally {
+            hideFullscreenLoader();
+        }
+    };
+}
+
+// 检查临时分享链接
+function checkTempShareLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tempId = urlParams.get('temp');
+    
+    if (tempId && sessionStorage.getItem(tempId)) {
+        const stored = sessionStorage.getItem(tempId);
+        const data = JSON.parse(stored);
+        if (data.expire > Date.now()) {
+            window._sharedReportData = data.data;
+            showReportFromShare();
+            // 清理URL参数
+            window.history.pushState({}, '', window.location.pathname);
+        }
+        sessionStorage.removeItem(tempId);
+        return true;
+    }
+    return false;
+}
+
+// 初始化分享功能
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        setupShareButton();
+    }, 1500);
+});
+
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
