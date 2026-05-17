@@ -5026,32 +5026,27 @@ let studentAttendanceUser = null;
 let studentTrendChart = null;
 let trendPeriod = 'all';
         // DOM加载完成后执行
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // 🔥 最重要：优先检查分享链接
-    if (checkSharedReport()) {
-        return; // 如果是分享链接，直接显示报告，不执行后续任何初始化
-    }
-    
-    // 初始化UI事件
-    initUIEvents();
-    
-    // 检查登录状态
-    auth.onAuthStateChanged(user => {
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 初始化UI事件
+            initUIEvents();
+            
+            // 检查登录状态
+auth.onAuthStateChanged(user => {
         if (new URLSearchParams(window.location.search).has('r')) {
-            return;
-        }
-        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-            currentUser = user;
-            document.getElementById('user-email').textContent = user.email;
-            showMainSystem();
-            loadAllData();
-            addActivity("用户登录系统", "success");
-        } else {
-            showStudentQueryPage();
-        }
-    });
+        return;
+    }
+    if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+        currentUser = user;
+        document.getElementById('user-email').textContent = user.email;
+        showMainSystem();
+        loadAllData();
+        addActivity("用户登录系统", "success");
+    } else {
+        showStudentQueryPage();
+    }
 });
+});  
 
         // 初始化UI事件
         function initUIEvents() {
@@ -14229,7 +14224,19 @@ function addShareButtonToReportTab() {
     generateBtn.parentNode.appendChild(shareBtn);
 }
 
+document.addEventListener('DOMContentLoaded', async function() {
 
+    // 优先检查分享链接
+    const isShared = checkSharedReport();
+
+    // 如果已经是分享页面，就不要继续显示查询页
+    if (isShared) return;
+
+    // 正常功能
+    if (typeof addShareButtonToReportTab === 'function') {
+        addShareButtonToReportTab();
+    }
+});
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
