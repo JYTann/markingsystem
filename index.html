@@ -5033,6 +5033,9 @@ let trendPeriod = 'all';
             
             // 检查登录状态
 auth.onAuthStateChanged(user => {
+        if (new URLSearchParams(window.location.search).has('r')) {
+        return;
+    }
     if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
         currentUser = user;
         document.getElementById('user-email').textContent = user.email;
@@ -14221,15 +14224,18 @@ function addShareButtonToReportTab() {
     generateBtn.parentNode.appendChild(shareBtn);
 }
 
-// 页面加载时检查分享链接
 document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        if (typeof addShareButtonToReportTab === 'function') {
-            addShareButtonToReportTab();
-        }
-        // 检查是否有分享链接
-        checkSharedReport();
-    }, 2000);
+
+    // 优先检查分享链接
+    const isShared = checkSharedReport();
+
+    // 如果已经是分享页面，就不要继续显示查询页
+    if (isShared) return;
+
+    // 正常功能
+    if (typeof addShareButtonToReportTab === 'function') {
+        addShareButtonToReportTab();
+    }
 });
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
