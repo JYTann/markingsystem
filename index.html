@@ -14204,7 +14204,7 @@ function addShareButtonToReportTab() {
             studentAverages.sort((a, b) => b.average - a.average);
             
             const reportData = { studentAverages, reportProjects, selectedClass, selectedLevel, groupByLevel };
-            const shareLink = await generateShareLink(reportData);
+            const shareLink = generateShareLink(reportData);
             
             await navigator.clipboard.writeText(shareLink);
             showAlert('✅ 分享链接已复制到剪贴板！', 'success');
@@ -14224,7 +14224,7 @@ function addShareButtonToReportTab() {
     generateBtn.parentNode.appendChild(shareBtn);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
 
     // 优先检查分享链接
     const isShared = checkSharedReport();
