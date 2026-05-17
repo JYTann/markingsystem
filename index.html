@@ -6304,6 +6304,8 @@ function saveLevelProject() {
         }
 
         // 添加学生到表格
+// ==================== 学生表格添加函数（无错误版本） ====================
+
 function addStudentToTable(student) {
     const tbody = document.getElementById('students-table-body');
     if (!tbody) return;
@@ -6325,7 +6327,7 @@ function addStudentToTable(student) {
                 </div>
                 ${student.name}
             </div>
-        </td>
+         </td>
         <td><span class="badge bg-primary">${student.class}</span></td>
         <td><span class="badge bg-success">${levelName}</span></td>
         <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
@@ -6340,7 +6342,7 @@ function addStudentToTable(student) {
             <button class="btn btn-sm btn-warning clean-student-duplicates ms-1" data-student-id="${student.id}" data-student-name="${student.name}" title="清理重复分数记录">
                 <i class="fas fa-broom"></i>
             </button>
-        </td>
+         </td>
     `;
     
     tbody.appendChild(row);
@@ -7360,22 +7362,6 @@ window.addStudentToTable = function(student) {
     // 调用原函数
     originalAddStudentToTable(student);
     
-    // 添加清理重复记录的按钮
-    setTimeout(() => {
-        const row = document.querySelector(`#students-table-body tr td:first-child:contains('${student.studentId}')`)?.closest('tr');
-        if (row) {
-            const actionCell = row.querySelector('td:last-child');
-            if (actionCell && !actionCell.querySelector('.clean-student-duplicates')) {
-                const cleanBtn = document.createElement('button');
-                cleanBtn.className = 'btn btn-sm btn-warning ms-1 clean-student-duplicates';
-                cleanBtn.dataset.studentId = student.id;
-                cleanBtn.dataset.studentName = student.name;
-                cleanBtn.innerHTML = '<i class="fas fa-broom"></i>';
-                cleanBtn.title = '清理重复分数记录';
-                actionCell.appendChild(cleanBtn);
-            }
-        }
-    }, 100);
 };
 
 // 页面加载时初始化
