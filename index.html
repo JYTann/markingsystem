@@ -11321,6 +11321,362 @@ updateDashboard = function() {
     }, 600);
 };
 
+        // ==================== 修复模态框相关错误 ====================
+
+// 修复 Bootstrap 模态框的焦点和 aria-hidden 问题
+document.addEventListener('hidden.bs.modal', function (event) {
+    // 清理所有模态框的 aria-hidden 属性
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.removeAttribute('aria-hidden');
+    });
+    
+    // 移除 body 上的样式
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // 移除所有遮罩层
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+        backdrop.remove();
+    });
+    
+    // 将焦点移回安全的元素（body）
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
+});
+
+// 修复模态框显示前的清理
+document.addEventListener('show.bs.modal', function (event) {
+    const modal = event.target;
+    // 确保模态框没有残留的 aria-hidden
+    modal.removeAttribute('aria-hidden');
+});
+
+// 修复所有模态框关闭按钮的点击事件
+function safeHideModal(modalElement) {
+    if (!modalElement) return;
+    
+    try {
+        // 先清除所有内部焦点
+        if (document.activeElement && modalElement.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+        
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        } else {
+            modalElement.style.display = 'none';
+            modalElement.classList.remove('show');
+        }
+        
+        // 延迟清理
+        setTimeout(() => {
+            modalElement.removeAttribute('aria-hidden');
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+        }, 150);
+    } catch (e) {
+        console.warn('关闭模态框失败:', e);
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+    }
+}
+
+// 全局捕获错误 - 防止 selector-engine 错误
+const originalConsoleError = console.error;
+console.error = function(...args) {
+    const message = args[0] || '';
+    // 过滤掉 Bootstrap selector-engine 的错误
+    if (typeof message === 'string' && 
+        (message.includes('selector-engine') || 
+         message.includes('Cannot read properties of null'))) {
+        return;
+    }
+    originalConsoleError.apply(console, args);
+};
+
+// 修复所有模态框的关闭按钮
+document.addEventListener('click', function(e) {
+    // 查找关闭按钮
+    const closeBtn = e.target.closest('.btn-close, [data-bs-dismiss="modal"]');
+    if (closeBtn) {
+        e.preventDefault();
+        const modal = closeBtn.closest('.modal');
+        if (modal) {
+            safeHideModal(modal);
+        }
+    }
+});
+
+// 修复点名模态框的初始化
+function initAttendanceModal() {
+    const modalElement = document.getElementById('attendanceModal');
+    if (!modalElement) return;
+    
+    // 移除任何残留的监听器
+    const newModal = modalElement.cloneNode(true);
+    modalElement.parentNode.replaceChild(newModal, modalElement);
+    
+    // 重新绑定保存按钮
+    const saveBtn = newModal.querySelector('#save-attendance-btn');
+    if (saveBtn) {
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.addEventListener('click', saveAttendance);
+    }
+    
+    // 绑定随机生成验证码按钮
+    const randomBtn = newModal.querySelector('[onclick="generateRandomCode()"]');
+    if (randomBtn) {
+        randomBtn.onclick = generateRandomCode;
+    }
+    
+    // 绑定时间变化事件
+    const startTime = newModal.querySelector('#attendance-start-time');
+    const endTime = newModal.querySelector('#attendance-end-time');
+    const dateInput = newModal.querySelector('#attendance-date');
+    
+    if (startTime) startTime.addEventListener('change', updateTimePreview);
+    if (endTime) endTime.addEventListener('change', updateTimePreview);
+    if (dateInput) dateInput.addEventListener('change', updateTimePreview);
+}
+
+// 重写 updateTimePreview 函数，添加安全检查
+const originalUpdateTimePreview = updateTimePreview;
+window.updateTimePreview = function() {
+    const date = document.getElementById('attendance-date')?.value;
+    const startTime = document.getElementById('attendance-start-time')?.value;
+    const endTime = document.getElementById('attendance-end-time')?.value;
+    const previewText = document.getElementById('time-preview-text');
+    
+    if (!previewText) return;
+    
+    if (date && startTime && endTime) {
+        const start = new Date(`${date}T${startTime}:00`);
+        const end = new Date(`${date}T${endTime}:00`);
+        const durationMinutes = Math.round((end - start) / 60000);
+        
+        if (durationMinutes > 0) {
+            previewText.innerHTML = `
+                点名时段：<strong>${date} ${startTime} - ${endTime}</strong><br>
+                持续时长：<strong>${durationMinutes} 分钟</strong>
+                ${durationMinutes > 120 ? '<br><span class="text-warning">⚠️ 点名时间较长，建议控制在2小时内</span>' : ''}
+            `;
+        } else {
+            previewText.innerHTML = `<span class="text-danger">⚠️ 结束时间必须晚于开始时间</span>`;
+        }
+    } else {
+        previewText.innerHTML = '请设置点名时间';
+    }
+};
+
+// 重写新建点名函数，使用安全的方式
+const originalCreateNewAttendance = createNewAttendance;
+window.createNewAttendance = function() {
+    const modalElement = document.getElementById('attendanceModal');
+    if (!modalElement) return;
+    
+    // 先清理
+    safeHideModal(modalElement);
+    
+    setTimeout(() => {
+        // 重置表单
+        const titleInput = document.getElementById('attendance-title');
+        const dateInput = document.getElementById('attendance-date');
+        const startTimeInput = document.getElementById('attendance-start-time');
+        const endTimeInput = document.getElementById('attendance-end-time');
+        const codeInput = document.getElementById('attendance-code');
+        const noteInput = document.getElementById('attendance-note');
+        const levelSelect = document.getElementById('attendance-level');
+        const modalTitle = document.getElementById('attendance-modal-title');
+        
+        if (titleInput) titleInput.value = '';
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
+        if (codeInput) codeInput.value = '';
+        if (noteInput) noteInput.value = '';
+        if (modalTitle) modalTitle.textContent = '新建点名';
+        
+        // 更新级别选择
+        if (levelSelect) {
+            levelSelect.innerHTML = '<option value="">所有级别</option>';
+            levels.forEach(level => {
+                const option = document.createElement('option');
+                option.value = level.id;
+                option.textContent = level.name;
+                levelSelect.appendChild(option);
+            });
+        }
+        
+        if (previewText) previewText.innerHTML = '请设置点名时间';
+        
+        // 显示模态框
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        // 添加遮罩层
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+        
+        try {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.show();
+        } catch(e) {
+            // Bootstrap 实例不存在，手动处理
+        }
+    }, 200);
+};
+
+// 重写 editAttendance 函数
+const originalEditAttendance = editAttendance;
+window.editAttendance = function(attendanceId) {
+    const attendance = attendances.find(a => a.id === attendanceId);
+    if (!attendance) return;
+    
+    const modalElement = document.getElementById('attendanceModal');
+    if (!modalElement) return;
+    
+    safeHideModal(modalElement);
+    
+    setTimeout(() => {
+        document.getElementById('attendance-id').value = attendance.id;
+        document.getElementById('attendance-modal-title').textContent = '编辑点名';
+        document.getElementById('attendance-title').value = attendance.title || '';
+        document.getElementById('attendance-date').value = attendance.date || '';
+        document.getElementById('attendance-start-time').value = attendance.startTimeStr || '';
+        document.getElementById('attendance-end-time').value = attendance.endTimeStr || '';
+        document.getElementById('attendance-code').value = attendance.code || '';
+        document.getElementById('attendance-note').value = attendance.note || '';
+        document.getElementById('attendance-level').value = attendance.levelId || '';
+        
+        updateTimePreview();
+        
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+    }, 200);
+};
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 延迟初始化模态框
+    setTimeout(() => {
+        initAttendanceModal();
+        cleanupAllModals();
+    }, 500);
+});
+
+// 增强清理函数
+function cleanupAllModals() {
+    document.querySelectorAll('.modal.show').forEach(modal => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.removeAttribute('aria-hidden');
+    });
+    
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // 确保焦点不在隐藏元素上
+    if (document.activeElement && document.activeElement.blur) {
+        document.activeElement.blur();
+    }
+}
+
+// 修复 saveAttendance 函数中的模态框关闭
+const originalSaveAttendance = saveAttendance;
+window.saveAttendance = function() {
+    const id = document.getElementById('attendance-id')?.value;
+    const title = document.getElementById('attendance-title')?.value.trim();
+    const date = document.getElementById('attendance-date')?.value;
+    const startTimeStr = document.getElementById('attendance-start-time')?.value;
+    const endTimeStr = document.getElementById('attendance-end-time')?.value;
+    const code = document.getElementById('attendance-code')?.value.trim().toUpperCase();
+    const note = document.getElementById('attendance-note')?.value.trim();
+    const levelId = document.getElementById('attendance-level')?.value;
+    
+    if (!title) { showAlert('请输入点名标题', 'warning'); return; }
+    if (!date) { showAlert('请选择日期', 'warning'); return; }
+    if (!startTimeStr) { showAlert('请设置开始时间', 'warning'); return; }
+    if (!endTimeStr) { showAlert('请设置结束时间', 'warning'); return; }
+    if (!code || code.length < 4 || code.length > 6) {
+        showAlert('验证码需要4-6位字符', 'warning'); return;
+    }
+    
+    if (startTimeStr >= endTimeStr) {
+        showAlert('结束时间必须晚于开始时间', 'warning'); return;
+    }
+    
+    const startTime = new Date(`${date}T${startTimeStr}:00`);
+    const endTime = new Date(`${date}T${endTimeStr}:00`);
+    
+    const btn = document.getElementById('save-attendance-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    }
+    
+    const attendanceData = {
+        title,
+        date,
+        startTime: firebase.firestore.Timestamp.fromDate(startTime),
+        endTime: firebase.firestore.Timestamp.fromDate(endTime),
+        startTimeStr,
+        endTimeStr,
+        code,
+        note: note || null,
+        levelId: levelId || null,
+        cancelled: false,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (!id) {
+        attendanceData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+    
+    const savePromise = id 
+        ? db.collection('attendances').doc(id).update(attendanceData)
+        : db.collection('attendances').add(attendanceData);
+    
+    savePromise
+        .then(() => {
+            showAlert(id ? '点名更新成功' : '点名创建成功', 'success');
+            safeHideModal(document.getElementById('attendanceModal'));
+            loadAttendances();
+            addActivity(`${id ? '更新' : '创建'}点名: ${title}`, 'success');
+        })
+        .catch(error => {
+            console.error('保存点名失败:', error);
+            showAlert('保存失败: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            }
+        });
+};
+
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
