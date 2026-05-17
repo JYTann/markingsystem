@@ -13924,10 +13924,12 @@ function encodeReportData(data) {
  */
 function decodeReportData(encoded) {
     try {
-        // 直接 URL 解码
+        // 步骤1：URL 解码（因为生成时用了 encodeURIComponent）
         const jsonStr = decodeURIComponent(encoded);
+        // 步骤2：JSON 解析
         const decoded = JSON.parse(jsonStr);
         
+        // 转换回原始格式
         return {
             studentAverages: decoded.s.map(s => ({
                 student: {
