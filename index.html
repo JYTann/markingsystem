@@ -5027,26 +5027,46 @@ let studentTrendChart = null;
 let trendPeriod = 'all';
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
-            
-            // 初始化UI事件
-            initUIEvents();
-            
-            // 检查登录状态
-auth.onAuthStateChanged(user => {
-        if (new URLSearchParams(window.location.search).has('r')) {
-        return;
+    // ========== 最优先：检查分享链接 ==========
+    // 如果 URL 中有分享参数，立即显示报告，不执行任何其他初始化
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('r')) {
+        // 延迟一点确保 DOM 准备好，然后显示报告
+        setTimeout(() => {
+            if (typeof checkSharedReport === 'function') {
+                checkSharedReport();
+            }
+        }, 100);
+        return; // 关键：直接返回，不再执行下面的登录检查等代码
     }
-    if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-        currentUser = user;
-        document.getElementById('user-email').textContent = user.email;
-        showMainSystem();
-        loadAllData();
-        addActivity("用户登录系统", "success");
-    } else {
-        showStudentQueryPage();
-    }
+    
+    // 初始化UI事件
+    initUIEvents();
+    
+    // 检查登录状态
+    auth.onAuthStateChanged(user => {
+        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+            currentUser = user;
+            document.getElementById('user-email').textContent = user.email;
+            showMainSystem();
+            loadAllData();
+            addActivity("用户登录系统", "success");
+        } else {
+            showStudentQueryPage();
+        }
+    });
+    
+    // 延迟初始化模态框
+    setTimeout(cleanupAllModals, 500);
+    
+    // 延迟初始化新功能
+    setTimeout(() => {
+        initNewFeatures();
+        if (typeof addShareButtonToReportTab === 'function') {
+            addShareButtonToReportTab();
+        }
+    }, 1000);
 });
-});  
 
         // 初始化UI事件
         function initUIEvents() {
@@ -13970,7 +13990,7 @@ function showReportFromShare() {
         document.body.appendChild(shareContainer);
     }
     
-    // 直接生成简化版报告 HTML（避免依赖复杂的 createProfessionalReportHTML）
+    // 显示报告
     shareContainer.innerHTML = generateSimpleReportHTML(window._sharedReportData);
     shareContainer.style.display = 'block';
     
@@ -13993,17 +14013,13 @@ function showReportFromShare() {
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            transition: all 0.2s;
         `;
-        closeBtn.onmouseover = () => closeBtn.style.transform = 'scale(1.05)';
-        closeBtn.onmouseout = () => closeBtn.style.transform = 'scale(1)';
         closeBtn.onclick = () => {
             shareContainer.style.display = 'none';
             if (studentPage) studentPage.style.display = 'block';
             if (mainSystem) mainSystem.style.display = 'none';
             // 清除 URL 参数
-            const newUrl = window.location.pathname;
-            window.history.pushState({}, '', newUrl);
+            window.history.pushState({}, '', window.location.pathname);
             window._sharedReportData = null;
         };
         shareContainer.appendChild(closeBtn);
@@ -14014,6 +14030,15 @@ function showReportFromShare() {
  * 生成简化版报告 HTML（专门用于分享链接，避免依赖复杂函数）
  */
 function generateSimpleReportHTML(data) {
+        // 兼容两种数据格式
+    const studentList = data.studentAverages || data.students || [];
+    const projects = data.reportProjects || data.projects || [];
+    const selectedClass = data.selectedClass || '';
+    const groupByLevel = data.groupByLevel || false;
+    
+    if (studentList.length === 0) {
+        return '<div style="text-align:center;padding:50px;">暂无数据</div>';
+    }
     const { studentAverages, reportProjects, selectedClass, groupByLevel } = data;
     
     const totalStudents = studentAverages.length;
