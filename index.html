@@ -5026,29 +5026,17 @@ let studentAttendanceUser = null;
 let studentTrendChart = null;
 let trendPeriod = 'all';
         // DOM加载完成后执行
-        document.addEventListener('DOMContentLoaded', function() {
-    // ========== 最优先：检查分享链接 ==========
+       document.addEventListener('DOMContentLoaded', function() {
+    // ========== 最优先：检查分享链接（使用 sid 参数） ==========
     const urlParams = new URLSearchParams(window.location.search);
     
-    if (urlParams.has('r')) {
+    if (urlParams.has('sid')) {
         // 有分享参数，直接显示报告，跳过所有登录和初始化
         console.log('检测到分享链接，正在加载报告...');
-        
-        // 解码并显示报告
-        const encodedReport = urlParams.get('r');
-        try {
-            const decodedData = decodeReportData(encodedReport);
-            if (decodedData && decodedData.studentAverages && decodedData.studentAverages.length > 0) {
-                window._sharedReportData = decodedData;
-                // 延迟一点点确保 DOM 准备好
-                setTimeout(() => {
-                    showReportFromShare();
-                }, 100);
-                return; // 关键：直接返回，不再执行后续任何代码
-            }
-        } catch(e) {
-            console.error('解码分享数据失败:', e);
-        }
+        setTimeout(() => {
+            checkSharedReport();
+        }, 100);
+        return; // 关键：直接返回，不再执行后续任何代码
     }
     
     // 没有分享链接，正常执行初始化
@@ -5067,10 +5055,8 @@ let trendPeriod = 'all';
         }
     });
     
-    // 延迟初始化模态框
+    // 延迟初始化
     setTimeout(cleanupAllModals, 500);
-    
-    // 延迟初始化新功能
     setTimeout(() => {
         initNewFeatures();
         if (typeof addShareButtonToReportTab === 'function') {
@@ -13955,19 +13941,41 @@ function generateShareLink(data) {
 /**
  * 检查 URL 中是否有分享的报告数据，如果有则自动显示
  */
-async function checkSharedReport() {
+function checkSharedReport() {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedReport = urlParams.get('r');  // 使用短参数名 r
+    const shareId = urlParams.get('sid');
     
-    if (encodedReport) {
-        const data = decodeReportData(encodedReport);
-        if (data && data.studentAverages && data.studentAverages.length > 0) {
-            window._sharedReportData = data;
-            showReportFromShare();
-            return true;
+    if (!shareId) return false;
+    
+    const stored = localStorage.getItem(shareId);
+    if (!stored) return false;
+    
+    try {
+        const { d, e } = JSON.parse(stored);
+        if (e < Date.now()) {
+            localStorage.removeItem(shareId);
+            return false;
         }
+        
+        // 转换为报告所需格式
+        window._sharedReportData = {
+            studentAverages: d.s.map(s => ({
+                student: { name: s.n, studentId: s.sid, class: s.c },
+                levelName: s.l,
+                average: s.a,
+                scores: s.sc
+            })),
+            reportProjects: d.p,
+            selectedClass: d.cl,
+            groupByLevel: d.gb
+        };
+        
+        showReportFromShare();
+        return true;
+    } catch(e) {
+        console.error('读取分享数据失败:', e);
+        return false;
     }
-    return false;
 }
 
 /**
@@ -14238,11 +14246,38 @@ function addShareButtonToReportTab() {
             const reportProjects = Array.from(allProjectsMap.values()).sort((a, b) => b.weight - a.weight);
             studentAverages.sort((a, b) => b.average - a.average);
             
-            const reportData = { studentAverages, reportProjects, selectedClass, selectedLevel, groupByLevel };
-            const shareLink = generateShareLink(reportData);
+            // 生成唯一分享 ID
+            const shareId = 'share_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
+            
+            // 简化数据，存储到 localStorage
+            const simpleData = {
+                s: studentAverages.map(s => ({
+                    n: s.student.name,
+                    sid: s.student.studentId,
+                    c: s.student.class,
+                    l: s.levelName,
+                    a: s.average,
+                    sc: s.scores.map(sc => ({
+                        pn: sc.projectName,
+                        sc: sc.score,
+                        fm: sc.fullMark,
+                        pc: sc.percentage
+                    }))
+                })),
+                p: reportProjects,
+                cl: selectedClass,
+                gb: groupByLevel
+            };
+            
+            localStorage.setItem(shareId, JSON.stringify({
+                d: simpleData,
+                e: Date.now() + 7 * 24 * 60 * 60 * 1000  // 7天有效期
+            }));
+            
+            const shareLink = window.location.origin + window.location.pathname + '?sid=' + shareId;
             
             await navigator.clipboard.writeText(shareLink);
-            showAlert('✅ 分享链接已复制到剪贴板！', 'success');
+            showAlert('✅ 分享链接已复制到剪贴板！链接7天内有效', 'success');
             
             setTimeout(() => {
                 prompt('请将以下链接发送给他人（已自动复制）：', shareLink);
