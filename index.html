@@ -1937,69 +1937,121 @@ body.modal-open #student-query-page {
 }
 
 /* ==================== 📱 打印样式 ==================== */
+/* 打印样式 - 只显示表格，隐藏其他所有内容 */
 @media print {
-    /* 隐藏导航栏、按钮等 */
-    .navbar,
-    .btn,
-    #toast-container,
-    .modal-backdrop,
-    .no-print,
+    /* 隐藏工具栏和所有按钮 */
     .toolbar,
-    .back-to-top,
-    .fab-menu {
+    .toolbar-btn,
+    .btn,
+    button {
         display: none !important;
     }
     
-    /* 隐藏作业标题等细节元素 */
-    .score-item .small,
-    .score-item .text-muted,
-    .score-item .badge,
-    .student-score-header .text-muted,
-    .student-score-header small,
-    .analysis-card,
-    .student-trend-section {
+    /* 隐藏页眉中的额外信息（保留标题） */
+    .report-header .logo-area,
+    .report-header .date {
         display: none !important;
     }
     
-    /* 只保留核心内容 */
-    .student-score-card,
-    .student-score-header,
-    .score-detail-table,
-    .score-detail-table tr,
-    .score-detail-table td {
-        display: block !important;
+    /* 隐藏统计卡片区域 */
+    .stats-section {
+        display: none !important;
     }
     
-    /* 表格字体调小，确保一页显示更多 */
-    .score-detail-table td {
-        font-size: 10pt !important;
-        padding: 4px !important;
+    /* 隐藏页脚 */
+    .report-footer {
+        display: none !important;
     }
     
-    /* 项目名称（作业标题）简化显示 */
-    .score-detail-table td:first-child {
+    /* 隐藏所有滚动条提示 */
+    .table-wrapper::after {
+        display: none !important;
+    }
+    
+    /* 表格容器不滚动，完整显示 */
+    .table-wrapper {
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* 表格完全显示，不截断 */
+    .score-table {
+        width: 100% !important;
+        min-width: auto !important;
         font-size: 9pt !important;
-        max-width: 100px;
-        white-space: normal;
+        border-collapse: collapse !important;
     }
     
-    /* 隐藏权重等信息 */
-    .score-detail-table span.small,
-    .score-detail-table .text-muted {
-        display: none !important;
+    /* 表头固定在每一页顶部 */
+    .score-table thead {
+        display: table-header-group;
     }
     
-    body {
-        background: white;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .card {
-        box-shadow: none;
-        border: 1px solid #ddd;
+    /* 确保表格行不被分页截断 */
+    .score-table tr {
         break-inside: avoid;
+        page-break-inside: avoid;
     }
+    
+    /* 简化表格边框 */
+    .score-table th,
+    .score-table td {
+        border: 1px solid #ccc !important;
+        padding: 6px 4px !important;
+    }
+    
+    /* 隐藏排名徽章的背景（保留数字） */
+    .rank-badge {
+        background: none !important;
+        color: #000 !important;
+        width: auto !important;
+        height: auto !important;
+        font-weight: normal !important;
+    }
+    
+    /* 隐藏班级标签的背景，只保留文字 */
+    .class-badge {
+        background: none !important;
+        color: #000 !important;
+        padding: 0 !important;
+    }
+    
+    /* 分数颜色保留（可选） */
+    .score-high {
+        color: #10b981 !important;
+    }
+    .score-medium {
+        color: #f59e0b !important;
+    }
+    .score-low {
+        color: #ef4444 !important;
+    }
+    
+    /* 全局设置 */
+    body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .report-container {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .content-section {
+        padding: 0 !important;
+    }
+}
+
+        .no-print {
+    display: none !important;
 }
 
         /* ==================== 🆕 新增功能样式 ==================== */
@@ -9040,13 +9092,13 @@ function generateProfessionalScoreTable(data) {
         `;
         
         reportProjects.forEach(project => {
-            header += `
-                <th class="project-col" style="min-width:100px;">
-                    <div class="project-name">${project.name}</div>
-                    <div class="project-meta">${project.fullMark}分 / ${(project.weight * 100).toFixed(0)}%</div>
-                </th>
-            `;
-        });
+    header += `
+        <th class="project-col" style="min-width:100px;">
+            <div class="project-name">${project.name}</div>
+            <div class="project-meta no-print">${project.fullMark}分 / ${(project.weight * 100).toFixed(0)}%</div>
+        </th>
+    `;
+});
         
         header += `<th style="width:80px;">总平均</th></tr></thead>`;
         return header;
