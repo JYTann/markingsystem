@@ -6304,11 +6304,13 @@ function saveLevelProject() {
         }
 
         // 添加学生到表格
-        // 添加学生到表格 - 修改版本
 function addStudentToTable(student) {
     const tbody = document.getElementById('students-table-body');
+    if (!tbody) return;
+    
     const row = document.createElement('tr');
     row.className = 'fade-in';
+    row.setAttribute('data-student-id', student.id);
     
     // 获取级别名称
     const level = levels.find(l => l.id === student.levelId);
@@ -6335,13 +6337,60 @@ function addStudentToTable(student) {
             <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
                 <i class="fas fa-trash"></i>
             </button>
+            <button class="btn btn-sm btn-warning clean-student-duplicates ms-1" data-student-id="${student.id}" data-student-name="${student.name}" title="清理重复分数记录">
+                <i class="fas fa-broom"></i>
+            </button>
         </td>
     `;
+    
     tbody.appendChild(row);
     
-    // 添加编辑和删除事件
-    row.querySelector('.edit-student').addEventListener('click', () => editStudent(student.id));
-    row.querySelector('.delete-student').addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
+    // 添加编辑事件
+    const editBtn = row.querySelector('.edit-student');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => editStudent(student.id));
+    }
+    
+    // 添加删除事件
+    const deleteBtn = row.querySelector('.delete-student');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
+    }
+    
+    // 添加清理重复分数事件
+    const cleanBtn = row.querySelector('.clean-student-duplicates');
+    if (cleanBtn) {
+        cleanBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const studentId = cleanBtn.getAttribute('data-student-id');
+            const studentName = cleanBtn.getAttribute('data-student-name');
+            
+            const confirmed = confirm(
+                `是否清理「${studentName}」的重复分数记录？\n\n` +
+                `此操作将保留每个项目的最新分数，删除旧的重复记录。`
+            );
+            
+            if (!confirmed) return;
+            
+            try {
+                showFullscreenLoader(`正在清理 ${studentName} 的重复分数...`);
+                const result = await cleanStudentDuplicateScores(studentId);
+                hideFullscreenLoader();
+                
+                if (result.cleaned === 0) {
+                    showAlert(`「${studentName}」没有重复分数记录`, 'info');
+                } else {
+                    showAlert(`「${studentName}」清理完成，共删除 ${result.cleaned} 条重复记录`, 'success');
+                    addActivity(`清理学生 ${studentName} 的重复分数: ${result.cleaned} 条`, 'info');
+                }
+                await loadScores();
+            } catch (error) {
+                hideFullscreenLoader();
+                console.error('清理失败:', error);
+                showAlert('清理失败: ' + error.message, 'danger');
+            }
+        });
+    }
 }
 
         // 保存学生
@@ -7191,7 +7240,6 @@ window.saveScore = async function() {
 
 // ==================== 添加一键清理重复记录的管理按钮 ====================
 
-// 在页面中添加清理按钮（在分数录入页面的合适位置）
 function addCleanDuplicateButton() {
     const scoresTab = document.getElementById('scores-tab');
     if (!scoresTab) return;
@@ -7200,16 +7248,16 @@ function addCleanDuplicateButton() {
     if (document.getElementById('clean-duplicates-btn')) return;
     
     const cleanButtonHTML = `
-        <div class="row mb-3">
+        <div class="row mt-3" id="clean-duplicates-row">
             <div class="col-md-12">
                 <div class="card bg-warning bg-opacity-10 border-warning">
                     <div class="card-body py-2 d-flex justify-content-between align-items-center">
                         <div>
                             <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-                            <span class="small">检测到可能存在重复分数记录？</span>
+                            <span class="small">检测到可能存在重复分数记录？一键清理功能</span>
                         </div>
                         <button id="clean-duplicates-btn" class="btn btn-sm btn-warning">
-                            <i class="fas fa-broom me-1"></i>一键清理重复记录
+                            <i class="fas fa-broom me-1"></i>一键清理全校重复记录
                         </button>
                     </div>
                 </div>
@@ -7217,16 +7265,25 @@ function addCleanDuplicateButton() {
         </div>
     `;
     
-    // 找到合适的位置插入（在现有控件上方）
-    const existingRow = scoresTab.querySelector('.row.mb-3:first-child');
-    if (existingRow) {
-        existingRow.insertAdjacentHTML('beforebegin', cleanButtonHTML);
+    // 找到合适的位置插入
+    const batchCard = scoresTab.querySelector('#batch-score-card');
+    if (batchCard && batchCard.parentNode) {
+        batchCard.insertAdjacentHTML('afterend', cleanButtonHTML);
+    } else {
+        const container = scoresTab.querySelector('.card-body');
+        if (container) {
+            container.insertAdjacentHTML('beforebegin', cleanButtonHTML);
+        }
     }
     
     // 绑定事件
     const cleanBtn = document.getElementById('clean-duplicates-btn');
     if (cleanBtn) {
-        cleanBtn.addEventListener('click', async () => {
+        // 移除旧监听器
+        const newCleanBtn = cleanBtn.cloneNode(true);
+        cleanBtn.parentNode.replaceChild(newCleanBtn, cleanBtn);
+        
+        newCleanBtn.addEventListener('click', async () => {
             const confirmed = confirm(
                 '⚠️ 警告：此操作将扫描所有学生的分数记录，\n' +
                 '删除同一学生同一项目中重复的旧记录（保留最新的一条）。\n\n' +
@@ -7236,7 +7293,11 @@ function addCleanDuplicateButton() {
             if (!confirmed) return;
             
             try {
+                newCleanBtn.disabled = true;
+                newCleanBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>扫描中...';
+                
                 const result = await cleanAllDuplicateScores();
+                
                 if (result.totalCleaned === 0) {
                     showAlert('未发现重复分数记录，数据很干净！', 'success');
                 } else {
@@ -7247,11 +7308,13 @@ function addCleanDuplicateButton() {
             } catch (error) {
                 console.error('清理失败:', error);
                 showAlert('清理失败: ' + error.message, 'danger');
+            } finally {
+                newCleanBtn.disabled = false;
+                newCleanBtn.innerHTML = '<i class="fas fa-broom me-1"></i>一键清理全校重复记录';
             }
         });
     }
 }
-
 // 在学生管理页面添加“清理该学生重复分数”的按钮
 function addStudentCleanButton() {
     // 修改 addStudentToTable 函数，在操作按钮区域添加清理按钮
