@@ -8411,7 +8411,7 @@ async function showReportInWindow() {
     // 添加分享功能到新窗口
     setTimeout(() => {
         try {
-            const shareLink = await generateShareLink(data);
+            const shareLink = generateShareLink(data);
             
             // 在工具栏中添加分享按钮
             const toolbar = reportWindow.document.querySelector('.toolbar');
@@ -13924,7 +13924,7 @@ function generateShareLink(data) {
 /**
  * 检查 URL 中是否有分享的报告数据，如果有则自动显示
  */
-function checkSharedReport() {
+async function checkSharedReport() {
     const urlParams = new URLSearchParams(window.location.search);
     const encodedReport = urlParams.get('r');  // 使用短参数名 r
     
