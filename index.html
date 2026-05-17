@@ -5028,19 +5028,30 @@ let trendPeriod = 'all';
         // DOM加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
     // ========== 最优先：检查分享链接 ==========
-    // 如果 URL 中有分享参数，立即显示报告，不执行任何其他初始化
     const urlParams = new URLSearchParams(window.location.search);
+    
     if (urlParams.has('r')) {
-        // 延迟一点确保 DOM 准备好，然后显示报告
-        setTimeout(() => {
-            if (typeof checkSharedReport === 'function') {
-                checkSharedReport();
+        // 有分享参数，直接显示报告，跳过所有登录和初始化
+        console.log('检测到分享链接，正在加载报告...');
+        
+        // 解码并显示报告
+        const encodedReport = urlParams.get('r');
+        try {
+            const decodedData = decodeReportData(encodedReport);
+            if (decodedData && decodedData.studentAverages && decodedData.studentAverages.length > 0) {
+                window._sharedReportData = decodedData;
+                // 延迟一点点确保 DOM 准备好
+                setTimeout(() => {
+                    showReportFromShare();
+                }, 100);
+                return; // 关键：直接返回，不再执行后续任何代码
             }
-        }, 100);
-        return; // 关键：直接返回，不再执行下面的登录检查等代码
+        } catch(e) {
+            console.error('解码分享数据失败:', e);
+        }
     }
     
-    // 初始化UI事件
+    // 没有分享链接，正常执行初始化
     initUIEvents();
     
     // 检查登录状态
@@ -13965,11 +13976,17 @@ async function checkSharedReport() {
 function showReportFromShare() {
     if (!window._sharedReportData) return;
     
-    // 隐藏学生查询页面和主系统
+    console.log('显示分享报告');
+    
+    // 隐藏所有正常页面元素
     const studentPage = document.getElementById('student-query-page');
     const mainSystem = document.getElementById('main-system');
     if (studentPage) studentPage.style.display = 'none';
     if (mainSystem) mainSystem.style.display = 'none';
+    
+    // 隐藏导航栏（可选）
+    const navbar = document.querySelector('.navbar');
+    if (navbar) navbar.style.display = 'none';
     
     // 创建或获取分享容器
     let shareContainer = document.getElementById('shared-report-container');
@@ -13983,14 +14000,14 @@ function showReportFromShare() {
             right: 0;
             bottom: 0;
             background: #f0f2f5;
-            z-index: 10000;
+            z-index: 100000;
             overflow-y: auto;
             padding: 20px;
         `;
         document.body.appendChild(shareContainer);
     }
     
-    // 显示报告
+    // 生成并显示报告
     shareContainer.innerHTML = generateSimpleReportHTML(window._sharedReportData);
     shareContainer.style.display = 'block';
     
@@ -14004,7 +14021,7 @@ function showReportFromShare() {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            z-index: 10001;
+            z-index: 100001;
             background: #ef4444;
             color: white;
             border: none;
@@ -14013,11 +14030,13 @@ function showReportFromShare() {
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 14px;
         `;
         closeBtn.onclick = () => {
             shareContainer.style.display = 'none';
             if (studentPage) studentPage.style.display = 'block';
             if (mainSystem) mainSystem.style.display = 'none';
+            if (navbar) navbar.style.display = 'flex';
             // 清除 URL 参数
             window.history.pushState({}, '', window.location.pathname);
             window._sharedReportData = null;
