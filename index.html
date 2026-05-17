@@ -11677,6 +11677,329 @@ window.saveAttendance = function() {
         });
 };
 
+        // ==================== 从 Google 账号信息中提取中文姓名 ====================
+
+/**
+ * 从 Google 账号的 displayName 或 email 中提取中文姓名
+ * 支持格式：
+ * - "S2S0119 陈俊源 TAN JUN YUAN" -> "陈俊源"
+ * - "S3AC0131 安玟勳 WINSON ANN WEN XUN" -> "安玟勳"
+ * - "陈俊源" -> "陈俊源"
+ * - "jb220225@foonyew.edu.my" -> 从邮箱前缀提取学号再匹配
+ * 
+ * @param {Object} user - Firebase 用户对象
+ * @param {Array} membersList - 会员列表（用于额外匹配）
+ * @returns {Object} 提取到的姓名信息
+ */
+function extractChineseNameFromGoogleAccount(user, membersList = []) {
+    if (!user) return { name: null, studentId: null, matched: false };
+    
+    const displayName = user.displayName || '';
+    const email = user.email || '';
+    const emailPrefix = email.split('@')[0];
+    
+    let chineseName = null;
+    let studentId = null;
+    
+    // 方法1：从 displayName 中提取中文姓名
+    // 匹配中文字符（2-4个字符）
+    const chineseRegex = /[\u4e00-\u9fa5]{2,4}/;
+    const chineseMatch = displayName.match(chineseRegex);
+    
+    if (chineseMatch) {
+        chineseName = chineseMatch[0];
+        console.log(`从 displayName 提取到中文名: ${chineseName}`);
+        
+        // 尝试提取学号（通常在中文名前）
+        const idRegex = /([A-Z]?\d{4,7}[A-Z]?\d*)/i;
+        const idMatch = displayName.match(idRegex);
+        if (idMatch) {
+            studentId = idMatch[1].toUpperCase();
+            console.log(`从 displayName 提取到学号: ${studentId}`);
+        }
+    }
+    
+    // 方法2：如果 displayName 中没有中文，尝试从会员列表中匹配
+    if (!chineseName && membersList.length > 0) {
+        // 通过学号匹配（邮箱前缀可能是学号）
+        const memberByStudentId = membersList.find(m => 
+            m.studentId === emailPrefix || 
+            m.studentId === emailPrefix.toUpperCase()
+        );
+        
+        if (memberByStudentId) {
+            chineseName = memberByStudentId.name;
+            studentId = memberByStudentId.studentId;
+            console.log(`通过学号 ${studentId} 匹配到会员: ${chineseName}`);
+        }
+        
+        // 通过邮箱匹配
+        if (!chineseName) {
+            const memberByEmail = membersList.find(m => 
+                m.email === email || 
+                m.studentEmail === email
+            );
+            
+            if (memberByEmail) {
+                chineseName = memberByEmail.name;
+                studentId = memberByEmail.studentId;
+                console.log(`通过邮箱 ${email} 匹配到会员: ${chineseName}`);
+            }
+        }
+    }
+    
+    // 方法3：如果还是没有，尝试将显示名中的字母部分去掉
+    if (!chineseName && displayName) {
+        // 移除学号、英文名、空格，保留中文
+        let cleaned = displayName
+            .replace(/[A-Za-z0-9\s]+/g, ' ')  // 替换英文数字为空格
+            .replace(/\s+/g, ' ')               // 合并多个空格
+            .trim();
+        
+        const match = cleaned.match(/[\u4e00-\u9fa5]+/);
+        if (match) {
+            chineseName = match[0];
+            console.log(`清理后提取到中文名: ${chineseName}`);
+        }
+    }
+    
+    // 方法4：最后尝试，使用默认的 displayName
+    if (!chineseName) {
+        chineseName = displayName.split(' ')[0] || emailPrefix;
+    }
+    
+    return {
+        name: chineseName,
+        studentId: studentId,
+        originalDisplayName: displayName,
+        originalEmail: email,
+        matched: !!chineseName
+    };
+}
+
+/**
+ * 处理学生签到时的姓名提取（用于点名系统）
+ * 当 Google 登录受限时，使用此函数从账号信息中提取学生姓名
+ */
+async function extractAndMatchStudentForCheckin(user) {
+    if (!user) return null;
+    
+    // 确保会员列表已加载
+    if (members.length === 0) {
+        await loadMembersSilent();
+    }
+    
+    const extracted = extractChineseNameFromGoogleAccount(user, members);
+    
+    // 尝试在会员列表中查找匹配的学生
+    let matchedStudent = null;
+    
+    if (extracted.studentId) {
+        matchedStudent = members.find(m => m.studentId === extracted.studentId);
+    }
+    
+    if (!matchedStudent && extracted.name) {
+        // 使用中文名模糊匹配
+        matchedStudent = members.find(m => 
+            m.name === extracted.name || 
+            m.name.includes(extracted.name) || 
+            extracted.name.includes(m.name)
+        );
+    }
+    
+    if (matchedStudent) {
+        console.log(`成功匹配学生: ${matchedStudent.name} (${matchedStudent.studentId})`);
+        return {
+            ...matchedStudent,
+            extractedInfo: extracted
+        };
+    }
+    
+    // 如果没有匹配到，返回提取的信息供手动确认
+    return {
+        id: null,
+        name: extracted.name || user.displayName || user.email,
+        studentId: extracted.studentId || user.email?.split('@')[0] || '未知',
+        class: '待确认',
+        levelName: '待确认',
+        extractedInfo: extracted,
+        isTemporary: true
+    };
+}
+
+/**
+ * 静默加载会员数据（不显示提示）
+ */
+async function loadMembersSilent() {
+    try {
+        const querySnapshot = await db.collection('members').get();
+        members = [];
+        querySnapshot.forEach(doc => {
+            members.push({ id: doc.id, ...doc.data() });
+        });
+        console.log(`静默加载会员数据完成，共 ${members.length} 人`);
+    } catch (error) {
+        console.error("静默加载会员数据失败:", error);
+    }
+}
+
+// ==================== 修改学生签到登录函数 ====================
+
+// 修改原有的 studentGoogleLogin 函数
+const originalStudentGoogleLogin = studentGoogleLogin;
+window.studentGoogleLogin = function() {
+    const btn = document.getElementById('student-attendance-login-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 登录中...';
+    }
+    
+    // 添加更多权限请求，但即使受限也能获取基本信息
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
+    
+    auth.signInWithPopup(googleProvider)
+        .then(async (result) => {
+            const user = result.user;
+            console.log("Google登录成功，用户信息:", {
+                displayName: user.displayName,
+                email: user.email,
+                uid: user.uid
+            });
+            
+            // 尝试从账号信息中提取中文名并匹配学生
+            const matchedStudent = await extractAndMatchStudentForCheckin(user);
+            
+            if (matchedStudent && !matchedStudent.isTemporary) {
+                // 成功匹配到会员
+                studentAttendanceUser = {
+                    displayName: matchedStudent.name,
+                    email: user.email,
+                    uid: user.uid,
+                    studentId: matchedStudent.studentId,
+                    isStudentLogin: false,
+                    matchedFromGoogle: true
+                };
+                showAlert(`欢迎 ${matchedStudent.name}！签到成功`, 'success');
+            } else if (matchedStudent && matchedStudent.isTemporary) {
+                // 提取到姓名但未匹配到会员，使用提取的姓名
+                const extractedName = matchedStudent.name;
+                studentAttendanceUser = {
+                    displayName: extractedName,
+                    email: user.email,
+                    uid: user.uid,
+                    studentId: matchedStudent.studentId,
+                    isStudentLogin: false,
+                    isTemporary: true,
+                    needConfirm: true
+                };
+                showAlert(`已识别为：${extractedName}，请确认信息是否正确`, 'info');
+            } else {
+                // 完全无法识别，使用邮箱前缀
+                const emailName = user.email.split('@')[0];
+                studentAttendanceUser = {
+                    displayName: emailName,
+                    email: user.email,
+                    uid: user.uid,
+                    isStudentLogin: false,
+                    isGuest: true
+                };
+                showAlert(`使用账号 ${emailName} 登录，如姓名不正确请联系管理员`, 'warning');
+            }
+            
+            showStudentCheckinInterface();
+        })
+        .catch((error) => {
+            console.error("Google登录失败:", error);
+            let errorMsg = "登录失败";
+            
+            if (error.code === 'auth/popup-blocked') {
+                errorMsg = "弹窗被拦截，请允许弹出窗口后重试";
+            } else if (error.code === 'auth/unauthorized-domain') {
+                errorMsg = "域名未授权，请联系管理员添加域名";
+            } else if (error.message.includes('admin') || error.message.includes('policy')) {
+                errorMsg = "由于学校管理政策限制，Google登录可能无法使用。请使用学号登录";
+            } else {
+                errorMsg = "Google登录失败: " + error.message;
+            }
+            
+            showAlert(errorMsg, 'warning');
+            
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fab fa-google me-2"></i>使用学校Google账号登录';
+            }
+        });
+};
+
+// ==================== 添加手动输入姓名的备选方案 ====================
+
+// 在学生签到界面添加手动输入姓名的选项
+function addManualNameOption() {
+    const attendanceContent = document.getElementById('student-attendance-content');
+    if (!attendanceContent) return;
+    
+    // 检查是否已经添加过
+    if (document.getElementById('manual-name-section')) return;
+    
+    const manualSection = document.createElement('div');
+    manualSection.id = 'manual-name-section';
+    manualSection.className = 'mt-3 pt-3 border-top';
+    manualSection.innerHTML = `
+        <div class="text-center mb-2">
+            <span style="background: #f1f5f9; padding: 5px 15px; border-radius: 20px; color: #94a3b8; font-size: 0.8rem;">
+                无法使用 Google 登录？直接输入姓名签到
+            </span>
+        </div>
+        <div class="input-group">
+            <input type="text" class="form-control" id="manual-student-name" 
+                   placeholder="输入您的姓名（中文）" style="border-radius: 50px 0 0 50px;">
+            <input type="text" class="form-control" id="manual-student-id" 
+                   placeholder="学号（选填）" style="width: 120px; border-radius: 0;">
+            <button class="btn btn-outline-primary" id="manual-checkin-btn" 
+                    style="border-radius: 0 50px 50px 0;">
+                <i class="fas fa-sign-in-alt"></i> 签到
+            </button>
+        </div>
+        <small class="text-muted d-block text-center mt-2">
+            提示：输入姓名后可直接签到，系统会记录您的姓名
+        </small>
+    `;
+    
+    attendanceContent.appendChild(manualSection);
+    
+    // 绑定手动签到事件
+    document.getElementById('manual-checkin-btn').addEventListener('click', async function() {
+        const name = document.getElementById('manual-student-name').value.trim();
+        const studentId = document.getElementById('manual-student-id').value.trim();
+        
+        if (!name) {
+            showAlert('请输入姓名', 'warning');
+            return;
+        }
+        
+        // 创建临时用户对象
+        studentAttendanceUser = {
+            displayName: name,
+            email: studentId ? `${studentId}@manual.local` : `${name}@manual.local`,
+            uid: `manual_${Date.now()}`,
+            studentId: studentId || null,
+            isStudentLogin: true,
+            isManualLogin: true
+        };
+        
+        showAlert(`欢迎 ${name}！`, 'success');
+        showStudentCheckinInterface();
+    });
+}
+
+// 在原有的 showStudentCheckinInterface 函数中添加手动选项初始化
+const originalShowStudentCheckinInterface = showStudentCheckinInterface;
+window.showStudentCheckinInterface = function() {
+    originalShowStudentCheckinInterface();
+    addManualNameOption();
+};
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
