@@ -10483,7 +10483,7 @@ function generateRandomCode() {
 
 // ==================== 学生签到功能 ====================
 
-// 学生Google登录
+// 修改后的 studentGoogleLogin 函数
 function studentGoogleLogin() {
     const btn = document.getElementById('student-attendance-login-btn');
     if (btn) {
@@ -10492,24 +10492,98 @@ function studentGoogleLogin() {
     }
     
     auth.signInWithPopup(googleProvider)
-        .then((result) => {
-            studentAttendanceUser = result.user;
-            showStudentCheckinInterface();
+        .then(async (result) => {
+            const user = result.user;
+            console.log("Google登录成功，用户信息:", {
+                displayName: user.displayName,
+                email: user.email
+            });
+            
+            // ========== 核心：从 displayName 提取中文名 ==========
+            let chineseName = null;
+            let studentId = null;
+            
+            // 方法1：正则提取中文字符（2-4个连续中文）
+            const chineseRegex = /[\u4e00-\u9fa5]{2,4}/;
+            const chineseMatch = user.displayName ? user.displayName.match(chineseRegex) : null;
+            
+            if (chineseMatch) {
+                chineseName = chineseMatch[0];
+                console.log(`✅ 从 displayName 提取到中文名: ${chineseName}`);
+            }
+            
+            // 提取学号（如果有）
+            const idRegex = /([A-Z]?\d{4,7}[A-Z]?\d*)/i;
+            const idMatch = user.displayName ? user.displayName.match(idRegex) : null;
+            if (idMatch) {
+                studentId = idMatch[1].toUpperCase();
+                console.log(`✅ 提取到学号: ${studentId}`);
+            }
+            
+            // 如果提取到中文名，直接使用
+            if (chineseName) {
+                studentAttendanceUser = {
+                    displayName: chineseName,
+                    email: user.email,
+                    uid: user.uid,
+                    studentId: studentId,
+                    isStudentLogin: false,
+                    extractedFromGoogle: true
+                };
+                showAlert(`欢迎 ${chineseName}！`, 'success');
+                showStudentCheckinInterface();
+            } else {
+                // 降级：使用邮箱前缀
+                const fallbackName = user.email.split('@')[0];
+                studentAttendanceUser = {
+                    displayName: fallbackName,
+                    email: user.email,
+                    uid: user.uid,
+                    isStudentLogin: false,
+                    isGuest: true
+                };
+                showAlert(`欢迎 ${fallbackName}，如姓名不正确请使用学号登录`, 'warning');
+                showStudentCheckinInterface();
+            }
         })
         .catch((error) => {
-            console.error("登录失败:", error);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                showAlert("登录失败: " + error.message, 'danger');
+            console.error("Google登录失败:", error);
+            let errorMsg = "Google登录失败";
+            if (error.code === 'auth/popup-blocked') {
+                errorMsg = "弹窗被拦截，请允许弹出窗口";
+            } else if (error.message.includes('admin') || error.message.includes('policy')) {
+                errorMsg = "由于学校管理限制，请使用学号登录";
             }
+            showAlert(errorMsg, 'warning');
+        })
+        .finally(() => {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fab fa-google me-2"></i>使用学校Google账号登录';
+                btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
             }
         });
 }
 
-// 显示学生签到界面
-// 显示学生签到界面
+        // 增强版中文名提取函数
+function extractChineseName(displayName) {
+    if (!displayName) return null;
+    
+    // 正则1：直接匹配连续中文字符（2-4个）
+    let match = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
+    if (match) return match[0];
+    
+    // 正则2：匹配学号后面的中文（如 "S3AC0131 安玟勳"）
+    match = displayName.match(/[A-Z0-9]+\s+([\u4e00-\u9fa5]+)/);
+    if (match) return match[1];
+    
+    // 正则3：匹配中文前后的内容
+    match = displayName.match(/[\u4e00-\u9fa5]+/);
+    if (match) return match[0];
+    
+    return null;
+}
+
+
 // 显示学生签到界面
 function showStudentCheckinInterface() {
     if (!studentAttendanceUser) return;
