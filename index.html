@@ -8052,6 +8052,7 @@ function showDeleteConfirm(type, id, message) {
 }
 
 // 确认删除
+// 修复 confirmDelete 函数，添加 member 类型的删除处理
 function confirmDelete() {
     let collectionName = '';
     let successMessage = '';
@@ -8080,7 +8081,15 @@ function confirmDelete() {
             collectionName = 'levelProjects';
             successMessage = '评分项目删除成功';
             break;
+        // ========== 添加 member 类型的删除处理 ==========
+        case 'member':
+            collectionName = 'members';
+            const member = members.find(m => m.id === deleteId);
+            successMessage = `会员 ${member?.name || ''} (${member?.studentId || ''}) 删除成功`;
+            break;
         default:
+            console.warn('未知的删除类型:', deleteType);
+            showAlert("删除失败：未知类型", "danger");
             return;
     }
     
@@ -8129,11 +8138,15 @@ function confirmDelete() {
             } else if (deleteType === 'levelProject') {
                 loadLevelProjects();
                 addActivity(successMessage, "info");
+            } else if (deleteType === 'member') {
+                // 重新加载会员数据
+                loadMembers();
+                addActivity(successMessage, "info");
             }
         })
         .catch(error => {
             console.error("删除失败: ", error);
-            showAlert("删除失败", "danger");
+            showAlert("删除失败: " + error.message, "danger");
             addActivity("删除操作失败", "danger");
             
             // 错误时也关闭模态框
