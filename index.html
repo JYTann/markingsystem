@@ -16237,6 +16237,90 @@ if (document.readyState === 'loading') {
     setTimeout(checkSharedReportFixed, 100);
 }
 
+// ==================== 修复主系统显示 ====================
+
+// 1. 修复 showMainSystem 函数
+window.originalShowMainSystem = window.showMainSystem;
+window.showMainSystem = function() {
+    console.log('显示主系统...');
+    
+    const studentPage = document.getElementById('student-query-page');
+    const mainSystem = document.getElementById('main-system');
+    
+    // 隐藏学生页面
+    if (studentPage) studentPage.style.display = 'none';
+    
+    // 显示主系统 - 关键修复
+    if (mainSystem) {
+        mainSystem.style.display = 'block';
+        mainSystem.style.visibility = 'visible';
+        mainSystem.style.opacity = '1';
+    }
+    
+    // 确保 dashboard 显示
+    const dashboard = document.getElementById('dashboard-tab');
+    if (dashboard) {
+        // 隐藏所有 tab
+        document.querySelectorAll('#main-system .tab-pane').forEach(pane => {
+            pane.style.display = 'none';
+            pane.classList.remove('show', 'active');
+        });
+        // 显示 dashboard
+        dashboard.style.display = 'block';
+        dashboard.classList.add('show', 'active');
+    }
+    
+    // 激活导航栏按钮
+    const dashboardLink = document.querySelector('.navbar-nav .nav-link[data-bs-target="#dashboard-tab"]');
+    if (dashboardLink) {
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
+        dashboardLink.classList.add('active');
+    }
+    
+    // 确保容器有高度
+    const container = document.querySelector('#main-system .container');
+    if (container) {
+        container.style.minHeight = '500px';
+    }
+    
+    console.log('✅ 主系统显示完成');
+};
+
+// 2. 修复登录回调
+if (typeof auth !== 'undefined') {
+    const originalOnAuthStateChanged = auth.onAuthStateChanged;
+    auth.onAuthStateChanged = function(callback) {
+        return originalOnAuthStateChanged.call(auth, function(user) {
+            if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+                currentUser = user;
+                const userEmailSpan = document.getElementById('user-email');
+                if (userEmailSpan) userEmailSpan.textContent = user.email;
+                
+                // 调用修复后的显示函数
+                window.showMainSystem();
+                
+                // 加载数据
+                if (typeof loadAllData === 'function') loadAllData();
+                if (typeof addActivity === 'function') addActivity("用户登录系统", "success");
+            } else {
+                if (typeof showStudentQueryPage === 'function') showStudentQueryPage();
+            }
+            if (callback) callback(user);
+        });
+    };
+}
+
+// 3. 页面加载完成后检查登录状态
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        if (typeof auth !== 'undefined' && auth.currentUser) {
+            const user = auth.currentUser;
+            if (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com") {
+                window.showMainSystem();
+            }
+        }
+    }, 500);
+});
 
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
