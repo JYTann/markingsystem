@@ -3831,41 +3831,25 @@ body {
                 </span>
             </div>
             
-            <!-- 学号登录表单（三重验证版） -->
-<form id="student-id-login-form" onsubmit="return handleStudentIdLogin(event)">
-    <div class="mb-3">
-        <input type="text" class="form-control" id="student-id-login-input" 
-               placeholder="请输入您的学号" required
-               style="text-align: center; font-size: 1.1rem;">
-        <small class="text-muted d-block text-center mt-1">
-            <i class="fas fa-id-card me-1"></i>例如：220225
-        </small>
+            <!-- 学号登录表单 -->
+            <form id="student-id-login-form" onsubmit="return handleStudentIdLogin(event)">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="student-id-login-input" 
+                           placeholder="请输入您的学号" required
+                           style="text-align: center; font-size: 1.1rem;">
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="student-name-login-input" 
+                           placeholder="请输入您的姓名（验证用）" required
+                           style="text-align: center;">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>学号登录签到
+                </button>
+            </form>
+            <div id="student-id-login-error" class="text-danger mt-2" style="display: none;"></div>
+        </div>
     </div>
-    
-    <div class="mb-3">
-        <input type="text" class="form-control" id="personal-code-input" 
-               placeholder="个人签到码" required
-               style="text-align: center; font-family: monospace; letter-spacing: 2px; font-size: 1rem;">
-        <small class="text-muted d-block text-center mt-1">
-            <i class="fas fa-key me-1"></i>协会发放的个人签到码
-        </small>
-    </div>
-    
-    <div class="mb-3">
-        <input type="text" class="form-control" id="attendance-code-input" 
-               placeholder="点名验证码" required
-               style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 1.2rem;">
-        <small class="text-muted d-block text-center mt-1">
-            <i class="fas fa-shield-alt me-1"></i>当前点名活动的验证码
-        </small>
-    </div>
-    
-    <button type="submit" class="btn btn-primary w-100">
-        <i class="fas fa-fingerprint me-2"></i>三重验证签到
-    </button>
-</form>
-
-<div id="student-id-login-error" class="text-danger mt-2" style="display: none;"></div>
     
                     
                     <!-- 签到表单（登录后显示） -->
@@ -4033,7 +4017,6 @@ body {
                             <th>班级</th>
                             <th>组别</th>
                             <th>学校邮箱</th>
-                            <th><i class="fas fa-key me-1"></i>个人签到码</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -12619,7 +12602,7 @@ function loadMembers() {
     const tbody = document.getElementById('members-table-body');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
     
     db.collection('members').orderBy('studentId').get()
         .then(querySnapshot => {
@@ -12627,7 +12610,7 @@ function loadMembers() {
             tbody.innerHTML = '';
             
             if (querySnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">暂无会员数据</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">暂无会员数据</td></tr>';
                 return;
             }
             
@@ -12636,45 +12619,19 @@ function loadMembers() {
                 members.push(member);
                 
                 const row = document.createElement('tr');
-                
-                // 个人签到码显示
-                let personalCodeHtml = '';
-                if (member.personalCode) {
-                    personalCodeHtml = `
-                        <div class="d-flex align-items-center gap-1">
-                            <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; font-family: monospace;">
-                                ${escapeHtml(member.personalCode)}
-                            </code>
-                            <button class="btn btn-sm btn-warning reset-code-btn" data-id="${member.id}" title="重置签到码" style="padding: 2px 6px;">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    personalCodeHtml = `
-                        <div class="d-flex align-items-center gap-1">
-                            <span class="badge bg-secondary">未生成</span>
-                            <button class="btn btn-sm btn-info generate-code-btn" data-id="${member.id}" title="生成签到码" style="padding: 2px 6px;">
-                                <i class="fas fa-key"></i>
-                            </button>
-                        </div>
-                    `;
-                }
-                
                 row.innerHTML = `
-                    <td>${escapeHtml(member.studentId)}</td>
+                    <td>${member.studentId}</td>
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="avatar me-2" style="width:32px;height:32px;background-color:${stringToColor(member.name)};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;">
-                                ${escapeHtml(member.name.charAt(0))}
+                                ${member.name.charAt(0)}
                             </div>
-                            ${escapeHtml(member.name)}
+                            ${member.name}
                         </div>
                     </td>
-                    <td>${escapeHtml(member.class || '-')}</td>
-                    <td>${member.group ? `<span class="badge bg-info">${escapeHtml(member.group)}</span>` : '-'}</td>
-                    <td>${escapeHtml(member.email || '-')}</td>
-                    <td class="personal-code-cell">${personalCodeHtml}</td>
+                    <td>${member.class || '-'}</td>
+                    <td>${member.group ? `<span class="badge bg-info">${member.group}</span>` : '-'}</td>
+                    <td>${member.email || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-primary edit-member-btn" data-id="${member.id}">
                             <i class="fas fa-edit"></i>
@@ -12686,552 +12643,17 @@ function loadMembers() {
                 `;
                 tbody.appendChild(row);
                 
-                // 绑定编辑按钮事件
-                const editBtn = row.querySelector('.edit-member-btn');
-                if (editBtn) editBtn.addEventListener('click', () => editMember(member.id));
-                
-                // 绑定删除按钮事件
-                const deleteBtn = row.querySelector('.delete-member-btn');
-                if (deleteBtn) deleteBtn.addEventListener('click', () => 
+                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(member.id));
+                row.querySelector('.delete-member-btn').addEventListener('click', () => 
                     showDeleteConfirm('member', member.id, `确定要删除会员 ${member.name} 吗？`)
                 );
-                
-                // 绑定重置个人码按钮事件
-                const resetBtn = row.querySelector('.reset-code-btn');
-                if (resetBtn) {
-                    resetBtn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const confirmed = confirm(`确定要重置 ${member.name} 的个人签到码吗？\n旧码将立即失效。`);
-                        if (confirmed) {
-                            await resetPersonalCode(member.id);
-                        }
-                    });
-                }
-                
-                // 绑定生成个人码按钮事件
-                const genBtn = row.querySelector('.generate-code-btn');
-                if (genBtn) {
-                    genBtn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        await resetPersonalCode(member.id);
-                    });
-                }
             });
-            
-            // 添加批量操作按钮（如果还没有）
-            addPersonalCodeButtons();
         })
         .catch(error => {
             console.error("加载会员失败:", error);
-            if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">加载失败</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">加载失败</td></tr>';
         });
 }
-
-        // ==================== 三重验证签到功能 ====================
-
-// 1. 为现有会员生成缺失的个人签到码
-async function generateMissingPersonalCodes() {
-    console.log('检查缺失的个人签到码...');
-    let generated = 0;
-    for (const member of members) {
-        if (!member.personalCode && member.id) {
-            const personalCode = generatePersonalCode(member);
-            await db.collection('members').doc(member.id).update({
-                personalCode: personalCode,
-                codeCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            generated++;
-        }
-    }
-    if (generated > 0) {
-        console.log(`已生成 ${generated} 个个人签到码`);
-        loadMembers(); // 刷新显示
-    }
-}
-
-// 生成个人签到码
-function generatePersonalCode(member) {
-    const prefix = 'FYMCS';
-    const studentIdSuffix = member.studentId.slice(-4);
-    const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${studentIdSuffix}-${randomChars}`;
-}
-
-// 2. 批量生成所有会员的个人签到码（管理员调用）
-async function batchGenerateAllPersonalCodes() {
-    showFullscreenLoader('正在生成个人签到码...');
-    let generated = 0;
-    for (const member of members) {
-        const personalCode = generatePersonalCode(member);
-        await db.collection('members').doc(member.id).update({
-            personalCode: personalCode,
-            codeCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        generated++;
-    }
-    hideFullscreenLoader();
-    showAlert(`成功生成 ${generated} 个个人签到码`, 'success');
-    loadMembers();
-}
-
-// 3. 导出个人签到码（Excel）
-async function exportPersonalCodes() {
-    const data = members.map(m => ({
-        '学号': m.studentId,
-        '姓名': m.name,
-        '班级': m.class,
-        '组别': m.group || '',
-        '个人签到码': m.personalCode || '未生成',
-        '使用说明': '登录时输入：学号 + 个人签到码 + 点名验证码'
-    }));
-    
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "个人签到码");
-    XLSX.writeFile(wb, `个人签到码_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showAlert('导出成功', 'success');
-}
-
-// 4. 重置单个会员的个人签到码
-async function resetPersonalCode(memberId) {
-    const member = members.find(m => m.id === memberId);
-    if (!member) return;
-    
-    const newCode = generatePersonalCode(member);
-    await db.collection('members').doc(memberId).update({
-        personalCode: newCode,
-        codeCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showAlert(`${member.name} 的个人签到码已重置为: ${newCode}`, 'success');
-    loadMembers();
-}
-
-// 5. 修改会员表格显示，添加个人码列
-function updateMemberTableWithPersonalCode() {
-    const tbody = document.getElementById('members-table-body');
-    if (!tbody) return;
-    
-    // 使用 MutationObserver 监听表格变化
-    const observer = new MutationObserver(() => {
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(row => {
-            // 检查是否已经添加了个人码列
-            if (row.querySelector('.personal-code-cell')) return;
-            
-            const cells = row.querySelectorAll('td');
-            if (cells.length < 6) return;
-            
-            const memberId = row.querySelector('.edit-member-btn')?.getAttribute('data-id');
-            const member = members.find(m => m.id === memberId);
-            
-            // 创建个人码单元格
-            const codeCell = document.createElement('td');
-            codeCell.className = 'personal-code-cell';
-            codeCell.style.textAlign = 'center';
-            
-            if (member?.personalCode) {
-                codeCell.innerHTML = `
-                    <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; font-family: monospace;">
-                        ${member.personalCode}
-                    </code>
-                    <button class="btn btn-sm btn-warning reset-code-btn ms-1" data-id="${member.id}" title="重置签到码" style="padding: 2px 6px;">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                `;
-            } else {
-                codeCell.innerHTML = `
-                    <span class="badge bg-secondary">未生成</span>
-                    <button class="btn btn-sm btn-info generate-code-btn ms-1" data-id="${member.id}" title="生成签到码" style="padding: 2px 6px;">
-                        <i class="fas fa-key"></i>
-                    </button>
-                `;
-            }
-            
-            // 插入到操作列之前
-            const actionCell = cells[cells.length - 1];
-            row.insertBefore(codeCell, actionCell);
-            
-            // 绑定重置按钮事件
-            const resetBtn = codeCell.querySelector('.reset-code-btn');
-            if (resetBtn) {
-                resetBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const id = resetBtn.getAttribute('data-id');
-                    const confirmed = confirm('确定要重置该会员的个人签到码吗？旧码将立即失效。');
-                    if (confirmed) await resetPersonalCode(id);
-                });
-            }
-            
-            // 绑定生成按钮事件
-            const genBtn = codeCell.querySelector('.generate-code-btn');
-            if (genBtn) {
-                genBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    const id = genBtn.getAttribute('data-id');
-                    await resetPersonalCode(id);
-                });
-            }
-        });
-    });
-    
-    observer.observe(tbody, { childList: true, subtree: true });
-}
-
-// 6. 在会员管理页面添加批量操作按钮
-function addPersonalCodeButtons() {
-    const membersTab = document.getElementById('members-tab');
-    if (!membersTab) return;
-    
-    const headerDiv = membersTab.querySelector('.card-header div');
-    if (!headerDiv) return;
-    
-    // 检查是否已添加
-    if (document.getElementById('batch-generate-codes-btn')) return;
-    
-    const batchBtn = document.createElement('button');
-    batchBtn.id = 'batch-generate-codes-btn';
-    batchBtn.className = 'btn btn-sm btn-info ms-2';
-    batchBtn.innerHTML = '<i class="fas fa-key me-1"></i>批量生成个人码';
-    batchBtn.onclick = batchGenerateAllPersonalCodes;
-    
-    const exportCodesBtn = document.createElement('button');
-    exportCodesBtn.id = 'export-codes-btn';
-    exportCodesBtn.className = 'btn btn-sm btn-success ms-2';
-    exportCodesBtn.innerHTML = '<i class="fas fa-file-excel me-1"></i>导出个人码';
-    exportCodesBtn.onclick = exportPersonalCodes;
-    
-    headerDiv.appendChild(batchBtn);
-    headerDiv.appendChild(exportCodesBtn);
-}
-
-// 7. 修改原有的 handleStudentIdLogin 函数为三重验证版本
-// 完全替换原有的 handleStudentIdLogin 函数
-async function handleStudentIdLogin(event) {
-    event.preventDefault();
-    
-    const studentId = document.getElementById('student-id-login-input').value.trim();
-    const personalCode = document.getElementById('personal-code-input').value.trim().toUpperCase();
-    const attendanceCode = document.getElementById('attendance-code-input').value.trim().toUpperCase();
-    const errorDiv = document.getElementById('student-id-login-error');
-    
-    // 验证输入
-    if (!studentId || !personalCode || !attendanceCode) {
-        errorDiv.textContent = '请填写学号、个人签到码和点名验证码';
-        errorDiv.style.display = 'block';
-        return false;
-    }
-    
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 验证中...';
-    }
-    
-    try {
-        // 1. 确保会员数据已加载
-        if (members.length === 0) {
-            const membersSnapshot = await db.collection('members').get();
-            members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        
-        // 2. 确保点名数据已加载
-        if (attendances.length === 0) {
-            const attendanceSnapshot = await db.collection('attendances').get();
-            attendances = attendanceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        if (attendanceRecords.length === 0) {
-            const recordsSnapshot = await db.collection('attendanceRecords').get();
-            attendanceRecords = recordsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-        
-        const normalizedId = studentId.replace(/\s/g, '');
-        
-        // 3. 验证学号和个人签到码
-        let matchedMember = members.find(m => {
-            const mId = (m.studentId || '').replace(/\s/g, '');
-            return mId === normalizedId && m.personalCode === personalCode;
-        });
-        
-        if (!matchedMember) {
-            errorDiv.textContent = '学号或个人签到码不正确，请检查后重试';
-            errorDiv.style.display = 'block';
-            await logFailedAttempt(studentId, personalCode, attendanceCode, 'invalid_credentials');
-            return false;
-        }
-        
-        // 4. 检查是否有进行中的点名
-        const now = new Date();
-        const activeSessions = attendances.filter(a => {
-            if (a.cancelled) return false;
-            const start = a.startTime?.toDate();
-            const end = a.endTime?.toDate();
-            return start && end && now >= start && now <= end;
-        });
-        
-        if (activeSessions.length === 0) {
-            errorDiv.textContent = '当前没有进行中的点名活动';
-            errorDiv.style.display = 'block';
-            return false;
-        }
-        
-        // 5. 验证点名验证码（匹配任一进行中的点名）
-        let matchedSession = null;
-        for (const session of activeSessions) {
-            if (session.code === attendanceCode) {
-                matchedSession = session;
-                break;
-            }
-        }
-        
-        if (!matchedSession) {
-            errorDiv.textContent = '点名验证码不正确，请确认后重试';
-            errorDiv.style.display = 'block';
-            await logFailedAttempt(studentId, personalCode, attendanceCode, 'invalid_code', matchedMember?.id);
-            return false;
-        }
-        
-        // 6. 检查签到时间范围
-        const startTime = matchedSession.startTime.toDate();
-        const endTime = matchedSession.endTime.toDate();
-        
-        if (now < startTime) {
-            errorDiv.textContent = `签到尚未开始，开始时间：${startTime.toLocaleTimeString()}`;
-            errorDiv.style.display = 'block';
-            return false;
-        }
-        
-        if (now > endTime) {
-            errorDiv.textContent = `签到已结束，截止时间：${endTime.toLocaleTimeString()}`;
-            errorDiv.style.display = 'block';
-            return false;
-        }
-        
-        // 7. 检查是否已经签到过
-        const existingRecord = attendanceRecords.find(r => 
-            r.attendanceId === matchedSession.id && 
-            (r.memberId === matchedMember.id || r.studentId === matchedMember.studentId)
-        );
-        
-        if (existingRecord) {
-            errorDiv.textContent = '您已经签到过了，无需重复签到';
-            errorDiv.style.display = 'block';
-            return false;
-        }
-        
-        // 8. 获取设备信息
-        const deviceInfo = await getDeviceInfo();
-        
-        // 9. 记录签到
-        const checkinData = {
-            attendanceId: matchedSession.id,
-            memberId: matchedMember.id,
-            studentId: matchedMember.studentId,
-            studentName: matchedMember.name,
-            studentClass: matchedMember.class,
-            studentGroup: matchedMember.group,
-            studentEmail: matchedMember.email,
-            personalCode: personalCode,
-            attendanceCode: attendanceCode,
-            checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
-            deviceInfo: deviceInfo,
-            verificationMethod: 'triple_verification',
-            verified: true,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        await db.collection('attendanceRecords').add(checkinData);
-        
-        // 10. 记录成功日志
-        await logSuccessfulCheckin(matchedMember, matchedSession, deviceInfo);
-        
-        errorDiv.style.display = 'none';
-        
-        // 11. 设置用户会话
-        studentAttendanceUser = {
-            displayName: matchedMember.name,
-            email: matchedMember.email || `${matchedMember.studentId}@student.local`,
-            uid: `member_${matchedMember.id}`,
-            studentId: matchedMember.studentId,
-            personalCode: matchedMember.personalCode,
-            isStudentLogin: true,
-            memberInfo: matchedMember,
-            currentSession: matchedSession
-        };
-        
-        // 缓存信息
-        sessionStorage.setItem('cached_member_info', JSON.stringify({
-            id: matchedMember.id,
-            name: matchedMember.name,
-            studentId: matchedMember.studentId,
-            class: matchedMember.class,
-            group: matchedMember.group,
-            email: matchedMember.email,
-            personalCode: matchedMember.personalCode
-        }));
-        
-        showAlert(`✅ 签到成功！欢迎 ${matchedMember.name}`, 'success');
-        
-        // 显示签到成功界面
-        showCheckinSuccessInterface(matchedMember, matchedSession);
-        
-        // 刷新点名列表
-        await loadActiveSessions();
-        
-    } catch (error) {
-        console.error('登录验证失败:', error);
-        errorDiv.textContent = '验证失败，请稍后重试';
-        errorDiv.style.display = 'block';
-    } finally {
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-fingerprint me-2"></i>三重验证签到';
-        }
-    }
-    
-    return false;
-}
-
-// 8. 辅助函数：获取设备信息
-async function getDeviceInfo() {
-    const components = [
-        navigator.userAgent,
-        navigator.language,
-        screen.width + 'x' + screen.height,
-        screen.colorDepth,
-        new Date().getTimezoneOffset(),
-        navigator.hardwareConcurrency || '',
-        navigator.deviceMemory || ''
-    ];
-    
-    let hash = 0;
-    const str = components.join('|');
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-    }
-    
-    return {
-        userAgent: navigator.userAgent,
-        language: navigator.language,
-        screen: `${screen.width}x${screen.height}`,
-        timezone: new Date().getTimezoneOffset(),
-        deviceId: hash.toString(),
-        timestamp: new Date().toISOString()
-    };
-}
-
-// 9. 辅助函数：记录失败尝试
-async function logFailedAttempt(studentId, personalCode, attendanceCode, reason, memberId = null) {
-    try {
-        await db.collection('attendanceLogs').add({
-            type: 'failed_attempt',
-            studentId: studentId,
-            personalCode: personalCode,
-            attendanceCode: attendanceCode,
-            reason: reason,
-            memberId: memberId,
-            deviceInfo: await getDeviceInfo(),
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    } catch (e) {
-        console.warn('记录失败日志出错:', e);
-    }
-}
-
-// 10. 辅助函数：记录成功签到
-async function logSuccessfulCheckin(member, session, deviceInfo) {
-    try {
-        await db.collection('attendanceLogs').add({
-            type: 'successful_checkin',
-            memberId: member.id,
-            studentId: member.studentId,
-            name: member.name,
-            attendanceId: session.id,
-            attendanceTitle: session.title,
-            deviceInfo: deviceInfo,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    } catch (e) {
-        console.warn('记录成功日志出错:', e);
-    }
-}
-
-// 11. 显示签到成功界面
-function showCheckinSuccessInterface(member, session) {
-    // 隐藏登录表单区域
-    const loginArea = document.querySelector('#student-attendance-content > div:first-child');
-    if (loginArea) loginArea.style.display = 'none';
-    
-    // 显示签到成功界面
-    let successContainer = document.getElementById('checkin-success-container');
-    if (!successContainer) {
-        successContainer = document.createElement('div');
-        successContainer.id = 'checkin-success-container';
-        document.getElementById('student-attendance-content').appendChild(successContainer);
-    }
-    
-    successContainer.innerHTML = `
-        <div class="text-center py-4">
-            <div class="mb-3">
-                <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
-            </div>
-            <h4 class="text-success">签到成功！</h4>
-            <p class="mt-3">
-                <strong>${escapeHtml(member.name)}</strong><br>
-                学号：${escapeHtml(member.studentId)}<br>
-                班级：${escapeHtml(member.class || '-')}<br>
-                组别：${escapeHtml(member.group || '-')}
-            </p>
-            <div class="alert alert-info mt-3">
-                <i class="fas fa-calendar-check me-2"></i>
-                已成功签到：${escapeHtml(session.title)}<br>
-                签到时间：${new Date().toLocaleString()}
-            </div>
-            <hr>
-            <button class="btn btn-outline-primary mt-2" onclick="resetToLoginForm()">
-                <i class="fas fa-arrow-left me-1"></i>返回登录
-            </button>
-        </div>
-    `;
-}
-
-// 12. 重置到登录表单
-function resetToLoginForm() {
-    const loginArea = document.querySelector('#student-attendance-content > div:first-child');
-    if (loginArea) loginArea.style.display = 'block';
-    
-    const successContainer = document.getElementById('checkin-success-container');
-    if (successContainer) successContainer.remove();
-    
-    // 清空表单
-    document.getElementById('student-id-login-input').value = '';
-    document.getElementById('personal-code-input').value = '';
-    document.getElementById('attendance-code-input').value = '';
-    document.getElementById('student-id-login-error').style.display = 'none';
-}
-
-// 13. 初始化三重验证系统
-function initTripleVerification() {
-    // 为现有会员生成缺失的个人码
-    setTimeout(async () => {
-        await generateMissingPersonalCodes();
-    }, 2000);
-    
-    // 添加会员管理按钮
-    setTimeout(() => {
-        addPersonalCodeButtons();
-        updateMemberTableWithPersonalCode();
-    }, 1500);
-}
-
-// 页面加载时初始化三重验证
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        if (typeof initTripleVerification === 'function') {
-            initTripleVerification();
-        }
-    }, 2000);
-});
 
 // 保存会员
 function saveMember() {
