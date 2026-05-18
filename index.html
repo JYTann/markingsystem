@@ -11941,6 +11941,7 @@ window.editAttendance = function(attendanceId) {
     }
     
     setTimeout(() => {
+        // 只声明一次 previewText
         const previewText = document.getElementById('time-preview-text');
         
         document.getElementById('attendance-id').value = attendance.id;
@@ -11955,8 +11956,8 @@ window.editAttendance = function(attendanceId) {
         const levelSelect = document.getElementById('attendance-level');
         if (levelSelect) levelSelect.value = attendance.levelId || '';
         
-        const previewText = document.getElementById('time-preview-text');
-if (previewText) previewText.innerHTML = '请设置点名时间';
+        // 删除重复的声明，直接使用已有的 previewText
+        if (previewText) previewText.innerHTML = '请设置点名时间';
         
         if (typeof updateTimePreview === 'function') {
             updateTimePreview();
@@ -13724,11 +13725,9 @@ window.createNewAttendance = function() {
     const modalElement = document.getElementById('attendanceModal');
     if (!modalElement) return;
     
-    // 先清理
-    safeHideModal(modalElement);
+    if (typeof safeHideModal === 'function') safeHideModal(modalElement);
     
     setTimeout(() => {
-        // 重置表单
         const titleInput = document.getElementById('attendance-title');
         const dateInput = document.getElementById('attendance-date');
         const startTimeInput = document.getElementById('attendance-start-time');
@@ -13737,6 +13736,8 @@ window.createNewAttendance = function() {
         const noteInput = document.getElementById('attendance-note');
         const levelSelect = document.getElementById('attendance-level');
         const modalTitle = document.getElementById('attendance-modal-title');
+        // 使用不同的变量名避免重复声明
+        const timePreviewEl = document.getElementById('time-preview-text');
         
         if (titleInput) titleInput.value = '';
         if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
@@ -13745,9 +13746,9 @@ window.createNewAttendance = function() {
         if (codeInput) codeInput.value = '';
         if (noteInput) noteInput.value = '';
         if (modalTitle) modalTitle.textContent = '新建点名';
+        if (timePreviewEl) timePreviewEl.innerHTML = '请设置点名时间';
         
-        // 更新级别选择
-        if (levelSelect) {
+        if (levelSelect && typeof levels !== 'undefined') {
             levelSelect.innerHTML = '<option value="">所有级别</option>';
             levels.forEach(level => {
                 const option = document.createElement('option');
@@ -13757,15 +13758,10 @@ window.createNewAttendance = function() {
             });
         }
         
-        const previewText = document.getElementById('time-preview-text');
-if (previewText) previewText.innerHTML = '请设置点名时间';
-        
-        // 显示模态框
         modalElement.style.display = 'block';
         modalElement.classList.add('show');
         modalElement.removeAttribute('aria-hidden');
         
-        // 添加遮罩层
         let backdrop = document.querySelector('.modal-backdrop');
         if (!backdrop) {
             backdrop = document.createElement('div');
@@ -13773,14 +13769,7 @@ if (previewText) previewText.innerHTML = '请设置点名时间';
             document.body.appendChild(backdrop);
         }
         document.body.classList.add('modal-open');
-        
-        try {
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.show();
-        } catch(e) {
-            // Bootstrap 实例不存在，手动处理
-        }
-    }, 200);
+    }, 100);
 };
 
 // 重写 editAttendance 函数
