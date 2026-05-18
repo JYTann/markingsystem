@@ -15773,7 +15773,130 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(checkSharedReportFixed, 100);
 }
-
+// ==================== 紧急修复：清除重复函数冲突 ====================
+(function() {
+    console.log('开始修复函数冲突...');
+    
+    // 删除重复的 loadActiveSessions（如果存在多个）
+    const scripts = document.querySelectorAll('script');
+    let lastValidLoadActiveSessions = null;
+    let lastValidShowCheckinForm = null;
+    
+    // 重新定义正确的函数
+    window.loadActiveSessions = async function() {
+        console.log('加载进行中的点名...');
+        
+        if (attendances.length === 0) {
+            await loadAttendanceDataForStudent();
+        }
+        
+        const now = new Date();
+        const activeSessions = attendances.filter(a => {
+            if (a.cancelled) return false;
+            const start = a.startTime?.toDate();
+            const end = a.endTime?.toDate();
+            return start && end && now >= start && now <= end;
+        });
+        
+        const container = document.getElementById('active-sessions-list');
+        const noSession = document.getElementById('no-active-session');
+        const checkinCard = document.getElementById('checkin-card');
+        
+        if (!container) return;
+        
+        if (activeSessions.length === 0) {
+            container.innerHTML = '';
+            if (noSession) noSession.style.display = 'block';
+            if (checkinCard) checkinCard.style.display = 'none';
+            return;
+        }
+        
+        if (noSession) noSession.style.display = 'none';
+        
+        const userEmail = studentAttendanceUser?.email || '';
+        const userStudentId = studentAttendanceUser?.studentId || '';
+        
+        const alreadyCheckedIn = activeSessions.filter(session => {
+            return attendanceRecords.some(r => 
+                r.attendanceId === session.id && 
+                (r.loginEmail === userEmail || 
+                 r.studentId === userStudentId ||
+                 r.studentEmail === userEmail)
+            );
+        });
+        
+        container.innerHTML = activeSessions.map(session => {
+            const endTime = session.endTime.toDate();
+            const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
+            const isCheckedIn = alreadyCheckedIn.some(s => s.id === session.id);
+            
+            if (isCheckedIn) {
+                return `
+                    <div class="alert alert-success mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${escapeHtml(session.title)}</h6>
+                                <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
+                            </div>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>已签到
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${escapeHtml(session.title)}</h6>
+                                <small class="text-muted">剩余时间：${remainingMinutes} 分钟</small>
+                                <br>
+                                <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="showCheckinForm('${session.id}')">
+                                <i class="fas fa-pen me-1"></i>签到
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+    };
+    
+    window.showCheckinForm = function(sessionId) {
+        console.log('显示签到表单，点名ID:', sessionId);
+        
+        const session = attendances.find(a => a.id === sessionId);
+        
+        if (!session) {
+            console.error('找不到对应的点名会话:', sessionId);
+            showAlert('签到信息加载失败，请刷新页面重试', 'warning');
+            return;
+        }
+        
+        activeCheckinSession = session;
+        
+        const titleElement = document.getElementById('checkin-session-title');
+        const timeElement = document.getElementById('checkin-session-time');
+        const codeInput = document.getElementById('checkin-code-input');
+        const resultDiv = document.getElementById('checkin-result');
+        const checkinCard = document.getElementById('checkin-card');
+        
+        if (titleElement) titleElement.textContent = session.title;
+        if (timeElement) timeElement.textContent = `${session.date} ${session.startTimeStr} - ${session.endTimeStr}`;
+        if (codeInput) codeInput.value = '';
+        if (resultDiv) resultDiv.innerHTML = '';
+        if (checkinCard) {
+            checkinCard.style.display = 'block';
+            checkinCard.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        showAlert(`请输入点名 "${session.title}" 的验证码`, 'info');
+    };
+    
+    console.log('✅ 函数修复完成，刷新页面生效');
+})();
         
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
