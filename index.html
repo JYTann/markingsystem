@@ -11955,7 +11955,8 @@ window.editAttendance = function(attendanceId) {
         const levelSelect = document.getElementById('attendance-level');
         if (levelSelect) levelSelect.value = attendance.levelId || '';
         
-        if (previewText) previewText.innerHTML = '请设置点名时间';
+        const previewText = document.getElementById('time-preview-text');
+if (previewText) previewText.innerHTML = '请设置点名时间';
         
         if (typeof updateTimePreview === 'function') {
             updateTimePreview();
@@ -12135,94 +12136,7 @@ function showStudentCheckinInterface() {
     }
     window._attendanceRefreshInterval = setInterval(loadActiveSessions, 30000);
 }
-// 加载进行中的点名
-// 加载进行中的点名 - 修复版
-// 加载进行中的点名
-async function loadActiveSessions() {
-    console.log('加载进行中的点名...');
-    
-    // 确保 attendances 和 attendanceRecords 已加载
-    if (attendances.length === 0) {
-        await loadAttendanceDataForStudent();
-    }
-    
-    const now = new Date();
-    const activeSessions = attendances.filter(a => {
-        if (a.cancelled) return false;
-        const start = a.startTime?.toDate();
-        const end = a.endTime?.toDate();
-        return start && end && now >= start && now <= end;
-    });
-    
-    console.log('进行中的点名数量:', activeSessions.length);
-    
-    const container = document.getElementById('active-sessions-list');
-    const noSession = document.getElementById('no-active-session');
-    const checkinCard = document.getElementById('checkin-card');
-    
-    if (!container) return;
-    
-    if (activeSessions.length === 0) {
-        container.innerHTML = '';
-        if (noSession) noSession.style.display = 'block';
-        if (checkinCard) checkinCard.style.display = 'none';
-        return;
-    }
-    
-    if (noSession) noSession.style.display = 'none';
-    
-    // 检查当前用户是否已经签到
-    const userEmail = studentAttendanceUser?.email || '';
-    const userStudentId = studentAttendanceUser?.studentId || '';
-    
-    const alreadyCheckedIn = activeSessions.filter(session => {
-        return attendanceRecords.some(r => 
-            r.attendanceId === session.id && 
-            (r.loginEmail === userEmail || 
-             r.studentId === userStudentId ||
-             r.studentEmail === userEmail)
-        );
-    });
-    
-    // 构建点名列表HTML
-    container.innerHTML = activeSessions.map(session => {
-        const endTime = session.endTime.toDate();
-        const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
-        const isCheckedIn = alreadyCheckedIn.some(s => s.id === session.id);
-        
-        if (isCheckedIn) {
-            return `
-                <div class="alert alert-success mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${escapeHtml(session.title)}</h6>
-                            <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
-                        </div>
-                        <span class="badge bg-success">
-                            <i class="fas fa-check-circle me-1"></i>已签到
-                        </span>
-                    </div>
-                </div>
-            `;
-        } else {
-            return `
-                <div class="alert alert-info mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${escapeHtml(session.title)}</h6>
-                            <small class="text-muted">剩余时间：${remainingMinutes} 分钟</small>
-                            <br>
-                            <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
-                        </div>
-                        <button class="btn btn-primary btn-sm" onclick="showCheckinForm('${session.id}')">
-                            <i class="fas fa-pen me-1"></i>签到
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-    }).join('');
-}
+
 
         // 显示签到表单 - 修复版
 // 显示签到表单
@@ -13843,7 +13757,8 @@ window.createNewAttendance = function() {
             });
         }
         
-        if (previewText) previewText.innerHTML = '请设置点名时间';
+        const previewText = document.getElementById('time-preview-text');
+if (previewText) previewText.innerHTML = '请设置点名时间';
         
         // 显示模态框
         modalElement.style.display = 'block';
