@@ -6052,13 +6052,20 @@ function removeToast(toast) {
 // ========== Toast 通知系统结束 ==========
 
         // 加载所有数据
-        function loadAllData() {
-    loadAttendances();
-    loadLevels();
-    loadStudents();
-    loadMembers();
-    loadProjects();
-    loadScores();
+        // 在 loadAllData 函数中添加同步逻辑
+async function loadAllData() {
+    // 并行加载所有数据
+    await Promise.all([
+        loadAttendances(),
+        loadLevels(),
+        loadStudents(),
+        loadMembers(),      // 确保加载会员数据
+        loadProjects(),
+        loadScores()
+    ]);
+    
+    // 同步学生邮箱到会员名单（可选）
+    await syncStudentEmailsToMembers();
     
     // 初始化趋势图控制
     setTimeout(() => {
@@ -6071,6 +6078,22 @@ function removeToast(toast) {
             updateProjectComparisonChart();
         }
     }, 500);
+}
+
+// 同步学生邮箱到会员名单
+async function syncStudentEmailsToMembers() {
+    for (const student of students) {
+        if (student.studentEmail) {
+            const existingMember = members.find(m => m.studentId === student.studentId);
+            if (existingMember && !existingMember.email) {
+                // 更新会员邮箱
+                await db.collection('members').doc(existingMember.id).update({
+                    email: student.studentEmail
+                });
+                console.log(`同步会员邮箱: ${student.name} -> ${student.studentEmail}`);
+            }
+        }
+    }
 }
 
         // 加载级别数据
@@ -11381,24 +11404,67 @@ function deleteAttendance(attendanceId) {
 }
 
 // 查看点名详情
-function viewAttendanceDetail(attendanceId) {
+// 查看点名详情 - 增强版，正确显示学生信息
+async function viewAttendanceDetail(attendanceId) {
     currentAttendanceId = attendanceId;
     const attendance = attendances.find(a => a.id === attendanceId);
     if (!attendance) return;
     
+    // 获取该点名的签到记录
     const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
-    const checkedInStudents = records.map(r => {
-        const student = students.find(s => s.id === r.studentId);
-        return { ...r, student };
+    
+    // 获取所有学生（合并会员和评分学生）
+    const allStudents = [...members, ...students];
+    
+    // 构建签到学生列表
+    const checkedInStudents = records.map(record => {
+        // 优先从签到记录中获取已存储的学生信息
+        if (record.studentName && record.studentName !== '未知') {
+            return {
+                ...record,
+                student: {
+                    name: record.studentName,
+                    studentId: record.studentNumber || '未知',
+                    class: record.studentClass || '-',
+                    levelName: record.studentLevel || '-'
+                }
+            };
+        }
+        
+        // 否则从会员/学生列表中查找
+        const student = allStudents.find(s => s.id === record.studentId);
+        return { 
+            ...record, 
+            student: student || {
+                name: record.studentName || '未知',
+                studentId: record.studentNumber || '未知',
+                class: record.studentClass || '-',
+                levelName: record.studentLevel || '-'
+            }
+        };
     });
+    
+    // 获取未签到学生（根据点名指定的级别筛选）
+    let targetStudents = [];
+    if (attendance.levelId) {
+        targetStudents = allStudents.filter(s => s.levelId === attendance.levelId);
+    } else {
+        targetStudents = allStudents;
+    }
+    
+    const checkedInIds = new Set(records.map(r => r.studentId).filter(id => id));
+    const absentStudents = targetStudents.filter(s => !checkedInIds.has(s.id));
     
     const now = new Date();
     const endTime = attendance.endTime?.toDate();
     const isActive = attendance.startTime?.toDate() <= now && now <= endTime && !attendance.cancelled;
     
-    document.getElementById('attendance-detail-content').innerHTML = `
+    const modalContent = document.getElementById('attendance-detail-content');
+    if (!modalContent) return;
+    
+    modalContent.innerHTML = `
         <div class="mb-3">
-            <h5>${attendance.title}</h5>
+            <h5>${escapeHtml(attendance.title)}</h5>
             <p class="text-muted mb-1">
                 <i class="fas fa-calendar me-2"></i>${attendance.date}
                 <i class="fas fa-clock ms-3 me-2"></i>${attendance.startTimeStr} - ${attendance.endTimeStr}
@@ -11421,14 +11487,14 @@ function viewAttendanceDetail(attendanceId) {
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #f87171);">
                     <i class="fas fa-user-times"></i>
-                    <h5 class="card-title">${students.length - checkedInStudents.length}</h5>
+                    <h5 class="card-title">${absentStudents.length}</h5>
                     <p class="card-text">未签到</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
                     <i class="fas fa-percentage"></i>
-                    <h5 class="card-title">${students.length > 0 ? Math.round((checkedInStudents.length/students.length)*100) : 0}%</h5>
+                    <h5 class="card-title">${targetStudents.length > 0 ? Math.round((checkedInStudents.length/targetStudents.length)*100) : 0}%</h5>
                     <p class="card-text">出勤率</p>
                 </div>
             </div>
@@ -11452,10 +11518,10 @@ function viewAttendanceDetail(attendanceId) {
                     ${checkedInStudents.map((record, index) => `
                         <tr>
                             <td>${index + 1}</td>
-                            <td>${record.student?.studentId || '未知'}</td>
-                            <td>${record.student?.name || '未知'}</td>
-                            <td>${record.student?.class || '-'}</td>
-                            <td>${record.student?.levelName || '-'}</td>
+                            <td>${escapeHtml(record.student?.studentId || record.studentNumber || '未知')}</td>
+                            <td>${escapeHtml(record.student?.name || record.studentName || '未知')}</td>
+                            <td>${escapeHtml(record.student?.class || record.studentClass || '-')}</td>
+                            <td>${escapeHtml(record.student?.levelName || record.studentLevel || '-')}</td>
                             <td>${record.checkinTime?.toDate().toLocaleString() || '-'}</td>
                             <td>
                                 <span class="student-checkin-status checked-in">
@@ -11464,30 +11530,45 @@ function viewAttendanceDetail(attendanceId) {
                             </td>
                         </tr>
                     `).join('')}
+                    ${checkedInStudents.length === 0 ? `
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                暂无签到记录
+                            </td>
+                        </tr>
+                    ` : ''}
                 </tbody>
             </table>
         </div>
         
         <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到学生</h6>
         <div class="checkin-grid">
-            ${(members.length > 0 ? members : students)
-                .filter(s => !checkedInStudents.find(r => r.studentId === s.id))
-                .map(s => `
-                    <div class="checkin-student-card">
-                        <div class="avatar" style="width: 36px; height: 36px; background-color: #ef4444;">
-                            ${s.name.charAt(0)}
-                        </div>
-                        <div>
-                            <div style="font-weight: 500; font-size: 0.9rem;">${s.name}</div>
-                            <small class="text-muted">${s.studentId} | ${s.class}</small>
-                        </div>
+            ${absentStudents.map(s => `
+                <div class="checkin-student-card">
+                    <div class="avatar" style="width: 36px; height: 36px; background-color: #ef4444;">
+                        ${escapeHtml(s.name?.charAt(0) || '?')}
                     </div>
-                `).join('')}
+                    <div>
+                        <div style="font-weight: 500; font-size: 0.9rem;">${escapeHtml(s.name)}</div>
+                        <small class="text-muted">${escapeHtml(s.studentId)} | ${escapeHtml(s.class)}</small>
+                    </div>
+                </div>
+            `).join('')}
+            ${absentStudents.length === 0 ? '<p class="text-muted text-center">🎉 全员签到！</p>' : ''}
         </div>
     `;
     
-    const modal = new bootstrap.Modal(document.getElementById('attendanceDetailModal'));
-    modal.show();
+    // 显示模态框
+    const modalElement = document.getElementById('attendanceDetailModal');
+    if (modalElement) {
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } catch(e) {
+            modalElement.style.display = 'block';
+            modalElement.classList.add('show');
+        }
+    }
 }
 
 // 导出点名详情
@@ -12036,24 +12117,8 @@ function loadActiveSessions() {
     }
 }
 
-// 显示签到表单
-function showCheckinForm(sessionId) {
-    const session = attendances.find(a => a.id === sessionId);
-    if (!session) return;
-    
-    activeCheckinSession = session;
-    
-    document.getElementById('checkin-session-title').textContent = session.title;
-    document.getElementById('checkin-session-time').textContent = 
-        `${session.date} ${session.startTimeStr} - ${session.endTimeStr}`;
-    document.getElementById('checkin-code-input').value = '';
-    document.getElementById('checkin-result').innerHTML = '';
-    document.getElementById('checkin-card').style.display = 'block';
-    document.getElementById('checkin-card').scrollIntoView({ behavior: 'smooth' });
-}
-
-// 提交签到
-function submitCheckIn() {
+// 提交签到 - 增强版，确保正确匹配学生信息
+async function submitCheckIn() {
     if (!activeCheckinSession || !studentAttendanceUser) {
         showAlert('签到信息已过期，请刷新重试', 'warning');
         return;
@@ -12093,70 +12158,151 @@ function submitCheckIn() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
     
-       // 查找学生信息
-    const email = studentAttendanceUser.email;
-    let student = null;
+    // ========== 增强的学生信息匹配逻辑 ==========
+    // 获取已签到学生ID集合（避免重复签到）
+    const existingRecords = attendanceRecords.filter(r => r.attendanceId === activeCheckinSession.id);
+    const checkedInStudentIds = new Set(existingRecords.map(r => r.studentId));
     
-       const allMembers = members.length > 0 ? members : students;
-    
-    // 如果是学号登录，直接用学号查找
-    if (studentAttendanceUser.isStudentLogin && studentAttendanceUser.studentId) {
-        student = allMembers.find(s => s.studentId === studentAttendanceUser.studentId);
+    // 1. 先从 sessionStorage 获取之前匹配到的学生信息
+    let matchedStudent = null;
+    const cachedStudent = sessionStorage.getItem('cached_student_info');
+    if (cachedStudent) {
+        try {
+            matchedStudent = JSON.parse(cachedStudent);
+            console.log('使用缓存的学生信息:', matchedStudent);
+        } catch(e) {}
     }
     
-    // 如果不是学号登录或没找到，尝试其他方式
-    if (!student) {
-        student = allMembers.find(s => s.email === email || s.studentEmail === email);
-    }
-    if (!student) {
+    // 2. 如果缓存没有，尝试匹配
+    if (!matchedStudent) {
+        const email = studentAttendanceUser.email;
+        const studentId = studentAttendanceUser.studentId;
         const displayName = studentAttendanceUser.displayName || '';
-        const cleanName = displayName.split(' - ')[0].split('(')[0].trim();
-        student = allMembers.find(s => s.name === cleanName);
-    }
-    if (!student) {
-        const emailPrefix = email.split('@')[0];
-        student = allMembers.find(s => s.studentId === emailPrefix);
+        
+        // 提取中文姓名
+        let chineseName = displayName;
+        const chineseMatch = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
+        if (chineseMatch) {
+            chineseName = chineseMatch[0];
+        }
+        
+        // 合并会员列表和学生列表进行匹配
+        const allMembers = [...members, ...students];
+        
+        // 方法1：通过学号精确匹配
+        if (studentId) {
+            matchedStudent = allMembers.find(s => s.studentId === studentId);
+            if (matchedStudent) {
+                console.log('通过学号匹配到:', matchedStudent);
+            }
+        }
+        
+        // 方法2：通过邮箱匹配
+        if (!matchedStudent && email) {
+            matchedStudent = allMembers.find(s => s.email === email || s.studentEmail === email);
+            if (matchedStudent) {
+                console.log('通过邮箱匹配到:', matchedStudent);
+            }
+        }
+        
+        // 方法3：通过姓名匹配（中文名精确匹配）
+        if (!matchedStudent && chineseName && chineseName.length >= 2) {
+            matchedStudent = allMembers.find(s => s.name === chineseName);
+            if (matchedStudent) {
+                console.log('通过姓名匹配到:', matchedStudent);
+            } else {
+                // 模糊匹配
+                matchedStudent = allMembers.find(s => s.name.includes(chineseName) || chineseName.includes(s.name));
+                if (matchedStudent) {
+                    console.log('通过模糊姓名匹配到:', matchedStudent);
+                }
+            }
+        }
+        
+        // 方法4：通过学号登录时输入的学号匹配会员名单
+        if (!matchedStudent && studentAttendanceUser.isStudentLogin && studentAttendanceUser.studentId) {
+            matchedStudent = members.find(m => m.studentId === studentAttendanceUser.studentId);
+            if (!matchedStudent) {
+                matchedStudent = students.find(s => s.studentId === studentAttendanceUser.studentId);
+            }
+            if (matchedStudent) {
+                console.log('通过学号登录匹配到:', matchedStudent);
+            }
+        }
+        
+        // 缓存匹配结果
+        if (matchedStudent) {
+            sessionStorage.setItem('cached_student_info', JSON.stringify(matchedStudent));
+        }
     }
     
+    // 检查是否已签到
+    if (matchedStudent && checkedInStudentIds.has(matchedStudent.id)) {
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-clock me-2"></i>您已经签到过了，无需重复签到
+            </div>
+        `;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
+        return;
+    }
+    
+    // 构建签到数据
     const checkinData = {
         attendanceId: activeCheckinSession.id,
-        studentId: student?.id || null,
-        studentName: studentAttendanceUser.displayName || '未知',
-        loginEmail: email,
+        studentId: matchedStudent?.id || null,
+        studentName: matchedStudent?.name || studentAttendanceUser.displayName || '未知',
+        studentNumber: matchedStudent?.studentId || studentAttendanceUser.studentId || '未知',
+        studentClass: matchedStudent?.class || '待补充',
+        studentLevel: matchedStudent?.levelName || matchedStudent?.level || '待补充',
+        loginEmail: studentAttendanceUser.email || '',
         checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
         code: inputCode,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-       db.collection('attendanceRecords').add(checkinData)
-        .then(() => {
-            const displayName = student 
-                ? `${student.name} (${student.studentId})` 
-                : (studentAttendanceUser.displayName || '未知用户');
-            
-            document.getElementById('checkin-result').innerHTML = `
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong>签到成功！</strong><br>
-                    ${displayName}
-                </div>
-            `;
-            document.getElementById('checkin-card').style.display = 'none';
-            loadAttendanceRecords();
-            setTimeout(() => loadActiveSessions(), 500);
-        })
-        .catch(error => {
-            console.error('签到失败:', error);
-            document.getElementById('checkin-result').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-times-circle me-2"></i>签到失败: ${error.message}
-                </div>
-            `;
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
-        });
+    console.log('签到数据:', checkinData);
+    
+    try {
+        await db.collection('attendanceRecords').add(checkinData);
+        
+        const displayName = matchedStudent 
+            ? `${matchedStudent.name} (${matchedStudent.studentId})` 
+            : (studentAttendanceUser.displayName || '未知用户');
+        
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>签到成功！</strong><br>
+                ${displayName}<br>
+                ${matchedStudent ? `班级：${matchedStudent.class || '待补充'} | 级别：${matchedStudent.levelName || '待补充'}` : '请管理员补充您的信息'}
+            </div>
+        `;
+        
+        // 清空验证码输入框
+        document.getElementById('checkin-code-input').value = '';
+        
+        // 刷新点名记录和统计
+        await loadAttendanceRecords();
+        await loadActiveSessions();
+        
+        // 如果有点名详情模态框打开，刷新详情
+        if (currentAttendanceId && document.getElementById('attendanceDetailModal')?.classList.contains('show')) {
+            await viewAttendanceDetail(currentAttendanceId);
+        }
+        
+    } catch (error) {
+        console.error('签到失败:', error);
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-times-circle me-2"></i>签到失败: ${error.message}
+            </div>
+        `;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
+    }
 }
 
 // 实时更新点名状态（每30秒刷新）
@@ -12168,6 +12314,7 @@ setInterval(() => {
 
         // 学号登录处理
 // 学号登录处理
+// 修改 handleStudentIdLogin 函数
 async function handleStudentIdLogin(event) {
     event.preventDefault();
     
@@ -12181,7 +12328,6 @@ async function handleStudentIdLogin(event) {
         return false;
     }
     
-    // 显示加载状态
     const submitBtn = event.target.querySelector('button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
@@ -12189,22 +12335,18 @@ async function handleStudentIdLogin(event) {
     }
     
     try {
-        // 先加载学生数据和点名数据
-                // 先加载学生数据和点名数据
         await loadAllDataForQuery();
         await loadAttendanceDataForStudent();
         
-        // 加载会员数据
         if (members.length === 0) {
             const membersSnapshot = await db.collection('members').get();
             members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
         
-        // 查找匹配的学生（不区分大小写，去除空格）
         const normalizedId = studentId.replace(/\s/g, '');
         const normalizedName = studentName.trim();
         
-        const allMembers = members.length > 0 ? members : students;
+        const allMembers = [...members, ...students];
         const student = allMembers.find(s => {
             const sId = (s.studentId || '').replace(/\s/g, '');
             const sName = (s.name || '').trim();
@@ -12214,16 +12356,20 @@ async function handleStudentIdLogin(event) {
         if (!student) {
             errorDiv.textContent = '学号或姓名不正确，请检查后重试';
             errorDiv.style.display = 'block';
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>学号登录签到';
-            }
             return false;
         }
         
         errorDiv.style.display = 'none';
         
-        // 创建学生用户对象
+        // 缓存学生信息到 sessionStorage
+        sessionStorage.setItem('cached_student_info', JSON.stringify({
+            id: student.id,
+            name: student.name,
+            studentId: student.studentId,
+            class: student.class,
+            levelName: student.levelName
+        }));
+        
         studentAttendanceUser = {
             displayName: student.name,
             email: student.studentEmail || `${student.studentId}@student.foonyew.edu.my`,
@@ -12232,7 +12378,6 @@ async function handleStudentIdLogin(event) {
             isStudentLogin: true
         };
         
-        // 显示签到界面
         showStudentCheckinInterface();
         
     } catch (error) {
