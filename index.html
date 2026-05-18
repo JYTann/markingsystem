@@ -10734,7 +10734,7 @@ function createReportCardHTML(data) {
 // 当前选中的点名ID
 let selectedAttendanceId = null;
 
-// 更新点名统计 - 根据选中的点名显示详细统计
+// 更新点名统计 - 使用会员管理(members)的数据
 function updateAttendanceStats(attendanceId) {
     const statsContainer = document.getElementById('attendance-stats');
     if (!statsContainer) return;
@@ -10752,48 +10752,63 @@ function updateAttendanceStats(attendanceId) {
     
     // 获取该点名的签到记录
     const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
-    const checkedInIds = new Set(records.map(r => r.studentId));
+    // 使用 memberId 来匹配（如果记录中有的话），否则回退到 studentId
+    const checkedInMemberIds = new Set();
+    records.forEach(record => {
+        if (record.memberId) {
+            checkedInMemberIds.add(record.memberId);
+        } else if (record.studentId) {
+            // 通过 studentId 查找对应的 member
+            const member = members.find(m => m.studentId === record.studentId);
+            if (member) checkedInMemberIds.add(member.id);
+        }
+    });
     
-    // 获取该点名指定的级别学生（如果有指定级别）
-    let targetStudents = [];
+    // 获取该点名指定的目标会员
+    let targetMembers = [...members];
     if (attendance.levelId) {
-        targetStudents = students.filter(s => s.levelId === attendance.levelId);
-    } else {
-        targetStudents = students;
+        // 如果点名指定了级别，按组别筛选（将组别作为级别）
+        const level = levels.find(l => l.id === attendance.levelId);
+        if (level) {
+            targetMembers = members.filter(m => m.group === level.name);
+        }
     }
     
-    const totalStudents = targetStudents.length;
-    const checkedInCount = targetStudents.filter(s => checkedInIds.has(s.id)).length;
-    const absentCount = totalStudents - checkedInCount;
-    const attendanceRate = totalStudents > 0 ? (checkedInCount / totalStudents * 100).toFixed(1) : 0;
+    const totalMembers = targetMembers.length;
+    const checkedInCount = targetMembers.filter(m => checkedInMemberIds.has(m.id)).length;
+    const absentCount = totalMembers - checkedInCount;
+    const attendanceRate = totalMembers > 0 ? (checkedInCount / totalMembers * 100).toFixed(1) : 0;
     
     // 获取级别名称
-    const levelName = attendance.levelId ? 
-        (levels.find(l => l.id === attendance.levelId)?.name || '指定级别') : '全体成员';
+    let levelName = '全体会员';
+    if (attendance.levelId) {
+        const level = levels.find(l => l.id === attendance.levelId);
+        levelName = level ? level.name : '指定级别';
+    }
     
-    // 按班级统计
+    // 按班级统计（从会员信息中获取）
     const classStats = {};
-    targetStudents.forEach(student => {
-        const className = student.class || '未知班级';
+    targetMembers.forEach(member => {
+        const className = member.class || '未知班级';
         if (!classStats[className]) {
             classStats[className] = { total: 0, checkedIn: 0 };
         }
         classStats[className].total++;
-        if (checkedInIds.has(student.id)) {
+        if (checkedInMemberIds.has(member.id)) {
             classStats[className].checkedIn++;
         }
     });
     
-    // 按级别统计
-    const levelStats = {};
-    targetStudents.forEach(student => {
-        const levelNameVal = student.levelName || '未设置';
-        if (!levelStats[levelNameVal]) {
-            levelStats[levelNameVal] = { total: 0, checkedIn: 0 };
+    // 按组别统计（组别相当于级别）
+    const groupStats = {};
+    targetMembers.forEach(member => {
+        const groupName = member.group || '未设置组别';
+        if (!groupStats[groupName]) {
+            groupStats[groupName] = { total: 0, checkedIn: 0 };
         }
-        levelStats[levelNameVal].total++;
-        if (checkedInIds.has(student.id)) {
-            levelStats[levelNameVal].checkedIn++;
+        groupStats[groupName].total++;
+        if (checkedInMemberIds.has(member.id)) {
+            groupStats[groupName].checkedIn++;
         }
     });
     
@@ -10845,6 +10860,10 @@ function updateAttendanceStats(attendanceId) {
                     <span class="small text-muted"><i class="fas fa-users me-1"></i>范围</span>
                     <span class="small">${levelName}</span>
                 </div>
+                <div class="d-flex justify-content-between mt-1">
+                    <span class="small text-muted"><i class="fas fa-database me-1"></i>总会员数</span>
+                    <span class="small fw-bold">${totalMembers} 人</span>
+                </div>
             </div>
     `;
     
@@ -10861,15 +10880,16 @@ function updateAttendanceStats(attendanceId) {
                         <tbody>
                             ${Object.entries(classStats).map(([className, stats]) => {
                                 const rate = stats.total > 0 ? (stats.checkedIn / stats.total * 100).toFixed(0) : 0;
+                                const barColor = rate >= 80 ? 'success' : (rate >= 60 ? 'warning' : 'danger');
                                 return `
                                     <tr>
-                                        <td>${className}</td>
+                                        <td>${escapeHtml(className)}</td>
                                         <td>${stats.total}</td>
                                         <td>${stats.checkedIn}</td>
                                         <td>
                                             <div style="width: 50px; display: inline-block;">
                                                 <div class="progress" style="height: 4px;">
-                                                    <div class="progress-bar bg-${rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}" style="width: ${rate}%"></div>
+                                                    <div class="progress-bar bg-${barColor}" style="width: ${rate}%"></div>
                                                 </div>
                                             </div>
                                             <span class="ms-1">${rate}%</span>
@@ -10884,37 +10904,54 @@ function updateAttendanceStats(attendanceId) {
         `;
     }
     
-    // 级别统计表格
-    if (Object.keys(levelStats).length > 0 && !attendance.levelId) {
+    // 按组别统计表格（相当于级别）
+    if (Object.keys(groupStats).length > 0 && !attendance.levelId) {
         statsHTML += `
             <div class="mb-3">
-                <div class="small fw-bold mb-2"><i class="fas fa-layer-group me-1"></i>按级别统计</div>
+                <div class="small fw-bold mb-2"><i class="fas fa-layer-group me-1"></i>按组别统计</div>
                 <div class="table-responsive">
                     <table class="table table-sm table-borderless small">
                         <thead>
-                            <tr><th>级别</th><th>总人数</th><th>已签到</th><th>出勤率</th></tr>
+                            <tr><th>组别</th><th>总人数</th><th>已签到</th><th>出勤率</th></tr>
                         </thead>
                         <tbody>
-                            ${Object.entries(levelStats).map(([levelNameVal, stats]) => {
+                            ${Object.entries(groupStats).map(([groupName, stats]) => {
                                 const rate = stats.total > 0 ? (stats.checkedIn / stats.total * 100).toFixed(0) : 0;
+                                const barColor = rate >= 80 ? 'success' : (rate >= 60 ? 'warning' : 'danger');
                                 return `
                                     <tr>
-                                        <td>${levelNameVal}</td>
+                                        <td>${escapeHtml(groupName)}</td>
                                         <td>${stats.total}</td>
                                         <td>${stats.checkedIn}</td>
                                         <td>
                                             <div style="width: 50px; display: inline-block;">
                                                 <div class="progress" style="height: 4px;">
-                                                    <div class="progress-bar bg-${rate >= 80 ? 'success' : rate >= 60 ? 'warning' : 'danger'}" style="width: ${rate}%"></div>
+                                                    <div class="progress-bar bg-${barColor}" style="width: ${rate}%"></div>
                                                 </div>
                                             </div>
                                             <span class="ms-1">${rate}%</span>
-                                        </td>
-                                    </tr>
+                                         </td>
+                                     </tr>
                                 `;
                             }).join('')}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 已签到会员列表（简略显示）
+    const checkedInMembers = targetMembers.filter(m => checkedInMemberIds.has(m.id));
+    if (checkedInMembers.length > 0) {
+        statsHTML += `
+            <div class="mb-2">
+                <div class="small fw-bold mb-2"><i class="fas fa-user-check me-1"></i>已签到会员</div>
+                <div class="d-flex flex-wrap gap-1">
+                    ${checkedInMembers.slice(0, 10).map(m => `
+                        <span class="badge bg-success" style="font-size: 0.7rem;">${escapeHtml(m.name)}</span>
+                    `).join('')}
+                    ${checkedInMembers.length > 10 ? `<span class="badge bg-secondary">+${checkedInMembers.length - 10}人</span>` : ''}
                 </div>
             </div>
         `;
@@ -10939,6 +10976,17 @@ function updateAttendanceStats(attendanceId) {
     
     statsHTML += `</div>`;
     statsContainer.innerHTML = statsHTML;
+}
+
+// 辅助函数：HTML转义
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
 }
 
 // 修改渲染点名列表函数，添加选中高亮和统计联动
