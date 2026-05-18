@@ -16237,61 +16237,51 @@ if (document.readyState === 'loading') {
     setTimeout(checkSharedReportFixed, 100);
 }
 
-// ==================== 最终强制修复 ====================
-(function() {
-    console.log('🔧 执行强制修复...');
-    
-    // 保存原始的 showMainSystem 函数
-    const originalShowMainSystem = window.showMainSystem;
-    
-    // 完全重写 showMainSystem 函数
-    window.showMainSystem = function() {
-        console.log('强制显示主系统...');
+// ==================== 强制修复页面显示 ====================
+(function forceFix() {
+    // 等待页面加载完成
+    setTimeout(function() {
+        console.log('🔧 执行强制修复...');
         
-        const studentPage = document.getElementById('student-query-page');
         const mainSystem = document.getElementById('main-system');
+        if (!mainSystem) return;
         
-        // 隐藏学生页面
-        if (studentPage) studentPage.style.display = 'none';
+        // 强制设置样式
+        mainSystem.style.cssText = `
+            position: relative !important;
+            display: block !important;
+            width: 100% !important;
+            min-height: 100vh !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        `;
         
-        // 显示主系统
-        if (mainSystem) {
-            mainSystem.style.display = 'block';
-            mainSystem.style.visibility = 'visible';
-            mainSystem.style.opacity = '1';
-            mainSystem.style.position = 'relative';
-            mainSystem.style.width = '100%';
-            mainSystem.style.minHeight = '100vh';
-        }
-        
-        // 修复容器
-        const container = document.querySelector('#main-system .container');
+        // 确保所有子容器可见
+        const container = mainSystem.querySelector('.container');
         if (container) {
-            container.style.display = 'block';
-            container.style.width = '100%';
-            container.style.maxWidth = '1200px';
-            container.style.margin = '0 auto';
-            container.style.padding = '20px';
-            container.style.minHeight = '500px';
+            container.style.cssText = `
+                display: block !important;
+                width: 100% !important;
+                max-width: 1200px !important;
+                margin: 0 auto !important;
+                padding: 20px !important;
+            `;
         }
         
-        // 修复 tab-content
-        const tabContent = document.querySelector('#main-system .tab-content');
+        const tabContent = mainSystem.querySelector('.tab-content');
         if (tabContent) {
-            tabContent.style.display = 'block';
-            tabContent.style.minHeight = '400px';
+            tabContent.style.cssText = `
+                display: block !important;
+                width: 100% !important;
+            `;
         }
-        
-        // 只显示 dashboard
-        const allPanes = document.querySelectorAll('#main-system .tab-pane');
-        allPanes.forEach(pane => {
-            pane.style.display = 'none';
-            pane.classList.remove('show', 'active');
-        });
         
         const dashboard = document.getElementById('dashboard-tab');
         if (dashboard) {
-            dashboard.style.display = 'block';
+            dashboard.style.cssText = `
+                display: block !important;
+                width: 100% !important;
+            `;
             dashboard.classList.add('show', 'active');
         }
         
@@ -16302,48 +16292,40 @@ if (document.readyState === 'loading') {
             dashboardLink.classList.add('active');
         }
         
-        // 强制刷新
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-            if (typeof updateScoreDistributionChart === 'function') {
-                updateScoreDistributionChart();
-            }
-        }, 100);
-        
-        console.log('✅ 主系统显示完成');
-    };
-    
-    // 修复登录回调
-    if (typeof auth !== 'undefined') {
-        const originalCallback = auth.onAuthStateChanged;
-        auth.onAuthStateChanged = function(callback) {
-            return originalCallback.call(auth, function(user) {
-                if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-                    currentUser = user;
-                    document.getElementById('user-email').textContent = user.email;
-                    window.showMainSystem();
-                    if (typeof loadAllData === 'function') loadAllData();
-                    if (typeof addActivity === 'function') addActivity("用户登录系统", "success");
-                } else {
-                    if (typeof showStudentQueryPage === 'function') showStudentQueryPage();
-                }
-                if (callback) callback(user);
-            });
-        };
-    }
-    
-    // 如果当前已登录但没有显示，强制显示
-    setTimeout(function() {
-        const user = auth.currentUser;
-        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-            const mainSystem = document.getElementById('main-system');
-            if (mainSystem && mainSystem.style.display !== 'block') {
-                console.log('检测到已登录但未显示，强制显示');
-                window.showMainSystem();
-            }
-        }
-    }, 500);
+        console.log('✅ 强制修复完成');
+    }, 100);
 })();
+
+// 监听登录成功，自动修复显示
+if (typeof auth !== 'undefined') {
+    auth.onAuthStateChanged(function(user) {
+        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+            setTimeout(function() {
+                const mainSystem = document.getElementById('main-system');
+                if (mainSystem && mainSystem.style.display !== 'block') {
+                    mainSystem.style.display = 'block';
+                    mainSystem.style.cssText = `
+                        position: relative !important;
+                        display: block !important;
+                        width: 100% !important;
+                        min-height: 100vh !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
+                    `;
+                    document.getElementById('student-query-page').style.display = 'none';
+                    
+                    const dashboard = document.getElementById('dashboard-tab');
+                    if (dashboard) {
+                        dashboard.style.display = 'block';
+                        dashboard.classList.add('show', 'active');
+                    }
+                    console.log('✅ 登录后修复完成');
+                }
+            }, 200);
+        }
+    });
+}
+
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
