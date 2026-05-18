@@ -12119,7 +12119,16 @@ function showStudentCheckinInterface() {
     window._attendanceRefreshInterval = setInterval(loadActiveSessions, 30000);
 }
 // 加载进行中的点名
-function loadActiveSessions() {
+// 加载进行中的点名 - 修复版
+// 加载进行中的点名
+async function loadActiveSessions() {
+    console.log('加载进行中的点名...');
+    
+    // 确保 attendances 和 attendanceRecords 已加载
+    if (attendances.length === 0) {
+        await loadAttendanceDataForStudent();
+    }
+    
     const now = new Date();
     const activeSessions = attendances.filter(a => {
         if (a.cancelled) return false;
@@ -12128,12 +12137,16 @@ function loadActiveSessions() {
         return start && end && now >= start && now <= end;
     });
     
+    console.log('进行中的点名数量:', activeSessions.length);
+    
     const container = document.getElementById('active-sessions-list');
     const noSession = document.getElementById('no-active-session');
     const checkinCard = document.getElementById('checkin-card');
     
+    if (!container) return;
+    
     if (activeSessions.length === 0) {
-        if (container) container.innerHTML = '';
+        container.innerHTML = '';
         if (noSession) noSession.style.display = 'block';
         if (checkinCard) checkinCard.style.display = 'none';
         return;
@@ -12141,52 +12154,124 @@ function loadActiveSessions() {
     
     if (noSession) noSession.style.display = 'none';
     
-    // 检查是否已经签到
-    const userEmail = studentAttendanceUser.email;
+    // 检查当前用户是否已经签到
+    const userEmail = studentAttendanceUser?.email || '';
+    const userStudentId = studentAttendanceUser?.studentId || '';
+    
     const alreadyCheckedIn = activeSessions.filter(session => {
         return attendanceRecords.some(r => 
-            r.attendanceId === session.id && r.loginEmail === userEmail
+            r.attendanceId === session.id && 
+            (r.loginEmail === userEmail || 
+             r.studentId === userStudentId ||
+             r.studentEmail === userEmail)
         );
     });
     
-    if (container) {
-        container.innerHTML = activeSessions.map(session => {
-            const endTime = session.endTime.toDate();
-            const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
-            const isCheckedIn = alreadyCheckedIn.find(s => s.id === session.id);
-            
+    // 构建点名列表HTML
+    container.innerHTML = activeSessions.map(session => {
+        const endTime = session.endTime.toDate();
+        const remainingMinutes = Math.max(0, Math.floor((endTime - now) / 60000));
+        const isCheckedIn = alreadyCheckedIn.some(s => s.id === session.id);
+        
+        if (isCheckedIn) {
             return `
-                <div class="alert alert-${isCheckedIn ? 'success' : 'info'} mb-3">
+                <div class="alert alert-success mb-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="mb-1">${session.title}</h6>
-                            <small class="text-muted">剩余时间：${remainingMinutes} 分钟</small>
+                            <h6 class="mb-1">${escapeHtml(session.title)}</h6>
+                            <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
                         </div>
-                        ${isCheckedIn ? `
-                            <span class="badge bg-success">
-                                <i class="fas fa-check-circle me-1"></i>已签到
-                            </span>
-                        ` : `
-                            <button class="btn btn-primary btn-sm" onclick="showCheckinForm('${session.id}')">
-                                <i class="fas fa-pen me-1"></i>签到
-                            </button>
-                        `}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>已签到
+                        </span>
                     </div>
                 </div>
             `;
-        }).join('');
-    }
+        } else {
+            return `
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${escapeHtml(session.title)}</h6>
+                            <small class="text-muted">剩余时间：${remainingMinutes} 分钟</small>
+                            <br>
+                            <small class="text-muted">${session.date} ${session.startTimeStr} - ${session.endTimeStr}</small>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="showCheckinForm('${session.id}')">
+                            <i class="fas fa-pen me-1"></i>签到
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
 }
 
-// 提交签到 - 优先匹配会员管理中的成员
-async function submitCheckIn() {
-    if (!activeCheckinSession || !studentAttendanceUser) {
-        showAlert('签到信息已过期，请刷新重试', 'warning');
+        // 显示签到表单 - 修复版
+// 显示签到表单
+function showCheckinForm(sessionId) {
+    console.log('显示签到表单，点名ID:', sessionId);
+    
+    // 确保使用正确的 ID 查找
+    const session = attendances.find(a => a.id === sessionId);
+    
+    if (!session) {
+        console.error('找不到对应的点名会话:', sessionId);
+        console.log('当前 attendances:', attendances);
+        showAlert('签到信息加载失败，请刷新页面重试', 'warning');
         return;
     }
     
+    console.log('找到点名会话:', session.title);
+    
+    // 设置全局当前签到会话
+    activeCheckinSession = session;
+    
+    // 更新UI
+    const titleElement = document.getElementById('checkin-session-title');
+    const timeElement = document.getElementById('checkin-session-time');
+    const codeInput = document.getElementById('checkin-code-input');
+    const resultDiv = document.getElementById('checkin-result');
+    const checkinCard = document.getElementById('checkin-card');
+    
+    if (titleElement) titleElement.textContent = session.title;
+    if (timeElement) timeElement.textContent = `${session.date} ${session.startTimeStr} - ${session.endTimeStr}`;
+    if (codeInput) codeInput.value = '';
+    if (resultDiv) resultDiv.innerHTML = '';
+    if (checkinCard) {
+        checkinCard.style.display = 'block';
+        checkinCard.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 提示用户输入验证码
+    showAlert(`请输入点名 "${session.title}" 的验证码`, 'info');
+}
+        
+// 提交签到 - 完整版（优先匹配会员管理中的成员）
+async function submitCheckIn() {
+    console.log('=== 开始签到流程 ===');
+    console.log('当前 activeCheckinSession:', activeCheckinSession);
+    console.log('当前 studentAttendanceUser:', studentAttendanceUser);
+    
+    // 1. 验证签到会话是否存在
+    if (!activeCheckinSession) {
+        showAlert('签到信息已过期，请刷新页面重试', 'warning');
+        // 尝试重新加载点名
+        await loadActiveSessions();
+        return;
+    }
+    
+    // 2. 验证用户是否已登录
+    if (!studentAttendanceUser) {
+        showAlert('请先登录后再签到', 'warning');
+        return;
+    }
+    
+    // 3. 获取并验证验证码
     const inputCode = document.getElementById('checkin-code-input').value.trim().toUpperCase();
     const correctCode = activeCheckinSession.code;
+    
+    console.log('输入的验证码:', inputCode, '正确验证码:', correctCode);
     
     if (inputCode !== correctCode) {
         document.getElementById('checkin-result').innerHTML = `
@@ -12201,14 +12286,29 @@ async function submitCheckIn() {
         return;
     }
     
+    // 4. 验证签到时间
     const now = new Date();
     const startTime = activeCheckinSession.startTime?.toDate();
     const endTime = activeCheckinSession.endTime?.toDate();
     
-    if (now < startTime || now > endTime) {
+    if (!startTime || !endTime) {
+        showAlert('点名时间信息错误', 'danger');
+        return;
+    }
+    
+    if (now < startTime) {
         document.getElementById('checkin-result').innerHTML = `
             <div class="alert alert-warning">
-                <i class="fas fa-clock me-2"></i>当前不在签到时间范围内
+                <i class="fas fa-clock me-2"></i>签到尚未开始，请等待到 ${startTime.toLocaleTimeString()}
+            </div>
+        `;
+        return;
+    }
+    
+    if (now > endTime) {
+        document.getElementById('checkin-result').innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-clock me-2"></i>签到时间已结束（截止 ${endTime.toLocaleTimeString()}）
             </div>
         `;
         return;
@@ -12218,92 +12318,128 @@ async function submitCheckIn() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
     
-    // ========== 优先从会员管理(members)中匹配学生 ==========
-    let matchedMember = null;
-    
-    // 获取已签到的学生ID集合
-    const existingRecords = attendanceRecords.filter(r => r.attendanceId === activeCheckinSession.id);
-    const checkedInMemberIds = new Set(existingRecords.map(r => r.memberId).filter(id => id));
-    
-    const email = studentAttendanceUser.email || '';
-    const studentIdInput = studentAttendanceUser.studentId || '';
-    const displayName = studentAttendanceUser.displayName || '';
-    
-    // 提取中文姓名
-    let chineseName = displayName;
-    const chineseMatch = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
-    if (chineseMatch) {
-        chineseName = chineseMatch[0];
-    }
-    
-    console.log('开始匹配会员，信息:', { email, studentIdInput, chineseName, displayName });
-    console.log('当前会员总数:', members.length);
-    
-    // 方法1：通过会员的 email 字段匹配
-    if (email) {
-        matchedMember = members.find(m => m.email === email || m.studentEmail === email);
-        if (matchedMember) console.log('✅ 通过邮箱匹配到会员:', matchedMember.name);
-    }
-    
-    // 方法2：通过学号匹配（会员管理中的 studentId）
-    if (!matchedMember && studentIdInput) {
-        matchedMember = members.find(m => m.studentId === studentIdInput);
-        if (matchedMember) console.log('✅ 通过学号匹配到会员:', matchedMember.name);
-    }
-    
-    // 方法3：通过中文姓名精确匹配
-    if (!matchedMember && chineseName && chineseName.length >= 2) {
-        matchedMember = members.find(m => m.name === chineseName);
-        if (matchedMember) console.log('✅ 通过姓名精确匹配到会员:', matchedMember.name);
-    }
-    
-    // 方法4：通过中文姓名模糊匹配（包含关系）
-    if (!matchedMember && chineseName && chineseName.length >= 2) {
-        matchedMember = members.find(m => m.name.includes(chineseName) || chineseName.includes(m.name));
-        if (matchedMember) console.log('✅ 通过姓名模糊匹配到会员:', matchedMember.name);
-    }
-    
-    // 方法5：通过显示名称整体匹配
-    if (!matchedMember && displayName) {
-        matchedMember = members.find(m => m.name === displayName || displayName.includes(m.name));
-        if (matchedMember) console.log('✅ 通过显示名称匹配到会员:', matchedMember.name);
-    }
-    
-    // 检查是否已签到
-    if (matchedMember && checkedInMemberIds.has(matchedMember.id)) {
-        document.getElementById('checkin-result').innerHTML = `
-            <div class="alert alert-warning">
-                <i class="fas fa-clock me-2"></i>您已经签到过了，无需重复签到
-            </div>
-        `;
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
-        return;
-    }
-    
-    // 构建签到数据 - 存储会员信息
-    const checkinData = {
-        attendanceId: activeCheckinSession.id,
-        memberId: matchedMember?.id || null,
-        studentId: matchedMember?.studentId || studentIdInput || '未知',
-        studentName: matchedMember?.name || chineseName || displayName || '未知',
-        studentClass: matchedMember?.class || '待补充',
-        studentGroup: matchedMember?.group || '',
-        studentEmail: matchedMember?.email || email || '',
-        loginEmail: email,
-        checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
-        code: inputCode,
-        isMatched: !!matchedMember,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    
-    console.log('签到数据:', checkinData);
-    
     try {
+        // ========== 5. 优先从会员管理(members)中匹配学生 ==========
+        let matchedMember = null;
+        
+        // 获取已签到的会员ID集合（避免重复签到）
+        const existingRecords = attendanceRecords.filter(r => r.attendanceId === activeCheckinSession.id);
+        const checkedInMemberIds = new Set(existingRecords.map(r => r.memberId).filter(id => id));
+        const checkedInStudentIds = new Set(existingRecords.map(r => r.studentId).filter(id => id));
+        
+        const email = studentAttendanceUser.email || '';
+        const studentIdInput = studentAttendanceUser.studentId || '';
+        const displayName = studentAttendanceUser.displayName || '';
+        
+        // 提取中文姓名
+        let chineseName = displayName;
+        const chineseMatch = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
+        if (chineseMatch) {
+            chineseName = chineseMatch[0];
+        }
+        
+        console.log('开始匹配会员，信息:', { email, studentIdInput, chineseName, displayName });
+        console.log('当前会员总数:', members.length);
+        
+        // 方法1：通过会员的 email 字段匹配
+        if (email) {
+            matchedMember = members.find(m => m.email === email || m.studentEmail === email);
+            if (matchedMember) console.log('✅ 通过邮箱匹配到会员:', matchedMember.name, matchedMember.studentId);
+        }
+        
+        // 方法2：通过学号匹配（会员管理中的 studentId）
+        if (!matchedMember && studentIdInput) {
+            matchedMember = members.find(m => m.studentId === studentIdInput);
+            if (matchedMember) console.log('✅ 通过学号匹配到会员:', matchedMember.name);
+        }
+        
+        // 方法3：通过中文姓名精确匹配
+        if (!matchedMember && chineseName && chineseName.length >= 2) {
+            matchedMember = members.find(m => m.name === chineseName);
+            if (matchedMember) console.log('✅ 通过姓名精确匹配到会员:', matchedMember.name);
+        }
+        
+        // 方法4：通过中文姓名模糊匹配（包含关系）
+        if (!matchedMember && chineseName && chineseName.length >= 2) {
+            matchedMember = members.find(m => m.name.includes(chineseName) || chineseName.includes(m.name));
+            if (matchedMember) console.log('✅ 通过姓名模糊匹配到会员:', matchedMember.name);
+        }
+        
+        // 方法5：通过显示名称整体匹配
+        if (!matchedMember && displayName) {
+            matchedMember = members.find(m => m.name === displayName || displayName.includes(m.name));
+            if (matchedMember) console.log('✅ 通过显示名称匹配到会员:', matchedMember.name);
+        }
+        
+        // 方法6：如果学生是通过学号登录的，直接用学号找
+        if (!matchedMember && studentAttendanceUser.isStudentLogin && studentAttendanceUser.studentId) {
+            matchedMember = members.find(m => m.studentId === studentAttendanceUser.studentId);
+            if (matchedMember) console.log('✅ 通过学号登录匹配到会员:', matchedMember.name);
+        }
+        
+        // 方法7：尝试从 sessionStorage 读取缓存
+        if (!matchedMember) {
+            const cachedMember = sessionStorage.getItem('cached_member_info');
+            if (cachedMember) {
+                try {
+                    const cached = JSON.parse(cachedMember);
+                    matchedMember = members.find(m => m.id === cached.id || m.studentId === cached.studentId);
+                    if (matchedMember) console.log('✅ 通过缓存匹配到会员:', matchedMember.name);
+                } catch(e) {}
+            }
+        }
+        
+        // 6. 检查是否已签到
+        if (matchedMember) {
+            if (checkedInMemberIds.has(matchedMember.id)) {
+                document.getElementById('checkin-result').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>您已经签到过了，无需重复签到
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
+                return;
+            }
+        } else {
+            // 如果没有匹配到会员，检查是否通过学号/姓名已签到
+            if (checkedInStudentIds.has(studentIdInput) || checkedInStudentIds.has(chineseName)) {
+                document.getElementById('checkin-result').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock me-2"></i>您已经签到过了，无需重复签到
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
+                return;
+            }
+        }
+        
+        // 7. 构建签到数据
+        const checkinData = {
+            attendanceId: activeCheckinSession.id,
+            memberId: matchedMember?.id || null,
+            studentId: matchedMember?.studentId || studentIdInput || chineseName || '未知',
+            studentName: matchedMember?.name || chineseName || displayName || '未知',
+            studentClass: matchedMember?.class || '待补充',
+            studentGroup: matchedMember?.group || '',
+            studentEmail: matchedMember?.email || email || '',
+            loginEmail: email,
+            loginMethod: studentAttendanceUser.isStudentLogin ? 'student_id' : (studentAttendanceUser.extractedFromGoogle ? 'google' : 'manual'),
+            checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
+            code: inputCode,
+            isMatched: !!matchedMember,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        console.log('准备保存签到数据:', checkinData);
+        
+        // 8. 保存签到记录到 Firestore
         await db.collection('attendanceRecords').add(checkinData);
         
+        // 9. 显示签到成功信息
         const displayInfo = matchedMember 
-            ? `${matchedMember.name} (${matchedMember.studentId}) - ${matchedMember.class}`
+            ? `${matchedMember.name} (${matchedMember.studentId}) - ${matchedMember.class}${matchedMember.group ? ' | ' + matchedMember.group : ''}`
             : (chineseName || displayName || '未知用户');
         
         document.getElementById('checkin-result').innerHTML = `
@@ -12312,18 +12448,31 @@ async function submitCheckIn() {
                 <strong>签到成功！</strong><br>
                 ${displayInfo}<br>
                 ${matchedMember ? `班级：${matchedMember.class || '待补充'} | 组别：${matchedMember.group || '-'}` : '⚠️ 未在会员名单中找到您的信息，请联系管理员添加'}
+                <br><small>签到时间：${new Date().toLocaleString()}</small>
             </div>
         `;
         
+        // 清空验证码输入框
         document.getElementById('checkin-code-input').value = '';
         
-        // 刷新数据
+        // 10. 刷新相关数据
         await loadAttendanceRecords();
         await loadActiveSessions();
         
+        // 隐藏签到表单，显示已签到状态
+        document.getElementById('checkin-card').style.display = 'none';
+        
+        // 如果有点名详情模态框打开，刷新详情
         if (currentAttendanceId && document.getElementById('attendanceDetailModal')?.classList.contains('show')) {
             await viewAttendanceDetail(currentAttendanceId);
         }
+        
+        // 更新统计（如果有选中的点名）
+        if (selectedAttendanceId) {
+            updateAttendanceStats(selectedAttendanceId);
+        }
+        
+        showAlert(`签到成功！欢迎 ${matchedMember?.name || displayName}`, 'success');
         
     } catch (error) {
         console.error('签到失败:', error);
@@ -12332,6 +12481,7 @@ async function submitCheckIn() {
                 <i class="fas fa-times-circle me-2"></i>签到失败: ${error.message}
             </div>
         `;
+        showAlert('签到失败，请重试', 'danger');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
