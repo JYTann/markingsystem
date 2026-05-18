@@ -5161,65 +5161,18 @@ let trendPeriod = 'all';
     // 初始化UI事件
     initUIEvents();
     
-// 检查登录状态
-auth.onAuthStateChanged(user => {
-    if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-        currentUser = user;
-        document.getElementById('user-email').textContent = user.email;
-        
-        // ========== 修复：强制显示主系统 ==========
-        const mainSystem = document.getElementById('main-system');
-        const studentPage = document.getElementById('student-query-page');
-        
-        // 1. 隐藏学生页面
-        if (studentPage) studentPage.style.display = 'none';
-        
-        // 2. 显示主系统
-        if (mainSystem) {
-            mainSystem.style.display = 'block';
-            mainSystem.style.visibility = 'visible';
-            mainSystem.style.opacity = '1';
+    // 检查登录状态
+    auth.onAuthStateChanged(user => {
+        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+            currentUser = user;
+            document.getElementById('user-email').textContent = user.email;
+            showMainSystem();
+            loadAllData();
+            addActivity("用户登录系统", "success");
+        } else {
+            showStudentQueryPage();
         }
-        
-        // 3. 确保 dashboard tab 正确显示
-        const allPanes = document.querySelectorAll('#main-system .tab-pane');
-        allPanes.forEach(pane => {
-            pane.style.display = 'none';
-            pane.classList.remove('show', 'active');
-        });
-        
-        const dashboard = document.getElementById('dashboard-tab');
-        if (dashboard) {
-            dashboard.style.display = 'block';
-            dashboard.classList.add('show', 'active');
-        }
-        
-        // 4. 确保容器有高度
-        const container = document.querySelector('#main-system .container');
-        if (container) {
-            container.style.minHeight = '500px';
-        }
-        
-        const tabContent = document.querySelector('#main-system .tab-content');
-        if (tabContent) {
-            tabContent.style.minHeight = '400px';
-        }
-        
-        // 5. 激活导航栏按钮
-        const dashboardLink = document.querySelector('.navbar-nav .nav-link[data-bs-target="#dashboard-tab"]');
-        if (dashboardLink) {
-            document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
-            dashboardLink.classList.add('active');
-        }
-        
-        // 6. 加载数据
-        loadAllData();
-        addActivity("用户登录系统", "success");
-        
-    } else {
-        showStudentQueryPage();
-    }
-});
+    });
     
     // 延迟初始化
     setTimeout(cleanupAllModals, 500);
@@ -5960,34 +5913,12 @@ async function loadAllDataForQuery() {
             document.getElementById('login-form').reset();
         }
 
-// 显示主系统
-function showMainSystem() {
-    const studentPage = document.getElementById('student-query-page');
-    const mainSystem = document.getElementById('main-system');
-    
-    if (studentPage) studentPage.style.display = 'none';
-    if (mainSystem) {
-        mainSystem.style.display = 'block';
-        mainSystem.style.visibility = 'visible';
-        mainSystem.style.opacity = '1';
-    }
-    
-    // 确保 dashboard 可见
-    const dashboard = document.getElementById('dashboard-tab');
-    if (dashboard) {
-        const allPanes = document.querySelectorAll('#main-system .tab-pane');
-        allPanes.forEach(pane => {
-            pane.style.display = 'none';
-            pane.classList.remove('show', 'active');
-        });
-        dashboard.style.display = 'block';
-        dashboard.classList.add('show', 'active');
-    }
-    
-    // 刷新登录表单
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) loginForm.reset();
-}
+        // 显示主系统
+        function showMainSystem() {
+            document.getElementById('student-query-page').style.display = 'none';
+            document.getElementById('main-system').style.display = 'block';
+        }
+        
         // ========== 增强版 Toast 通知系统 ==========
 
 // 替换原有的 showAlert 函数
@@ -16237,91 +16168,7 @@ if (document.readyState === 'loading') {
     setTimeout(checkSharedReportFixed, 100);
 }
 
-// ==================== 修复主系统显示 ====================
-
-// 1. 修复 showMainSystem 函数
-window.originalShowMainSystem = window.showMainSystem;
-window.showMainSystem = function() {
-    console.log('显示主系统...');
-    
-    const studentPage = document.getElementById('student-query-page');
-    const mainSystem = document.getElementById('main-system');
-    
-    // 隐藏学生页面
-    if (studentPage) studentPage.style.display = 'none';
-    
-    // 显示主系统 - 关键修复
-    if (mainSystem) {
-        mainSystem.style.display = 'block';
-        mainSystem.style.visibility = 'visible';
-        mainSystem.style.opacity = '1';
-    }
-    
-    // 确保 dashboard 显示
-    const dashboard = document.getElementById('dashboard-tab');
-    if (dashboard) {
-        // 隐藏所有 tab
-        document.querySelectorAll('#main-system .tab-pane').forEach(pane => {
-            pane.style.display = 'none';
-            pane.classList.remove('show', 'active');
-        });
-        // 显示 dashboard
-        dashboard.style.display = 'block';
-        dashboard.classList.add('show', 'active');
-    }
-    
-    // 激活导航栏按钮
-    const dashboardLink = document.querySelector('.navbar-nav .nav-link[data-bs-target="#dashboard-tab"]');
-    if (dashboardLink) {
-        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
-        dashboardLink.classList.add('active');
-    }
-    
-    // 确保容器有高度
-    const container = document.querySelector('#main-system .container');
-    if (container) {
-        container.style.minHeight = '500px';
-    }
-    
-    console.log('✅ 主系统显示完成');
-};
-
-// 2. 修复登录回调
-if (typeof auth !== 'undefined') {
-    const originalOnAuthStateChanged = auth.onAuthStateChanged;
-    auth.onAuthStateChanged = function(callback) {
-        return originalOnAuthStateChanged.call(auth, function(user) {
-            if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-                currentUser = user;
-                const userEmailSpan = document.getElementById('user-email');
-                if (userEmailSpan) userEmailSpan.textContent = user.email;
-                
-                // 调用修复后的显示函数
-                window.showMainSystem();
-                
-                // 加载数据
-                if (typeof loadAllData === 'function') loadAllData();
-                if (typeof addActivity === 'function') addActivity("用户登录系统", "success");
-            } else {
-                if (typeof showStudentQueryPage === 'function') showStudentQueryPage();
-            }
-            if (callback) callback(user);
-        });
-    };
-}
-
-// 3. 页面加载完成后检查登录状态
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        if (typeof auth !== 'undefined' && auth.currentUser) {
-            const user = auth.currentUser;
-            if (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com") {
-                window.showMainSystem();
-            }
-        }
-    }, 500);
-});
-
+        
 // ==================== 窗口resize时重绘趋势图 ====================
 window.addEventListener('resize', debounce(() => {
     if (document.getElementById('dashboard-tab')?.classList.contains('active')) {
