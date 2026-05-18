@@ -11404,7 +11404,7 @@ function deleteAttendance(attendanceId) {
 }
 
 // 查看点名详情
-// 查看点名详情 - 增强版，正确显示学生信息
+// 查看点名详情 - 从会员管理读取信息
 async function viewAttendanceDetail(attendanceId) {
     currentAttendanceId = attendanceId;
     const attendance = attendances.find(a => a.id === attendanceId);
@@ -11413,47 +11413,60 @@ async function viewAttendanceDetail(attendanceId) {
     // 获取该点名的签到记录
     const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
     
-    // 获取所有学生（合并会员和评分学生）
-    const allStudents = [...members, ...students];
-    
-    // 构建签到学生列表
+    // 构建签到学生列表 - 优先使用会员信息
     const checkedInStudents = records.map(record => {
-        // 优先从签到记录中获取已存储的学生信息
-        if (record.studentName && record.studentName !== '未知') {
+        // 如果记录中已存储完整的会员信息，直接使用
+        if (record.studentName && record.studentName !== '未知' && record.studentId && record.studentId !== '未知') {
             return {
                 ...record,
-                student: {
+                memberInfo: {
                     name: record.studentName,
-                    studentId: record.studentNumber || '未知',
+                    studentId: record.studentId,
                     class: record.studentClass || '-',
-                    levelName: record.studentLevel || '-'
+                    group: record.studentGroup || '-'
                 }
             };
         }
         
-        // 否则从会员/学生列表中查找
-        const student = allStudents.find(s => s.id === record.studentId);
-        return { 
-            ...record, 
-            student: student || {
+        // 否则从会员列表中查找
+        const member = members.find(m => m.id === record.memberId || m.studentId === record.studentId);
+        if (member) {
+            return {
+                ...record,
+                memberInfo: {
+                    name: member.name,
+                    studentId: member.studentId,
+                    class: member.class || '-',
+                    group: member.group || '-',
+                    email: member.email
+                }
+            };
+        }
+        
+        // 都没有，使用记录中的原始数据
+        return {
+            ...record,
+            memberInfo: {
                 name: record.studentName || '未知',
-                studentId: record.studentNumber || '未知',
+                studentId: record.studentId || '未知',
                 class: record.studentClass || '-',
-                levelName: record.studentLevel || '-'
+                group: record.studentGroup || '-'
             }
         };
     });
     
-    // 获取未签到学生（根据点名指定的级别筛选）
-    let targetStudents = [];
+    // 获取未签到的会员（根据点名指定的级别筛选）
+    let targetMembers = [...members];
     if (attendance.levelId) {
-        targetStudents = allStudents.filter(s => s.levelId === attendance.levelId);
-    } else {
-        targetStudents = allStudents;
+        // 如果点名指定了级别，按组别筛选（组别作为级别使用）
+        const level = levels.find(l => l.id === attendance.levelId);
+        if (level) {
+            targetMembers = members.filter(m => m.group === level.name);
+        }
     }
     
-    const checkedInIds = new Set(records.map(r => r.studentId).filter(id => id));
-    const absentStudents = targetStudents.filter(s => !checkedInIds.has(s.id));
+    const checkedInMemberIds = new Set(records.map(r => r.memberId).filter(id => id));
+    const absentMembers = targetMembers.filter(m => !checkedInMemberIds.has(m.id));
     
     const now = new Date();
     const endTime = attendance.endTime?.toDate();
@@ -11487,14 +11500,14 @@ async function viewAttendanceDetail(attendanceId) {
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #f87171);">
                     <i class="fas fa-user-times"></i>
-                    <h5 class="card-title">${absentStudents.length}</h5>
+                    <h5 class="card-title">${absentMembers.length}</h5>
                     <p class="card-text">未签到</p>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
                     <i class="fas fa-percentage"></i>
-                    <h5 class="card-title">${targetStudents.length > 0 ? Math.round((checkedInStudents.length/targetStudents.length)*100) : 0}%</h5>
+                    <h5 class="card-title">${targetMembers.length > 0 ? Math.round((checkedInStudents.length/targetMembers.length)*100) : 0}%</h5>
                     <p class="card-text">出勤率</p>
                 </div>
             </div>
@@ -11509,7 +11522,7 @@ async function viewAttendanceDetail(attendanceId) {
                         <th>学号</th>
                         <th>姓名</th>
                         <th>班级</th>
-                        <th>级别</th>
+                        <th>组别</th>
                         <th>签到时间</th>
                         <th>状态</th>
                     </tr>
@@ -11518,10 +11531,10 @@ async function viewAttendanceDetail(attendanceId) {
                     ${checkedInStudents.map((record, index) => `
                         <tr>
                             <td>${index + 1}</td>
-                            <td>${escapeHtml(record.student?.studentId || record.studentNumber || '未知')}</td>
-                            <td>${escapeHtml(record.student?.name || record.studentName || '未知')}</td>
-                            <td>${escapeHtml(record.student?.class || record.studentClass || '-')}</td>
-                            <td>${escapeHtml(record.student?.levelName || record.studentLevel || '-')}</td>
+                            <td>${escapeHtml(record.memberInfo?.studentId || record.studentId || '未知')}</td>
+                            <td>${escapeHtml(record.memberInfo?.name || record.studentName || '未知')}</td>
+                            <td>${escapeHtml(record.memberInfo?.class || record.studentClass || '-')}</td>
+                            <td><span class="badge bg-info">${escapeHtml(record.memberInfo?.group || record.studentGroup || '-')}</span></td>
                             <td>${record.checkinTime?.toDate().toLocaleString() || '-'}</td>
                             <td>
                                 <span class="student-checkin-status checked-in">
@@ -11541,28 +11554,28 @@ async function viewAttendanceDetail(attendanceId) {
             </table>
         </div>
         
-        <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到学生</h6>
+        <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到会员</h6>
         <div class="checkin-grid">
-            ${absentStudents.map(s => `
+            ${absentMembers.map(m => `
                 <div class="checkin-student-card">
                     <div class="avatar" style="width: 36px; height: 36px; background-color: #ef4444;">
-                        ${escapeHtml(s.name?.charAt(0) || '?')}
+                        ${escapeHtml(m.name?.charAt(0) || '?')}
                     </div>
                     <div>
-                        <div style="font-weight: 500; font-size: 0.9rem;">${escapeHtml(s.name)}</div>
-                        <small class="text-muted">${escapeHtml(s.studentId)} | ${escapeHtml(s.class)}</small>
+                        <div style="font-weight: 500; font-size: 0.9rem;">${escapeHtml(m.name)}</div>
+                        <small class="text-muted">${escapeHtml(m.studentId)} | ${escapeHtml(m.class)}</small>
+                        ${m.group ? `<small class="text-muted d-block">组别：${escapeHtml(m.group)}</small>` : ''}
                     </div>
                 </div>
             `).join('')}
-            ${absentStudents.length === 0 ? '<p class="text-muted text-center">🎉 全员签到！</p>' : ''}
+            ${absentMembers.length === 0 ? '<p class="text-muted text-center">🎉 全员签到！</p>' : ''}
         </div>
     `;
     
-    // 显示模态框
     const modalElement = document.getElementById('attendanceDetailModal');
     if (modalElement) {
         try {
-            const modal = new bootstrap.Modal(modalElement);
+            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
             modal.show();
         } catch(e) {
             modalElement.style.display = 'block';
@@ -12117,7 +12130,7 @@ function loadActiveSessions() {
     }
 }
 
-// 提交签到 - 增强版，确保正确匹配学生信息
+// 提交签到 - 优先匹配会员管理中的成员
 async function submitCheckIn() {
     if (!activeCheckinSession || !studentAttendanceUser) {
         showAlert('签到信息已过期，请刷新重试', 'warning');
@@ -12140,7 +12153,6 @@ async function submitCheckIn() {
         return;
     }
     
-    // 验证时间
     const now = new Date();
     const startTime = activeCheckinSession.startTime?.toDate();
     const endTime = activeCheckinSession.endTime?.toDate();
@@ -12158,86 +12170,59 @@ async function submitCheckIn() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 签到中...';
     
-    // ========== 增强的学生信息匹配逻辑 ==========
-    // 获取已签到学生ID集合（避免重复签到）
-    const existingRecords = attendanceRecords.filter(r => r.attendanceId === activeCheckinSession.id);
-    const checkedInStudentIds = new Set(existingRecords.map(r => r.studentId));
+    // ========== 优先从会员管理(members)中匹配学生 ==========
+    let matchedMember = null;
     
-    // 1. 先从 sessionStorage 获取之前匹配到的学生信息
-    let matchedStudent = null;
-    const cachedStudent = sessionStorage.getItem('cached_student_info');
-    if (cachedStudent) {
-        try {
-            matchedStudent = JSON.parse(cachedStudent);
-            console.log('使用缓存的学生信息:', matchedStudent);
-        } catch(e) {}
+    // 获取已签到的学生ID集合
+    const existingRecords = attendanceRecords.filter(r => r.attendanceId === activeCheckinSession.id);
+    const checkedInMemberIds = new Set(existingRecords.map(r => r.memberId).filter(id => id));
+    
+    const email = studentAttendanceUser.email || '';
+    const studentIdInput = studentAttendanceUser.studentId || '';
+    const displayName = studentAttendanceUser.displayName || '';
+    
+    // 提取中文姓名
+    let chineseName = displayName;
+    const chineseMatch = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
+    if (chineseMatch) {
+        chineseName = chineseMatch[0];
     }
     
-    // 2. 如果缓存没有，尝试匹配
-    if (!matchedStudent) {
-        const email = studentAttendanceUser.email;
-        const studentId = studentAttendanceUser.studentId;
-        const displayName = studentAttendanceUser.displayName || '';
-        
-        // 提取中文姓名
-        let chineseName = displayName;
-        const chineseMatch = displayName.match(/[\u4e00-\u9fa5]{2,4}/);
-        if (chineseMatch) {
-            chineseName = chineseMatch[0];
-        }
-        
-        // 合并会员列表和学生列表进行匹配
-        const allMembers = [...members, ...students];
-        
-        // 方法1：通过学号精确匹配
-        if (studentId) {
-            matchedStudent = allMembers.find(s => s.studentId === studentId);
-            if (matchedStudent) {
-                console.log('通过学号匹配到:', matchedStudent);
-            }
-        }
-        
-        // 方法2：通过邮箱匹配
-        if (!matchedStudent && email) {
-            matchedStudent = allMembers.find(s => s.email === email || s.studentEmail === email);
-            if (matchedStudent) {
-                console.log('通过邮箱匹配到:', matchedStudent);
-            }
-        }
-        
-        // 方法3：通过姓名匹配（中文名精确匹配）
-        if (!matchedStudent && chineseName && chineseName.length >= 2) {
-            matchedStudent = allMembers.find(s => s.name === chineseName);
-            if (matchedStudent) {
-                console.log('通过姓名匹配到:', matchedStudent);
-            } else {
-                // 模糊匹配
-                matchedStudent = allMembers.find(s => s.name.includes(chineseName) || chineseName.includes(s.name));
-                if (matchedStudent) {
-                    console.log('通过模糊姓名匹配到:', matchedStudent);
-                }
-            }
-        }
-        
-        // 方法4：通过学号登录时输入的学号匹配会员名单
-        if (!matchedStudent && studentAttendanceUser.isStudentLogin && studentAttendanceUser.studentId) {
-            matchedStudent = members.find(m => m.studentId === studentAttendanceUser.studentId);
-            if (!matchedStudent) {
-                matchedStudent = students.find(s => s.studentId === studentAttendanceUser.studentId);
-            }
-            if (matchedStudent) {
-                console.log('通过学号登录匹配到:', matchedStudent);
-            }
-        }
-        
-        // 缓存匹配结果
-        if (matchedStudent) {
-            sessionStorage.setItem('cached_student_info', JSON.stringify(matchedStudent));
-        }
+    console.log('开始匹配会员，信息:', { email, studentIdInput, chineseName, displayName });
+    console.log('当前会员总数:', members.length);
+    
+    // 方法1：通过会员的 email 字段匹配
+    if (email) {
+        matchedMember = members.find(m => m.email === email || m.studentEmail === email);
+        if (matchedMember) console.log('✅ 通过邮箱匹配到会员:', matchedMember.name);
+    }
+    
+    // 方法2：通过学号匹配（会员管理中的 studentId）
+    if (!matchedMember && studentIdInput) {
+        matchedMember = members.find(m => m.studentId === studentIdInput);
+        if (matchedMember) console.log('✅ 通过学号匹配到会员:', matchedMember.name);
+    }
+    
+    // 方法3：通过中文姓名精确匹配
+    if (!matchedMember && chineseName && chineseName.length >= 2) {
+        matchedMember = members.find(m => m.name === chineseName);
+        if (matchedMember) console.log('✅ 通过姓名精确匹配到会员:', matchedMember.name);
+    }
+    
+    // 方法4：通过中文姓名模糊匹配（包含关系）
+    if (!matchedMember && chineseName && chineseName.length >= 2) {
+        matchedMember = members.find(m => m.name.includes(chineseName) || chineseName.includes(m.name));
+        if (matchedMember) console.log('✅ 通过姓名模糊匹配到会员:', matchedMember.name);
+    }
+    
+    // 方法5：通过显示名称整体匹配
+    if (!matchedMember && displayName) {
+        matchedMember = members.find(m => m.name === displayName || displayName.includes(m.name));
+        if (matchedMember) console.log('✅ 通过显示名称匹配到会员:', matchedMember.name);
     }
     
     // 检查是否已签到
-    if (matchedStudent && checkedInStudentIds.has(matchedStudent.id)) {
+    if (matchedMember && checkedInMemberIds.has(matchedMember.id)) {
         document.getElementById('checkin-result').innerHTML = `
             <div class="alert alert-warning">
                 <i class="fas fa-clock me-2"></i>您已经签到过了，无需重复签到
@@ -12248,17 +12233,19 @@ async function submitCheckIn() {
         return;
     }
     
-    // 构建签到数据
+    // 构建签到数据 - 存储会员信息
     const checkinData = {
         attendanceId: activeCheckinSession.id,
-        studentId: matchedStudent?.id || null,
-        studentName: matchedStudent?.name || studentAttendanceUser.displayName || '未知',
-        studentNumber: matchedStudent?.studentId || studentAttendanceUser.studentId || '未知',
-        studentClass: matchedStudent?.class || '待补充',
-        studentLevel: matchedStudent?.levelName || matchedStudent?.level || '待补充',
-        loginEmail: studentAttendanceUser.email || '',
+        memberId: matchedMember?.id || null,
+        studentId: matchedMember?.studentId || studentIdInput || '未知',
+        studentName: matchedMember?.name || chineseName || displayName || '未知',
+        studentClass: matchedMember?.class || '待补充',
+        studentGroup: matchedMember?.group || '',
+        studentEmail: matchedMember?.email || email || '',
+        loginEmail: email,
         checkinTime: firebase.firestore.FieldValue.serverTimestamp(),
         code: inputCode,
+        isMatched: !!matchedMember,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
@@ -12267,27 +12254,25 @@ async function submitCheckIn() {
     try {
         await db.collection('attendanceRecords').add(checkinData);
         
-        const displayName = matchedStudent 
-            ? `${matchedStudent.name} (${matchedStudent.studentId})` 
-            : (studentAttendanceUser.displayName || '未知用户');
+        const displayInfo = matchedMember 
+            ? `${matchedMember.name} (${matchedMember.studentId}) - ${matchedMember.class}`
+            : (chineseName || displayName || '未知用户');
         
         document.getElementById('checkin-result').innerHTML = `
             <div class="alert alert-success">
                 <i class="fas fa-check-circle me-2"></i>
                 <strong>签到成功！</strong><br>
-                ${displayName}<br>
-                ${matchedStudent ? `班级：${matchedStudent.class || '待补充'} | 级别：${matchedStudent.levelName || '待补充'}` : '请管理员补充您的信息'}
+                ${displayInfo}<br>
+                ${matchedMember ? `班级：${matchedMember.class || '待补充'} | 组别：${matchedMember.group || '-'}` : '⚠️ 未在会员名单中找到您的信息，请联系管理员添加'}
             </div>
         `;
         
-        // 清空验证码输入框
         document.getElementById('checkin-code-input').value = '';
         
-        // 刷新点名记录和统计
+        // 刷新数据
         await loadAttendanceRecords();
         await loadActiveSessions();
         
-        // 如果有点名详情模态框打开，刷新详情
         if (currentAttendanceId && document.getElementById('attendanceDetailModal')?.classList.contains('show')) {
             await viewAttendanceDetail(currentAttendanceId);
         }
@@ -12304,7 +12289,7 @@ async function submitCheckIn() {
         btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>确认签到';
     }
 }
-
+        
 // 实时更新点名状态（每30秒刷新）
 setInterval(() => {
     if (document.getElementById('attendance-tab')?.classList.contains('active')) {
@@ -12312,9 +12297,7 @@ setInterval(() => {
     }
 }, 30000);
 
-        // 学号登录处理
-// 学号登录处理
-// 修改 handleStudentIdLogin 函数
+ // 学号登录 - 优先匹配会员管理
 async function handleStudentIdLogin(event) {
     event.preventDefault();
     
@@ -12335,9 +12318,7 @@ async function handleStudentIdLogin(event) {
     }
     
     try {
-        await loadAllDataForQuery();
-        await loadAttendanceDataForStudent();
-        
+        // 确保会员数据已加载
         if (members.length === 0) {
             const membersSnapshot = await db.collection('members').get();
             members = membersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -12346,38 +12327,41 @@ async function handleStudentIdLogin(event) {
         const normalizedId = studentId.replace(/\s/g, '');
         const normalizedName = studentName.trim();
         
-        const allMembers = [...members, ...students];
-        const student = allMembers.find(s => {
-            const sId = (s.studentId || '').replace(/\s/g, '');
-            const sName = (s.name || '').trim();
-            return sId === normalizedId && sName === normalizedName;
+        // 优先在会员管理(members)中查找
+        let matchedMember = members.find(m => {
+            const mId = (m.studentId || '').replace(/\s/g, '');
+            const mName = (m.name || '').trim();
+            return mId === normalizedId && mName === normalizedName;
         });
         
-        if (!student) {
-            errorDiv.textContent = '学号或姓名不正确，请检查后重试';
+        if (!matchedMember) {
+            errorDiv.textContent = '学号或姓名不正确，请检查后重试（请确保已在会员管理中录入）';
             errorDiv.style.display = 'block';
             return false;
         }
         
         errorDiv.style.display = 'none';
         
-        // 缓存学生信息到 sessionStorage
-        sessionStorage.setItem('cached_student_info', JSON.stringify({
-            id: student.id,
-            name: student.name,
-            studentId: student.studentId,
-            class: student.class,
-            levelName: student.levelName
+        // 缓存会员信息到 sessionStorage
+        sessionStorage.setItem('cached_member_info', JSON.stringify({
+            id: matchedMember.id,
+            name: matchedMember.name,
+            studentId: matchedMember.studentId,
+            class: matchedMember.class,
+            group: matchedMember.group,
+            email: matchedMember.email
         }));
         
         studentAttendanceUser = {
-            displayName: student.name,
-            email: student.studentEmail || `${student.studentId}@student.foonyew.edu.my`,
-            uid: `student_${student.id}`,
-            studentId: student.studentId,
-            isStudentLogin: true
+            displayName: matchedMember.name,
+            email: matchedMember.email || `${matchedMember.studentId}@student.local`,
+            uid: `member_${matchedMember.id}`,
+            studentId: matchedMember.studentId,
+            isStudentLogin: true,
+            memberInfo: matchedMember
         };
         
+        showAlert(`欢迎 ${matchedMember.name}！`, 'success');
         showStudentCheckinInterface();
         
     } catch (error) {
