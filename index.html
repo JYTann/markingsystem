@@ -5161,18 +5161,65 @@ let trendPeriod = 'all';
     // 初始化UI事件
     initUIEvents();
     
-    // 检查登录状态
-    auth.onAuthStateChanged(user => {
-        if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
-            currentUser = user;
-            document.getElementById('user-email').textContent = user.email;
-            showMainSystem();
-            loadAllData();
-            addActivity("用户登录系统", "success");
-        } else {
-            showStudentQueryPage();
+// 检查登录状态
+auth.onAuthStateChanged(user => {
+    if (user && (user.email === "tanjunyuanfoonyew@gmail.com" || user.email === "jb220225@foonyew.edu.my" || user.email === "maker.fymcsjb@gmail.com" || user.email === "xiaothong1003@gmail.com")) {
+        currentUser = user;
+        document.getElementById('user-email').textContent = user.email;
+        
+        // ========== 修复：强制显示主系统 ==========
+        const mainSystem = document.getElementById('main-system');
+        const studentPage = document.getElementById('student-query-page');
+        
+        // 1. 隐藏学生页面
+        if (studentPage) studentPage.style.display = 'none';
+        
+        // 2. 显示主系统
+        if (mainSystem) {
+            mainSystem.style.display = 'block';
+            mainSystem.style.visibility = 'visible';
+            mainSystem.style.opacity = '1';
         }
-    });
+        
+        // 3. 确保 dashboard tab 正确显示
+        const allPanes = document.querySelectorAll('#main-system .tab-pane');
+        allPanes.forEach(pane => {
+            pane.style.display = 'none';
+            pane.classList.remove('show', 'active');
+        });
+        
+        const dashboard = document.getElementById('dashboard-tab');
+        if (dashboard) {
+            dashboard.style.display = 'block';
+            dashboard.classList.add('show', 'active');
+        }
+        
+        // 4. 确保容器有高度
+        const container = document.querySelector('#main-system .container');
+        if (container) {
+            container.style.minHeight = '500px';
+        }
+        
+        const tabContent = document.querySelector('#main-system .tab-content');
+        if (tabContent) {
+            tabContent.style.minHeight = '400px';
+        }
+        
+        // 5. 激活导航栏按钮
+        const dashboardLink = document.querySelector('.navbar-nav .nav-link[data-bs-target="#dashboard-tab"]');
+        if (dashboardLink) {
+            document.querySelectorAll('.navbar-nav .nav-link').forEach(link => link.classList.remove('active'));
+            dashboardLink.classList.add('active');
+        }
+        
+        // 6. 加载数据
+        loadAllData();
+        addActivity("用户登录系统", "success");
+        
+    } else {
+        showStudentQueryPage();
+    }
+});
     
     // 延迟初始化
     setTimeout(cleanupAllModals, 500);
@@ -5913,12 +5960,34 @@ async function loadAllDataForQuery() {
             document.getElementById('login-form').reset();
         }
 
-        // 显示主系统
-        function showMainSystem() {
-            document.getElementById('student-query-page').style.display = 'none';
-            document.getElementById('main-system').style.display = 'block';
-        }
-        
+// 显示主系统
+function showMainSystem() {
+    const studentPage = document.getElementById('student-query-page');
+    const mainSystem = document.getElementById('main-system');
+    
+    if (studentPage) studentPage.style.display = 'none';
+    if (mainSystem) {
+        mainSystem.style.display = 'block';
+        mainSystem.style.visibility = 'visible';
+        mainSystem.style.opacity = '1';
+    }
+    
+    // 确保 dashboard 可见
+    const dashboard = document.getElementById('dashboard-tab');
+    if (dashboard) {
+        const allPanes = document.querySelectorAll('#main-system .tab-pane');
+        allPanes.forEach(pane => {
+            pane.style.display = 'none';
+            pane.classList.remove('show', 'active');
+        });
+        dashboard.style.display = 'block';
+        dashboard.classList.add('show', 'active');
+    }
+    
+    // 刷新登录表单
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.reset();
+}
         // ========== 增强版 Toast 通知系统 ==========
 
 // 替换原有的 showAlert 函数
