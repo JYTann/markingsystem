@@ -11310,49 +11310,169 @@ function updateCurrentSessionInfo() {
 
 // 新建点名
 function createNewAttendance() {
-    document.getElementById('attendance-id').value = '';
-    document.getElementById('attendance-modal-title').textContent = '新建点名';
-    document.getElementById('attendance-title').value = '';
-    document.getElementById('attendance-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('attendance-start-time').value = '';
-    document.getElementById('attendance-end-time').value = '';
-    document.getElementById('attendance-code').value = '';
-    document.getElementById('attendance-note').value = '';
-    document.getElementById('time-preview-text').textContent = '请设置点名时间';
+    console.log('创建新的点名');
     
-    // 更新级别选择
-    const levelSelect = document.getElementById('attendance-level');
-    levelSelect.innerHTML = '<option value="">所有级别</option>';
-    levels.forEach(level => {
-        const option = document.createElement('option');
-        option.value = level.id;
-        option.textContent = level.name;
-        levelSelect.appendChild(option);
-    });
+    // 先清理模态框残留
+    const modalElement = document.getElementById('attendanceModal');
+    if (modalElement) {
+        try {
+            const existingModal = bootstrap.Modal.getInstance(modalElement);
+            if (existingModal) {
+                existingModal.hide();
+            }
+        } catch(e) {}
+        
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+    }
     
-    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
-    modal.show();
+    // 延迟后打开新建模态框
+    setTimeout(() => {
+        // 重置表单
+        const idInput = document.getElementById('attendance-id');
+        const titleInput = document.getElementById('attendance-title');
+        const dateInput = document.getElementById('attendance-date');
+        const startTimeInput = document.getElementById('attendance-start-time');
+        const endTimeInput = document.getElementById('attendance-end-time');
+        const codeInput = document.getElementById('attendance-code');
+        const noteInput = document.getElementById('attendance-note');
+        const levelSelect = document.getElementById('attendance-level');
+        const modalTitle = document.getElementById('attendance-modal-title');
+        const previewText = document.getElementById('time-preview-text');
+        
+        if (idInput) idInput.value = '';  // 清空 ID，表示新建
+        if (titleInput) titleInput.value = '';
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+        if (startTimeInput) startTimeInput.value = '';
+        if (endTimeInput) endTimeInput.value = '';
+        if (codeInput) codeInput.value = '';
+        if (noteInput) noteInput.value = '';
+        if (modalTitle) modalTitle.textContent = '新建点名';
+        if (previewText) previewText.innerHTML = '请设置点名时间';
+        
+        // 更新级别选择
+        if (levelSelect && typeof levels !== 'undefined') {
+            levelSelect.innerHTML = '<option value="">所有级别</option>';
+            levels.forEach(level => {
+                const option = document.createElement('option');
+                option.value = level.id;
+                option.textContent = level.name;
+                levelSelect.appendChild(option);
+            });
+        }
+        
+        // 显示模态框
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        // 添加遮罩层
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+        
+        // 尝试使用 Bootstrap 实例
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } catch(e) {
+            // 手动显示已处理
+        }
+    }, 200);
 }
-
 // 编辑点名
 function editAttendance(attendanceId) {
+    console.log('编辑点名，ID:', attendanceId);
+    
+    if (!attendanceId) {
+        showAlert('点名ID无效', 'danger');
+        return;
+    }
+    
     const attendance = attendances.find(a => a.id === attendanceId);
-    if (!attendance) return;
+    if (!attendance) {
+        showAlert('找不到点名记录，请刷新后重试', 'warning');
+        // 重新加载数据
+        loadAttendances();
+        return;
+    }
     
-    document.getElementById('attendance-id').value = attendance.id;
-    document.getElementById('attendance-modal-title').textContent = '编辑点名';
-    document.getElementById('attendance-title').value = attendance.title || '';
-    document.getElementById('attendance-date').value = attendance.date || '';
-    document.getElementById('attendance-start-time').value = attendance.startTimeStr || '';
-    document.getElementById('attendance-end-time').value = attendance.endTimeStr || '';
-    document.getElementById('attendance-code').value = attendance.code || '';
-    document.getElementById('attendance-note').value = attendance.note || '';
-    document.getElementById('attendance-level').value = attendance.levelId || '';
+    console.log('找到点名:', attendance.title);
     
-    updateTimePreview();
+    // 先清理模态框残留
+    const modalElement = document.getElementById('attendanceModal');
+    if (modalElement) {
+        try {
+            const existingModal = bootstrap.Modal.getInstance(modalElement);
+            if (existingModal) {
+                existingModal.hide();
+            }
+        } catch(e) {}
+        
+        // 重置显示状态
+        modalElement.style.display = 'none';
+        modalElement.classList.remove('show');
+    }
     
-    const modal = new bootstrap.Modal(document.getElementById('attendanceModal'));
-    modal.show();
+    // 延迟后打开编辑模态框
+    setTimeout(() => {
+        // 设置表单值
+        const idInput = document.getElementById('attendance-id');
+        const titleInput = document.getElementById('attendance-title');
+        const dateInput = document.getElementById('attendance-date');
+        const startTimeInput = document.getElementById('attendance-start-time');
+        const endTimeInput = document.getElementById('attendance-end-time');
+        const codeInput = document.getElementById('attendance-code');
+        const noteInput = document.getElementById('attendance-note');
+        const levelSelect = document.getElementById('attendance-level');
+        const modalTitle = document.getElementById('attendance-modal-title');
+        const previewText = document.getElementById('time-preview-text');
+        
+        if (idInput) idInput.value = attendance.id;
+        if (titleInput) titleInput.value = attendance.title || '';
+        if (dateInput) dateInput.value = attendance.date || '';
+        if (startTimeInput) startTimeInput.value = attendance.startTimeStr || '';
+        if (endTimeInput) endTimeInput.value = attendance.endTimeStr || '';
+        if (codeInput) codeInput.value = attendance.code || '';
+        if (noteInput) noteInput.value = attendance.note || '';
+        if (modalTitle) modalTitle.textContent = '编辑点名';
+        if (previewText) previewText.innerHTML = '请设置点名时间';
+        
+        if (levelSelect && attendance.levelId) {
+            levelSelect.value = attendance.levelId;
+        }
+        
+        // 更新时间预览
+        if (typeof updateTimePreview === 'function') {
+            updateTimePreview();
+        }
+        
+        // 显示模态框
+        modalElement.style.display = 'block';
+        modalElement.classList.add('show');
+        modalElement.removeAttribute('aria-hidden');
+        
+        // 添加遮罩层
+        let backdrop = document.querySelector('.modal-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show';
+            document.body.appendChild(backdrop);
+        }
+        document.body.classList.add('modal-open');
+        
+        // 尝试使用 Bootstrap 实例
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } catch(e) {
+            // 手动显示已处理
+        }
+    }, 200);
 }
 
 // 保存点名
@@ -11366,25 +11486,32 @@ function saveAttendance() {
     const note = document.getElementById('attendance-note').value.trim();
     const levelId = document.getElementById('attendance-level').value;
     
+    console.log('保存点名 - ID:', id);
+    console.log('保存点名 - 标题:', title);
+    
     // 验证
     if (!title) { showAlert('请输入点名标题', 'warning'); return; }
     if (!date) { showAlert('请选择日期', 'warning'); return; }
     if (!startTimeStr) { showAlert('请设置开始时间', 'warning'); return; }
     if (!endTimeStr) { showAlert('请设置结束时间', 'warning'); return; }
     if (!code || code.length < 4 || code.length > 6) {
-        showAlert('验证码需要4-6位字符', 'warning'); return;
+        showAlert('验证码需要4-6位字符', 'warning'); 
+        return;
     }
     
     if (startTimeStr >= endTimeStr) {
-        showAlert('结束时间必须晚于开始时间', 'warning'); return;
+        showAlert('结束时间必须晚于开始时间', 'warning'); 
+        return;
     }
     
     const startTime = new Date(`${date}T${startTimeStr}:00`);
     const endTime = new Date(`${date}T${endTimeStr}:00`);
     
     const btn = document.getElementById('save-attendance-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
+    }
     
     const attendanceData = {
         title,
@@ -11400,28 +11527,60 @@ function saveAttendance() {
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
     
-    if (!id) {
+    // 判断是新增还是更新
+    let savePromise;
+    if (id && id !== '') {
+        // 更新现有点名 - 使用 update
+        console.log('更新点名，文档ID:', id);
+        savePromise = db.collection('attendances').doc(id).update(attendanceData);
+    } else {
+        // 新建点名 - 使用 add
         attendanceData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        console.log('新建点名');
+        savePromise = db.collection('attendances').add(attendanceData);
     }
     
-    const savePromise = id 
-        ? db.collection('attendances').doc(id).update(attendanceData)
-        : db.collection('attendances').add(attendanceData);
-    
     savePromise
-        .then(() => {
-            showAlert(id ? '点名更新成功' : '点名创建成功', 'success');
-            document.getElementById('attendanceModal').querySelector('.btn-close').click();
+        .then((result) => {
+            const isUpdate = id && id !== '';
+            let successMsg = isUpdate ? '点名更新成功' : '点名创建成功';
+            if (!isUpdate && result && result.id) {
+                console.log('新点名ID:', result.id);
+            }
+            showAlert(successMsg, 'success');
+            
+            // 安全关闭模态框
+            const modalElement = document.getElementById('attendanceModal');
+            if (modalElement) {
+                try {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                } catch(e) {
+                    modalElement.style.display = 'none';
+                    modalElement.classList.remove('show');
+                }
+                setTimeout(cleanupAllModals, 300);
+            }
+            
+            // 重新加载点名列表
             loadAttendances();
-            addActivity(`${id ? '更新' : '创建'}点名: ${title}`, 'success');
+            addActivity(`${isUpdate ? '更新' : '创建'}点名: ${title}`, 'success');
         })
         .catch(error => {
             console.error('保存点名失败:', error);
-            showAlert('保存失败: ' + error.message, 'danger');
+            let errorMsg = '保存失败: ' + error.message;
+            if (error.code === 'not-found') {
+                errorMsg = '点名记录不存在，请刷新后重试';
+            }
+            showAlert(errorMsg, 'danger');
         })
         .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
+            }
         });
 }
 
