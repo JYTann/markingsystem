@@ -5098,6 +5098,269 @@ body {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
+        // ==================== 紧急修复：解决页面空白问题 ====================
+(function emergencyFix() {
+    console.log('🔧 执行紧急修复...');
+    
+    // 1. 修复 loadMembers 函数中的 colspan（从6改为7）
+    if (typeof loadMembers === 'function') {
+        const originalLoadMembers = loadMembers;
+        window.loadMembers = function() {
+            const tbody = document.getElementById('members-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary"></div>加载中...</td></tr>';
+            
+            db.collection('members').orderBy('studentId').get()
+                .then(querySnapshot => {
+                    members = [];
+                    tbody.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">暂无会员数据</td></tr>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach(doc => {
+                        const member = { id: doc.id, ...doc.data() };
+                        members.push(member);
+                        
+                        const row = document.createElement('tr');
+                        
+                        // 个人签到码显示
+                        let personalCodeHtml = '';
+                        if (member.personalCode) {
+                            personalCodeHtml = `
+                                <div class="d-flex align-items-center gap-1">
+                                    <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; font-family: monospace;">
+                                        ${escapeHtml(member.personalCode)}
+                                    </code>
+                                    <button class="btn btn-sm btn-warning reset-code-btn" data-id="${member.id}" title="重置签到码" style="padding: 2px 6px;">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            personalCodeHtml = `
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge bg-secondary">未生成</span>
+                                    <button class="btn btn-sm btn-info generate-code-btn" data-id="${member.id}" title="生成签到码" style="padding: 2px 6px;">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${escapeHtml(member.studentId)}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar me-2" style="width:32px;height:32px;background-color:${stringToColor(member.name)};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;">
+                                        ${escapeHtml(member.name.charAt(0))}
+                                    </div>
+                                    ${escapeHtml(member.name)}
+                                </div>
+                            </td>
+                            <td>${escapeHtml(member.class || '-')}</td>
+                            <td>${member.group ? `<span class="badge bg-info">${escapeHtml(member.group)}</span>` : '-'}</td>
+                            <td>${escapeHtml(member.email || '-')}</td>
+                            <td class="personal-code-cell">${personalCodeHtml}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-member-btn" data-id="${member.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-member-btn" data-id="${member.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                        
+                        // 绑定事件
+                        const editBtn = row.querySelector('.edit-member-btn');
+                        if (editBtn) editBtn.addEventListener('click', () => editMember(member.id));
+                        
+                        const deleteBtn = row.querySelector('.delete-member-btn');
+                        if (deleteBtn) deleteBtn.addEventListener('click', () => 
+                            showDeleteConfirm('member', member.id, `确定删除 ${member.name} 吗？`)
+                        );
+                        
+                        // 绑定重置个人码按钮
+                        const resetBtn = row.querySelector('.reset-code-btn');
+                        if (resetBtn) {
+                            resetBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                const confirmed = confirm(`确定要重置 ${member.name} 的个人签到码吗？`);
+                                if (confirmed && typeof resetPersonalCode === 'function') {
+                                    await resetPersonalCode(member.id);
+                                }
+                            });
+                        }
+                        
+                        // 绑定生成个人码按钮
+                        const genBtn = row.querySelector('.generate-code-btn');
+                        if (genBtn) {
+                            genBtn.addEventListener('click', async (e) => {
+                                e.stopPropagation();
+                                if (typeof resetPersonalCode === 'function') {
+                                    await resetPersonalCode(member.id);
+                                }
+                            });
+                        }
+                    });
+                    
+                    // 添加批量操作按钮
+                    if (typeof addPersonalCodeButtons === 'function') {
+                        addPersonalCodeButtons();
+                    }
+                })
+                .catch(error => {
+                    console.error("加载会员失败:", error);
+                    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">加载失败</td></tr>';
+                });
+        };
+        console.log('✅ loadMembers 函数已修复');
+    }
+    
+    // 2. 修复表格表头（增加个人签到码列）
+    function fixTableHeader() {
+        const table = document.querySelector('#members-tab .table');
+        if (table) {
+            const thead = table.querySelector('thead tr');
+            if (thead) {
+                const headers = thead.querySelectorAll('th');
+                if (headers.length === 6) {
+                    const newTh = document.createElement('th');
+                    newTh.innerHTML = '<i class="fas fa-key me-1"></i>个人签到码';
+                    headers[5].insertAdjacentElement('beforebegin', newTh);
+                    console.log('✅ 表格表头已修复');
+                }
+            }
+        }
+    }
+    
+    // 3. 辅助函数
+    if (typeof generatePersonalCode === 'undefined') {
+        window.generatePersonalCode = function(member) {
+            const prefix = 'FYMCS';
+            const studentIdSuffix = member.studentId.slice(-4);
+            const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+            return `${prefix}-${studentIdSuffix}-${randomChars}`;
+        };
+    }
+    
+    if (typeof resetPersonalCode === 'undefined') {
+        window.resetPersonalCode = async function(memberId) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            
+            const newCode = generatePersonalCode(member);
+            try {
+                await db.collection('members').doc(memberId).update({
+                    personalCode: newCode,
+                    codeCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showAlert(`${member.name} 的个人签到码已更新为: ${newCode}`, 'success');
+                loadMembers();
+            } catch (error) {
+                showAlert('重置失败: ' + error.message, 'danger');
+            }
+        };
+    }
+    
+    if (typeof batchGenerateAllPersonalCodes === 'undefined') {
+        window.batchGenerateAllPersonalCodes = async function() {
+            showFullscreenLoader('正在生成个人签到码...');
+            let generated = 0;
+            for (const member of members) {
+                if (!member.personalCode) {
+                    const newCode = generatePersonalCode(member);
+                    await db.collection('members').doc(member.id).update({
+                        personalCode: newCode,
+                        codeCreatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    generated++;
+                }
+            }
+            hideFullscreenLoader();
+            showAlert(`成功生成 ${generated} 个个人签到码`, 'success');
+            loadMembers();
+        };
+    }
+    
+    if (typeof exportPersonalCodes === 'undefined') {
+        window.exportPersonalCodes = async function() {
+            const data = members.map(m => ({
+                '学号': m.studentId,
+                '姓名': m.name,
+                '班级': m.class,
+                '组别': m.group || '',
+                '个人签到码': m.personalCode || '未生成',
+                '使用说明': '登录时输入：学号 + 个人签到码 + 点名验证码'
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "个人签到码");
+            XLSX.writeFile(wb, `个人签到码_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showAlert('导出成功', 'success');
+        };
+    }
+    
+    if (typeof addPersonalCodeButtons === 'undefined') {
+        window.addPersonalCodeButtons = function() {
+            const membersTab = document.getElementById('members-tab');
+            if (!membersTab) return;
+            
+            const headerDiv = membersTab.querySelector('.card-header div');
+            if (!headerDiv) return;
+            
+            if (document.getElementById('batch-generate-codes-btn')) return;
+            
+            const batchBtn = document.createElement('button');
+            batchBtn.id = 'batch-generate-codes-btn';
+            batchBtn.className = 'btn btn-sm btn-info ms-2';
+            batchBtn.innerHTML = '<i class="fas fa-key me-1"></i>批量生成个人码';
+            batchBtn.onclick = batchGenerateAllPersonalCodes;
+            
+            const exportCodesBtn = document.createElement('button');
+            exportCodesBtn.id = 'export-codes-btn';
+            exportCodesBtn.className = 'btn btn-sm btn-success ms-2';
+            exportCodesBtn.innerHTML = '<i class="fas fa-file-excel me-1"></i>导出个人码';
+            exportCodesBtn.onclick = exportPersonalCodes;
+            
+            headerDiv.appendChild(batchBtn);
+            headerDiv.appendChild(exportCodesBtn);
+        };
+    }
+    
+    // 4. 修复 active-sessions-list 容器（确保签到按钮显示）
+    function fixActiveSessionsList() {
+        const container = document.getElementById('active-sessions-list');
+        if (container && container.innerHTML === '') {
+            container.innerHTML = '<div class="text-center py-3 text-muted">正在加载点名列表...</div>';
+        }
+    }
+    
+    // 5. 执行修复
+    setTimeout(() => {
+        fixTableHeader();
+        if (typeof loadMembers === 'function') {
+            loadMembers();
+        }
+        if (typeof addPersonalCodeButtons === 'function') {
+            addPersonalCodeButtons();
+        }
+        fixActiveSessionsList();
+        
+        // 确保页面显示
+        const studentPage = document.getElementById('student-query-page');
+        const mainSystem = document.getElementById('main-system');
+        if (studentPage) studentPage.style.display = 'block';
+        if (mainSystem) mainSystem.style.display = 'none';
+        
+        console.log('✅ 紧急修复完成！');
+    }, 200);
+})();
         // Firebase配置
         const firebaseConfig = {
             apiKey: "AIzaSyA5E68ARL8svmrcjy0djUIInArlnxFQnhw",
