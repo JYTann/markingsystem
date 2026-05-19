@@ -1937,53 +1937,65 @@ body.modal-open #student-query-page {
     }
 }
 
-/* ==================== 📱 打印样式 ==================== */
-/* 打印样式 - 只显示表格，隐藏其他所有内容 */
+/* 替换原有的 @media print 样式块（约在第685-790行附近） */
 @media print {
-    /* 隐藏工具栏和所有按钮 */
+    /* 隐藏不需要打印的元素 */
+    .navbar,
+    .fab-menu,
+    .back-to-top,
+    .btn,
+    button:not(.no-print),
     .toolbar,
     .toolbar-btn,
-    .btn,
-    button {
+    .modal,
+    .modal-backdrop,
+    #toast-container,
+    .no-print {
         display: none !important;
     }
     
-    /* 隐藏页眉中的额外信息（保留标题） */
-    .report-header .logo-area,
-    .report-header .date {
-        display: none !important;
+    /* 强制显示所有内容 */
+    body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
     }
     
-    /* 隐藏统计卡片区域 */
-    .stats-section {
-        display: none !important;
+    /* 报告容器完整显示 */
+    .report-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
     }
     
-    /* 隐藏页脚 */
-    .report-footer {
-        display: none !important;
+    /* 内容区域不设限高 */
+    .content-section {
+        padding: 10px !important;
+        overflow: visible !important;
     }
     
-    /* 隐藏所有滚动条提示 */
-    .table-wrapper::after {
-        display: none !important;
-    }
-    
-    /* 表格容器不滚动，完整显示 */
+    /* 表格容器 - 关键修复：不滚动，完整显示 */
     .table-wrapper {
         overflow-x: visible !important;
         overflow-y: visible !important;
-        border: none !important;
+        border: 1px solid #ccc !important;
+        margin: 10px 0 !important;
         padding: 0 !important;
-        margin: 0 !important;
+        width: auto !important;
+        min-width: auto !important;
     }
     
-    /* 表格完全显示，不截断 */
+    /* 成绩表格 - 完整展开，禁止压缩 */
     .score-table {
         width: 100% !important;
         min-width: auto !important;
         font-size: 9pt !important;
         border-collapse: collapse !important;
+        table-layout: auto !important;
     }
     
     /* 表头固定在每一页顶部 */
@@ -1997,11 +2009,25 @@ body.modal-open #student-query-page {
         page-break-inside: avoid;
     }
     
-    /* 简化表格边框 */
+    /* 单元格内边距适当减小以容纳更多内容 */
     .score-table th,
     .score-table td {
         border: 1px solid #ccc !important;
         padding: 6px 4px !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        word-break: keep-all !important;
+        white-space: normal !important;
+    }
+    
+    /* 项目列标题更紧凑 */
+    .score-table th .project-name {
+        font-size: 8pt !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .score-table th .project-meta {
+        font-size: 6pt !important;
     }
     
     /* 隐藏排名徽章的背景（保留数字） */
@@ -2010,14 +2036,15 @@ body.modal-open #student-query-page {
         color: #000 !important;
         width: auto !important;
         height: auto !important;
-        font-weight: normal !important;
+        font-weight: bold !important;
     }
     
-    /* 隐藏班级标签的背景，只保留文字 */
+    /* 隐藏班级标签的背景 */
     .class-badge {
         background: none !important;
         color: #000 !important;
         padding: 0 !important;
+        border: none !important;
     }
     
     /* 分数颜色保留（可选） */
@@ -2031,28 +2058,41 @@ body.modal-open #student-query-page {
         color: #ef4444 !important;
     }
     
+    /* 强制每个级别分组在新页开始（可选） */
+    .level-group {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    /* 级别标题样式 */
+    .level-group-title {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border-bottom: 2px solid #333 !important;
+        break-inside: avoid;
+    }
+    
+    /* 统计卡片区域 */
+    .stats-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .stat-card {
+        break-inside: avoid;
+    }
+    
     /* 全局设置 */
-    body {
-        background: white !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-    
-    .report-container {
+    * {
+        background-color: transparent !important;
         box-shadow: none !important;
-        border-radius: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100% !important;
     }
     
-    .content-section {
-        padding: 0 !important;
+    /* 设置纸张方向为横向（解决横向表格被截断） */
+    @page {
+        size: landscape;
+        margin: 1cm;
     }
-}
-
-        .no-print {
-    display: none !important;
 }
 
         /* ==================== 🆕 新增功能样式 ==================== */
@@ -9242,6 +9282,7 @@ function generateProfessionalScoreTable(data) {
  */
 // ==================== 使用 pdf-lib 直接生成 PDF（支持任意多列，不压缩） ====================
 
+// 替换 downloadProfessionalPDF 函数
 async function downloadProfessionalPDF(data) {
     if (!data) {
         showAlert('没有可下载的报告数据', 'warning');
@@ -9257,8 +9298,10 @@ async function downloadProfessionalPDF(data) {
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     tempDiv.style.top = '0';
-    tempDiv.style.width = '1400px';
+    tempDiv.style.width = 'auto';
+    tempDiv.style.minWidth = '1200px';  // 关键：设置足够宽以确保完整显示
     tempDiv.style.backgroundColor = '#ffffff';
+    tempDiv.style.padding = '20px';
     document.body.appendChild(tempDiv);
     
     try {
@@ -9267,16 +9310,21 @@ async function downloadProfessionalPDF(data) {
             scale: 2.5,
             useCORS: true,
             logging: false,
-            windowWidth: 1400,
+            windowWidth: tempDiv.scrollWidth,  // 使用实际滚动宽度
+            windowHeight: tempDiv.scrollHeight,
             backgroundColor: '#ffffff',
             onclone: (clonedDoc, element) => {
-                // 确保克隆的文档中字体正确
+                // 确保克隆的文档中表格完整显示
                 const style = clonedDoc.createElement('style');
                 style.textContent = `
                     * { font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif !important; }
-                    .score-table { width: 100%; border-collapse: collapse; }
+                    .score-table { 
+                        width: 100%; 
+                        border-collapse: collapse;
+                        table-layout: auto !important;
+                    }
                     .score-table th, .score-table td { 
-                        padding: 8px 10px; 
+                        padding: 6px 4px; 
                         border: 1px solid #ddd;
                         text-align: center;
                         vertical-align: middle;
@@ -9286,8 +9334,8 @@ async function downloadProfessionalPDF(data) {
                         font-weight: 700;
                     }
                     .table-wrapper {
-                        overflow-x: auto;
-                        max-width: 100%;
+                        overflow: visible !important;
+                        width: 100% !important;
                     }
                 `;
                 clonedDoc.head.appendChild(style);
