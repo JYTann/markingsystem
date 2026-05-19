@@ -9343,25 +9343,26 @@ function createBeautifulReportHTML(data) {
         
         .student-name {
             font-weight: 700;
-            color: #1e293b;
+            color: white;
             font-size: 1em;
             margin: 4px 0;
         }
         
         .student-id {
-            font-size: 0.75em;
-            color: #64748b;
-            font-family: monospace;
-        }
-        
-        .student-class {
-            font-size: 0.7em;
-            background: #e2e8f0;
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-top: 4px;
-        }
+    font-size: 0.75em;
+    color: #cbd5e1;  /* 浅灰色，在深色背景上可见 */
+    font-family: monospace;
+}
+
+.student-class {
+    font-size: 0.7em;
+    background: rgba(255,255,255,0.2);  /* 半透明白色背景 */
+    color: white;  /* 白色文字 */
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+}
         
         .stats-header {
             background: rgba(139,92,246,0.15);
