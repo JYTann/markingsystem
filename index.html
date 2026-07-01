@@ -3878,250 +3878,80 @@ body {
 }
 
 /* ========================================================================
-   ✦ 设计精修层 — Design Refinement Layer
-   在原有样式基础上做整体视觉优化：更克制的动效、更精致的排版节奏、
-   更统一的色彩与阴影语言，让界面在保留活力的同时更显专业、耐看。
+   ✦ 设计精修层 v2 — Design Refinement Layer
+   保留原有的渐变、光影与活力，只清理少数互相打架、抢眼球的重复动效，
+   让色彩层次更统一、悬停反馈更干脆，整体依旧明快有质感。
    ======================================================================== */
 
 :root {
-    /* 更柔和、更有层次的中性色阶，用于替代大量纯白/纯黑堆叠 */
     --ink-900: #0f1729;
-    --ink-700: #33415c;
-    --ink-500: #64748b;
-    --ink-300: #cbd5e1;
-    --surface-1: #ffffff;
-    --surface-2: #f8fafc;
-    --ring: rgba(99, 102, 241, 0.16);
-
-    /* 统一、克制的阴影梯度，比原先更贴近真实光影，减少"发光"感 */
-    --e1: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
-    --e2: 0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-    --e3: 0 12px 28px -8px rgba(15, 23, 42, 0.14), 0 4px 10px -4px rgba(15, 23, 42, 0.06);
-    --e4: 0 24px 48px -12px rgba(76, 29, 149, 0.18), 0 8px 16px -8px rgba(15, 23, 42, 0.08);
+    --ring: rgba(99, 102, 241, 0.2);
+    --glow-primary: 0 10px 28px -6px rgba(99, 102, 241, 0.45);
+    --glow-success: 0 10px 28px -6px rgba(16, 185, 129, 0.4);
+    --glow-danger: 0 10px 28px -6px rgba(239, 68, 68, 0.4);
+    --glow-warning: 0 10px 28px -6px rgba(245, 158, 11, 0.4);
+    --glow-card: 0 24px 50px -14px rgba(99, 102, 241, 0.28), 0 6px 16px -6px rgba(139, 92, 246, 0.18);
 }
 
-/* ---------- 排版节奏：更清晰的层级与呼吸感 ---------- */
+/* ---------- 背景：更饱和的多彩渐变氛围 ---------- */
 body {
-    letter-spacing: 0.1px;
-    background: var(--surface-2) !important;
-    background-image:
-        radial-gradient(ellipse 900px 600px at 8% -10%, rgba(99, 102, 241, 0.07), transparent 60%),
-        radial-gradient(ellipse 900px 600px at 100% 10%, rgba(6, 182, 212, 0.06), transparent 60%) !important;
+    background:
+        radial-gradient(ellipse 1000px 700px at 6% -8%, rgba(99, 102, 241, 0.14), transparent 55%),
+        radial-gradient(ellipse 1000px 700px at 100% 0%, rgba(139, 92, 246, 0.12), transparent 55%),
+        radial-gradient(ellipse 900px 700px at 50% 100%, rgba(6, 182, 212, 0.1), transparent 55%),
+        #f8fafc !important;
     background-attachment: fixed !important;
 }
 
-body::before { opacity: 0.5; }
+h1, h2, h3, h4, h5, h6 { color: var(--ink-900); font-weight: 700; }
 
-h1, h2, h3, h4, h5, h6 {
-    color: var(--ink-900);
-    font-weight: 700;
-    letter-spacing: -0.2px;
-}
-
-p, .text-muted { color: var(--ink-500) !important; }
-
-/* 关闭大量过度使用的持续性动效，只保留过渡与悬停反馈，观感更沉稳 */
-.stat-card,
-.stat-card .card-title,
-.stat-card i,
-.btn-primary,
-.avatar,
-.student-avatar,
-.badge::after,
-.progress-bar::after {
+/* 只关闭"持续互相竞争注意力"的几处循环动效，其余渐变/阴影/悬停全部保留 */
+.badge::after,           /* 每个徽章上无差别扫光，视觉噪音大 */
+.table tbody tr::after,  /* 每行悬停都拉一条下划线，和整体阴影冲突 */
+#confirmDeleteModal .modal-content {
     animation: none !important;
 }
 
-/* ---------- 导航栏：更干净的层次，去掉过度描边 ---------- */
-.navbar {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.92)) !important;
-    box-shadow: var(--e2);
-    padding: 0.85rem 1.75rem;
-}
-
-.navbar::after { height: 1px; opacity: 0.55; }
-
-.navbar-nav .nav-link {
-    border-radius: 10px;
-    font-size: 0.88rem;
-}
-
-.navbar-nav .nav-link:hover {
-    transform: translateY(-1px);
-    box-shadow: none;
-}
-
-.navbar-nav .nav-link.active {
-    background: rgba(255, 255, 255, 0.14);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
-}
-
-/* ---------- 卡片：更轻盈的玻璃质感，去掉扫光条 ---------- */
-.card {
-    border-radius: 18px;
-    background: var(--surface-1);
-    box-shadow: var(--e2);
-    border: 1px solid rgba(15, 23, 42, 0.05);
-}
-
-.card::before { display: none; }
-.card::after { display: none; }
-
+/* ---------- 卡片：保留渐变描边光效，悬停更有分量 ---------- */
 .card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--e3);
-    border-color: rgba(99, 102, 241, 0.18);
+    box-shadow: var(--glow-card);
 }
 
-.card-header {
-    border-radius: 18px 18px 0 0 !important;
-    padding: 1.1rem 1.4rem;
-    font-weight: 600;
-}
-
-.card-header::after { display: none; }
-
-/* ---------- 统计卡片：稳重而不喧闹 ---------- */
+/* ---------- 统计卡片：保留渐变流动 + 悬浮图标，稍微加强质感 ---------- */
 .stat-card {
-    border-radius: 20px;
-    box-shadow: var(--e3);
+    box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.22);
 }
 
 .stat-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--e4);
+    box-shadow: 0 30px 65px -14px rgba(0, 0, 0, 0.32), var(--glow-card);
 }
 
-.stat-card .card-title {
-    font-size: 2.4rem;
-    letter-spacing: 0.2px;
-}
+/* ---------- 按钮：恢复彩色投影，悬停更跳跃 ---------- */
+.btn-primary { box-shadow: var(--glow-primary); }
+.btn-success { box-shadow: var(--glow-success); }
+.btn-danger  { box-shadow: var(--glow-danger); }
+.btn-warning { box-shadow: var(--glow-warning); }
 
-/* ---------- 按钮：去掉大写与过度阴影，改为干净的交互反馈 ---------- */
-.btn {
-    text-transform: none;
-    letter-spacing: 0.2px;
-    border-radius: 12px;
-    padding: 0.6rem 1.4rem;
-    font-size: 0.88rem;
-    box-shadow: var(--e1);
-}
+.btn-primary:hover { box-shadow: 0 16px 34px -6px rgba(139, 92, 246, 0.5); }
+.btn-success:hover { box-shadow: 0 16px 34px -6px rgba(52, 211, 153, 0.45); }
+.btn-danger:hover  { box-shadow: 0 16px 34px -6px rgba(248, 113, 113, 0.45); }
+.btn-warning:hover { box-shadow: 0 16px 34px -6px rgba(251, 191, 36, 0.45); }
 
-.btn::after { display: none; }
-
-.btn-primary {
-    box-shadow: var(--e2);
-}
-
-.btn-primary:hover,
-.btn-success:hover,
-.btn-danger:hover,
-.btn-warning:hover {
-    transform: translateY(-2px);
-}
-
-.btn-sm { border-radius: 9px; }
-
-/* ---------- 表格：降低对比噪音，突出数据本身 ---------- */
-.table-responsive { border-radius: 14px; }
-
-.table thead th {
-    background: var(--ink-900);
-    border-bottom: none;
-    letter-spacing: 0.6px;
-}
-
-.table tbody tr:hover {
-    transform: none;
-    box-shadow: none;
-}
-
-.table tbody tr::after { display: none; }
-
-/* ---------- 选项卡：更简洁的胶囊分段控件 ---------- */
-.nav-tabs {
-    background: var(--surface-1);
-    box-shadow: var(--e1);
-    border-radius: 14px;
-}
-
-.nav-tabs .nav-link {
-    border-radius: 10px;
-    padding: 0.65rem 1.4rem;
-}
-
-.nav-tabs .nav-link.active {
-    box-shadow: var(--e2);
-}
-
-.tab-content {
-    background: var(--surface-1);
-    box-shadow: var(--e2);
-    border-radius: 18px;
-}
-
-.tab-content::before { display: none; }
-.tab-pane { animation: fadeIn 0.35s ease; }
-
-/* ---------- 表单：更内敛的边框反馈 ---------- */
-.form-control, .form-select {
-    border-radius: 12px;
-    border: 1.5px solid var(--ink-300);
-    box-shadow: none;
-}
-
+/* ---------- 表单：聚焦光环更明显 ---------- */
 .form-control:focus, .form-select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--ring);
+    box-shadow: 0 0 0 4px var(--ring), inset 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
-/* ---------- 徽章与进度条：去除跑马灯光效，更克制 ---------- */
-.badge { box-shadow: none; text-transform: none; letter-spacing: 0.3px; }
-.badge::after { display: none; }
+/* ---------- 选项卡 / 标签内容：保留原有胶囊与渐变高亮 ---------- */
+.nav-tabs .nav-link.active { box-shadow: 0 8px 22px rgba(99, 102, 241, 0.4); }
 
-.progress-bar { animation: none; box-shadow: none; }
+/* ---------- 表格：表头渐变强调条保留，去掉逐行下划线动效即可 ---------- */
+.table thead th { border-bottom: 3px solid #8b5cf6; }
 
-/* ---------- 模态框：柔化边缘与阴影 ---------- */
-.modal-content {
-    border-radius: 18px;
-    box-shadow: var(--e4);
-}
+/* ---------- 徽章：去掉扫光但保留渐变底色与轻阴影 ---------- */
+.badge { box-shadow: 0 3px 10px rgba(99, 102, 241, 0.18); }
 
-.modal-header {
-    background: linear-gradient(135deg, var(--ink-900), #1e293b);
-    padding: 1.15rem 1.6rem;
-}
-
-/* ---------- 警示条：更沉稳的配色，减少入场滑动干扰 ---------- */
-.alert {
-    border-radius: 14px;
-    box-shadow: var(--e2);
-    animation: fadeIn 0.3s ease;
-}
-
-/* ---------- 页脚 ---------- */
-footer {
-    background: transparent;
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
-}
-
-/* ---------- 滚动条：更细、更安静 ---------- */
-::-webkit-scrollbar-thumb {
-    background: var(--ink-300);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-light);
-}
-
-/* ---------- 学生查询卡片：减少过度模糊与圆角 ---------- */
-.student-query-container {
-    border-radius: 28px;
-    box-shadow: var(--e4);
-    background: rgba(255, 255, 255, 0.92);
-}
-
-/* ---------- 移动端触控设备：完全关闭悬停位移，避免残留状态 ---------- */
+/* ---------- 移动端触控设备：避免悬停位移残留 ---------- */
 @media (hover: none) {
     .card:hover,
     .stat-card:hover,
