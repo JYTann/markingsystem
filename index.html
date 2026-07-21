@@ -3966,6 +3966,157 @@ h1, h2, h3, h4, h5, h6 { color: var(--ink-900); font-weight: 700; }
         transition-duration: 0.001ms !important;
     }
 }
+
+/* ========================================================================
+   ✦ 设计精修层 v3 — Visual Polish Layer
+   在 v2 的基础上进一步打磨：排版节奏、细节质感、可访问性反馈、
+   全局交互手感。全部为叠加规则，不改动既有类名与结构。
+   ======================================================================== */
+
+/* ---------- 字体：中英文混排更精致，标题更有节奏 ---------- */
+body {
+    letter-spacing: 0.01em;
+}
+
+h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.25; }
+h4, h5, h6 { letter-spacing: -0.01em; line-height: 1.35; }
+
+.card-header, .navbar-brand, .btn {
+    letter-spacing: 0.02em;
+}
+
+/* ---------- 全局：优雅的选中色与滚动条 ---------- */
+::selection {
+    background: rgba(99, 102, 241, 0.25);
+    color: var(--ink-900);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(148, 163, 184, 0.08);
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #a5b4fc, #8b5cf6);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #818cf8, #7c3aed);
+    background-clip: padding-box;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #a5b4fc rgba(148, 163, 184, 0.08);
+}
+
+/* ---------- 可访问性：清晰但不突兀的键盘焦点环 ---------- */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+.nav-link:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+/* ---------- 按钮：顶部玻璃高光 + 更利落的按压反馈 ---------- */
+.btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+.btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%);
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 1;
+}
+.btn:active {
+    transform: translateY(1px) scale(0.98);
+}
+
+/* ---------- 卡片头部：文字更立体 ---------- */
+.card-header {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- 输入框：更细腻的静止态与聚焦态过渡 ---------- */
+.form-control, .form-select {
+    transition: var(--transition-smooth), background-color 0.25s ease;
+}
+.form-control:hover:not(:focus), .form-select:hover:not(:focus) {
+    border-color: rgba(99, 102, 241, 0.35);
+}
+.form-control::placeholder {
+    color: var(--text-light);
+    opacity: 0.8;
+}
+
+/* ---------- 表格：更安静的斑马纹与悬停反馈 ---------- */
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+.table tbody tr:nth-child(even) {
+    background: rgba(99, 102, 241, 0.025);
+}
+.table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.06) !important;
+}
+
+/* ---------- 徽章：更圆润、轻微描边提升质感 ---------- */
+.badge {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-weight: 600;
+}
+
+/* ---------- 模态框：更柔和的呈现层次 ---------- */
+.modal-content {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
+.modal-backdrop.show {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0.55 !important;
+}
+
+/* ---------- 统计卡片图标：更柔和的呼吸感悬浮 ---------- */
+.stat-card i {
+    filter: drop-shadow(0 6px 12px rgba(99, 102, 241, 0.25));
+}
+
+/* ---------- 空状态与加载态：略微收敛，不喧宾夺主 ---------- */
+.empty-state, .spinner-border {
+    opacity: 0.9;
+}
+
+/* ---------- 页面整体：轻微淡入，避免生硬闪现 ---------- */
+@media (prefers-reduced-motion: no-preference) {
+    body {
+        animation: pageFadeIn 0.5s ease both;
+    }
+}
+@keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 移动端：细节收紧，避免拥挤 ---------- */
+@media (max-width: 576px) {
+    .card-header { padding: 1rem 1.1rem; }
+    .card-body { padding: 1.1rem; }
+    h1, h2 { letter-spacing: -0.01em; }
+}
 </style>
 </head>
     
