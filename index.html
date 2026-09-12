@@ -1757,6 +1757,302 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     body { font-size: 15px; }
 }
 
+/* ============================================================
+   管理员后台重构：侧边栏 + 顶栏布局（新增样式，不删除任何既有 CSS）
+   仅作用于 #main-system 内部，不影响学生查询欢迎页
+   ============================================================ */
+
+/* ---------- 整体布局 ---------- */
+#main-system .admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--gray-50);
+    align-items: stretch;
+}
+
+#main-system .admin-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    transition: transform var(--dur-base) var(--ease);
+}
+
+#main-system .admin-main {
+    flex: 1;
+    margin-left: 240px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+}
+
+/* ---------- 侧边栏品牌区 ---------- */
+#main-system .sidebar-brand {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 0 var(--sp-5);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+#main-system .sidebar-brand img { height: 24px; width: auto; }
+#main-system .sidebar-brand span {
+    font-size: var(--fs-base);
+    font-weight: var(--fw-semibold);
+    color: var(--gray-900);
+    line-height: 1.3;
+}
+
+/* ---------- 侧边栏菜单 ---------- */
+#main-system .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-4) var(--sp-3);
+}
+#main-system .admin-sidebar .navbar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+#main-system .admin-sidebar .sidebar-group-label {
+    font-size: var(--fs-2xs);
+    font-weight: var(--fw-semibold);
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+    padding: var(--sp-4) var(--sp-3) var(--sp-2);
+    pointer-events: none;
+}
+#main-system .admin-sidebar .sidebar-group-label:first-child { padding-top: var(--sp-2); }
+#main-system .admin-sidebar .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: var(--sp-2) var(--sp-2);
+}
+
+/* 覆盖旧版 .navbar-subnav .nav-link 的横向 Tab 样式，改为侧边栏纵向条目 */
+#main-system .admin-sidebar .navbar-subnav .nav-link.sidebar-item,
+#main-system .admin-sidebar .nav-link.sidebar-item {
+    display: flex !important;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: 10px var(--sp-3) !important;
+    margin: 0 !important;
+    border-radius: var(--r-md) !important;
+    border-bottom: none !important;
+    border: 1px solid transparent !important;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+    color: var(--gray-500) !important;
+    background: transparent !important;
+    text-decoration: none;
+    position: relative;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+#main-system .admin-sidebar .sidebar-item i {
+    width: 18px;
+    text-align: center;
+    font-size: var(--fs-md);
+    margin-right: 0 !important;
+    flex-shrink: 0;
+}
+#main-system .admin-sidebar .sidebar-item span { display: inline !important; }
+#main-system .admin-sidebar .navbar-subnav .nav-link.sidebar-item:hover,
+#main-system .admin-sidebar .nav-link.sidebar-item:hover {
+    background: var(--gray-100) !important;
+    color: var(--gray-900) !important;
+}
+#main-system .admin-sidebar .navbar-subnav .nav-link.sidebar-item.active,
+#main-system .admin-sidebar .nav-link.sidebar-item.active {
+    background: var(--primary-50) !important;
+    color: var(--primary-600) !important;
+    font-weight: var(--fw-semibold);
+    border-bottom: none !important;
+}
+#main-system .admin-sidebar .sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--primary-500);
+}
+
+/* ---------- 顶栏 ---------- */
+#main-system .admin-topbar {
+    height: 64px;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: 0 var(--sp-6);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+#main-system .topbar-menu-toggle {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md);
+    background: transparent;
+    border: none;
+    color: var(--gray-600);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--dur-fast) var(--ease);
+}
+#main-system .topbar-menu-toggle:hover { background: var(--gray-100); }
+#main-system .topbar-title {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
+    color: var(--gray-900);
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#main-system .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-left: auto;
+    flex-shrink: 0;
+}
+#main-system .topbar-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md);
+    background: transparent;
+    border: none;
+    color: var(--gray-500);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+#main-system .topbar-icon-btn:hover { background: var(--gray-100); color: var(--gray-900); }
+#main-system .topbar-icon-btn .dot {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+    border: 2px solid #FFFFFF;
+}
+#main-system .topbar-user.navbar-user-chip { cursor: default; }
+#main-system .admin-topbar #logout-btn { flex-shrink: 0; }
+
+/* ---------- 侧边栏移动端遮罩 ---------- */
+#main-system .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17,24,39,0.4);
+    z-index: 99;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-base) var(--ease);
+}
+#main-system .sidebar-backdrop.show { opacity: 1; visibility: visible; }
+
+/* ---------- 内容区 ---------- */
+#main-system .admin-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+#main-system .admin-content > .container.mt-4 {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding-left: 0;
+    padding-right: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+#main-system .admin-page-body { padding: var(--sp-8); flex: 1; }
+
+/* ---------- 统一页面头（标题 + 副标题） ---------- */
+#main-system .admin-page-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-6) var(--sp-8);
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+#main-system .admin-page-header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--r-lg);
+    background: var(--primary-50);
+    color: var(--primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-xl);
+    flex-shrink: 0;
+}
+#main-system #admin-page-title {
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-bold);
+    color: var(--gray-900);
+    margin: 0 0 2px;
+    line-height: 1.3;
+}
+#main-system #admin-page-subtitle {
+    font-size: var(--fs-base);
+    color: var(--gray-500);
+    margin: 0;
+}
+
+/* ---------- 移动端：抽屉式侧边栏 ---------- */
+@media (max-width: 1024px) {
+    #main-system .admin-sidebar { transform: translateX(-100%); }
+    #main-system .admin-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+    }
+    #main-system .admin-main { margin-left: 0; }
+    #main-system .topbar-menu-toggle { display: inline-flex; }
+}
+
+@media (max-width: 640px) {
+    #main-system .admin-topbar { padding: 0 var(--sp-4); gap: var(--sp-2); }
+    #main-system .admin-page-header { padding: var(--sp-4) var(--sp-5); gap: var(--sp-3); }
+    #main-system .admin-page-body { padding: var(--sp-4); }
+    #main-system #admin-page-title { font-size: var(--fs-xl); }
+    #main-system .admin-page-header-icon { width: 40px; height: 40px; font-size: var(--fs-lg); }
+    #main-system .topbar-title { font-size: var(--fs-base); }
+    #main-system .topbar-user #user-email { display: none; }
+}
+
 </style>
 </head>
     
@@ -2081,79 +2377,95 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 
    <!-- 主系统页面 (默认隐藏) -->
     <div id="main-system" style="display: none;">
-        <nav class="navbar navbar-expand-lg">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="javascript:void(0)">
-                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 32px; margin-right: 10px;">
+        <div class="admin-layout">
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <div class="sidebar-brand">
+                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo">
                     <span>新山宽柔中学电脑协会评分系统</span>
-                </a>
-                <div class="d-flex align-items-center order-lg-2">
-                    <div class="navbar-user-chip me-2">
-                        <span class="navbar-user-avatar"><i class="fas fa-user"></i></span>
-                        <span id="user-email">admin@example.com</span>
+                </div>
+                <nav class="sidebar-nav">
+                    <div class="collapse navbar-collapse show" id="navbarNav">
+                        <ul class="navbar-nav navbar-subnav me-auto">
+                            <li class="sidebar-group-label">主菜单</li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item active" data-bs-toggle="tab" data-bs-target="#dashboard-tab"
+                                   data-page-icon="fa-tachometer-alt" data-page-title="仪表盘" data-page-subtitle="协会评分系统运行概览">
+                                    <i class="fas fa-tachometer-alt"></i><span>仪表盘</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#students-tab"
+                                   data-page-icon="fa-user-graduate" data-page-title="学生管理" data-page-subtitle="管理学生档案、级别与分组信息">
+                                    <i class="fas fa-user-graduate"></i><span>学生管理</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#projects-tab"
+                                   data-page-icon="fa-tasks" data-page-title="评分项目" data-page-subtitle="创建与维护各类评分项目及权重">
+                                    <i class="fas fa-tasks"></i><span>评分项目</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#levels-tab"
+                                   data-page-icon="fa-layer-group" data-page-title="级别管理" data-page-subtitle="设置学生级别，并关联对应的评分项目">
+                                    <i class="fas fa-layer-group"></i><span>级别管理</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#scores-tab"
+                                   data-page-icon="fa-edit" data-page-title="分数录入" data-page-subtitle="录入、导入与批量管理学生成绩">
+                                    <i class="fas fa-edit"></i><span>分数录入</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#reports-tab"
+                                   data-page-icon="fa-file-pdf" data-page-title="成绩报告" data-page-subtitle="按班级或级别生成打印/导出报告">
+                                    <i class="fas fa-file-pdf"></i><span>成绩报告</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-divider" role="separator"></li>
+                            <li class="sidebar-group-label">联课</li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#attendance-tab"
+                                   data-page-icon="fa-clipboard-check" data-page-title="点名系统" data-page-subtitle="发起联课点名，查看签到记录">
+                                    <i class="fas fa-clipboard-check"></i><span>点名系统</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#members-tab"
+                                   data-page-icon="fa-address-book" data-page-title="会员管理" data-page-subtitle="维护协会全体会员名单，用于点名签到">
+                                    <i class="fas fa-address-book"></i><span>会员管理</span>
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <button id="logout-btn" class="btn btn-ghost btn-sm me-2">
-                        <i class="fas fa-sign-out-alt me-1"></i>退出
+                </nav>
+            </aside>
+            <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+            <div class="admin-main">
+                <header class="admin-topbar">
+                    <button class="topbar-menu-toggle" type="button" id="sidebar-toggle-btn" aria-label="展开菜单">
+                        <i class="fas fa-bars"></i>
                     </button>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                </div>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav navbar-subnav me-auto">
-    <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#members-tab"
-           data-page-icon="fa-address-book" data-page-title="会员管理" data-page-subtitle="维护协会全体会员名单，用于点名签到">
-            <i class="fas fa-address-book me-1"></i>会员管理
-        </a>
-    </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab"
-                               data-page-icon="fa-tachometer-alt" data-page-title="仪表盘" data-page-subtitle="协会评分系统运行概览">
-                                <i class="fas fa-tachometer-alt me-1"></i>仪表盘
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab"
-                               data-page-icon="fa-user-graduate" data-page-title="学生管理" data-page-subtitle="管理学生档案、级别与分组信息">
-                                <i class="fas fa-user-graduate me-1"></i>学生管理
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab"
-                               data-page-icon="fa-tasks" data-page-title="评分项目" data-page-subtitle="创建与维护各类评分项目及权重">
-                                <i class="fas fa-tasks me-1"></i>评分项目
-                            </a>
-                        </li>
-                        <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#levels-tab"
-       data-page-icon="fa-layer-group" data-page-title="级别管理" data-page-subtitle="设置学生级别，并关联对应的评分项目">
-        <i class="fas fa-layer-group me-1"></i>级别管理
-    </a>
-</li>
-                        <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab"
-       data-page-icon="fa-clipboard-check" data-page-title="点名系统" data-page-subtitle="发起联课点名，查看签到记录">
-        <i class="fas fa-clipboard-check me-1"></i>点名系统
-    </a>
-</li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab"
-                               data-page-icon="fa-edit" data-page-title="分数录入" data-page-subtitle="录入、导入与批量管理学生成绩">
-                                <i class="fas fa-edit me-1"></i>分数录入
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab"
-                               data-page-icon="fa-file-pdf" data-page-title="成绩报告" data-page-subtitle="按班级或级别生成打印/导出报告">
-                                <i class="fas fa-file-pdf me-1"></i>成绩报告
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+                    <div class="topbar-title" id="topbar-page-title">仪表盘</div>
+                    <div class="topbar-actions">
+                        <button class="topbar-icon-btn" type="button" title="搜索">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="topbar-icon-btn" type="button" title="通知">
+                            <i class="fas fa-bell"></i>
+                            <span class="dot"></span>
+                        </button>
+                        <div class="navbar-user-chip topbar-user">
+                            <span class="navbar-user-avatar topbar-user-avatar"><i class="fas fa-user"></i></span>
+                            <span id="user-email">admin@example.com</span>
+                        </div>
+                        <button id="logout-btn" class="btn btn-ghost btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>退出
+                        </button>
+                    </div>
+                </header>
+                <main class="admin-content">
 
         <div class="container mt-4">
             <!-- 管理后台统一页头：随 Tab 切换联动图标/标题/副标题 -->
@@ -2164,6 +2476,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                     <p id="admin-page-subtitle">协会评分系统运行概览</p>
                 </div>
             </div>
+            <div class="admin-page-body">
             <div class="tab-content">
                 <!-- 会员管理 -->
 <div class="tab-pane fade" id="members-tab">
@@ -3219,6 +3532,13 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
             </div>
         </div>
     </div>
+</div>
+                </div><!-- /.tab-content -->
+            </div><!-- /.admin-page-body -->
+            </div><!-- /.container -->
+                </main><!-- /.admin-content -->
+            </div><!-- /.admin-main -->
+        </div><!-- /.admin-layout -->
 </div>
 
                 <!-- 快速返回顶部按钮 -->
@@ -16261,6 +16581,57 @@ window.addEventListener('resize', debounce(() => {
         updateScoreTrendChart();
     }
 }, 500));
+
+// ==================== 管理员后台：侧边栏 + 顶栏布局（新增，不修改任何既有函数） ====================
+function initAdminSidebar() {
+    const sidebar = document.getElementById('admin-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    const topbarTitle = document.getElementById('topbar-page-title');
+    const pageTitle = document.getElementById('admin-page-title');
+    const pageSubtitle = document.getElementById('admin-page-subtitle');
+    const pageIcon = document.getElementById('admin-page-icon');
+
+    // 移动端：汉堡按钮展开/收起侧边栏抽屉
+    if (toggleBtn && sidebar && backdrop) {
+        toggleBtn.addEventListener('click', function () {
+            sidebar.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        });
+        backdrop.addEventListener('click', function () {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+        });
+    }
+
+    // 侧边栏菜单点击：同步顶栏标题 + 页面头标题/副标题/图标
+    // 注意：active 状态的增删已由既有的 safeActivateTab / tab 切换逻辑处理，这里只负责文案同步
+    const sidebarLinks = document.querySelectorAll('.admin-sidebar .sidebar-item[data-bs-toggle="tab"]');
+    sidebarLinks.forEach(function (link) {
+        link.addEventListener('click', function () {
+            const title = this.getAttribute('data-page-title');
+            const subtitle = this.getAttribute('data-page-subtitle');
+            const icon = this.getAttribute('data-page-icon');
+
+            if (title) {
+                if (pageTitle) pageTitle.textContent = title;
+                if (topbarTitle) topbarTitle.textContent = title;
+            }
+            if (subtitle && pageSubtitle) pageSubtitle.textContent = subtitle;
+            if (icon && pageIcon) pageIcon.className = 'fas ' + icon;
+
+            // 移动端选中菜单项后自动收起抽屉
+            if (window.innerWidth <= 1024 && sidebar && backdrop) {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('show');
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(initAdminSidebar, 500);
+});
     </script>
 
     <!-- ============================================================
