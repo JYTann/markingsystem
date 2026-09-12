@@ -309,6 +309,32 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
 }
 .navbar.scrolled { box-shadow: var(--shadow-xs); }
 
+.navbar-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: var(--r-full);
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+}
+.navbar-user-avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--primary-500);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+.navbar-toggler { border: 1px solid var(--border); }
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(55, 65, 81, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
 /* ----------------------------------------------------------------------------
    4. 卡片
    ---------------------------------------------------------------------------- */
@@ -1128,20 +1154,70 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 .status-dot.offline { background: var(--gray-300); }
 
 /* ----------------------------------------------------------------------------
-   25. 学生查询容器 / 登录相关
+   25. 学生查询页 — 左品牌区 + 右功能卡（Stripe 式双栏登录）
    ---------------------------------------------------------------------------- */
-.student-query-container {
-    max-width: 480px;
+.query-shell {
+    max-width: 880px;
     margin: var(--sp-16) auto;
-    padding: var(--sp-8);
-    background: #fff;
-    backdrop-filter: none;
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
     border-radius: var(--r-xl);
-    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
     border: 1px solid var(--border);
-    animation: fadeInUp var(--dur-slow) var(--ease);
+    animation: fadeInUp var(--dur-slow) var(--ease-out);
+    background: #fff;
 }
-.student-query-title { font-size: var(--fs-xl); font-weight: var(--fw-bold); text-align: center; margin-bottom: var(--sp-6); color: var(--gray-900); }
+.query-brand-panel {
+    background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-700) 100%);
+    color: #fff;
+    padding: var(--sp-10) var(--sp-8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.query-brand-panel .login-logo { text-align: left; margin-bottom: var(--sp-6); }
+.query-brand-panel .login-logo img { height: 56px; margin: 0; filter: brightness(0) invert(1); }
+.query-brand-panel .student-query-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 28px;
+    line-height: 1.35;
+    text-align: left;
+    color: #fff;
+    margin-bottom: var(--sp-4);
+    letter-spacing: 0.02em;
+}
+.query-brand-tagline {
+    font-size: var(--fs-base);
+    color: rgba(255,255,255,0.82);
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+.query-brand-panel .query-divider { width: 32px; height: 2px; background: rgba(255,255,255,0.4); margin: var(--sp-5) 0; border: none; }
+
+.query-form-panel {
+    padding: var(--sp-10) var(--sp-8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.query-form-panel .nav-tabs { margin-bottom: var(--sp-6); }
+
+@media (max-width: 768px) {
+    .query-shell { grid-template-columns: 1fr; margin: 0; border-radius: 0; box-shadow: none; border: none; min-height: 100vh; }
+    .query-brand-panel { padding: var(--sp-8) var(--sp-6) var(--sp-6); }
+    .query-brand-panel .login-logo { text-align: center; }
+    .query-brand-panel .login-logo img { margin: 0 auto; }
+    .query-brand-panel .student-query-title { text-align: center; font-size: 24px; }
+    .query-brand-tagline { text-align: center; }
+    .query-brand-panel .query-divider { margin: var(--sp-4) auto; }
+    .query-form-panel { padding: var(--sp-6); }
+}
+
+/* 旧变量名兼容映射，避免其它引用失效 */
+.student-query-container { max-width: 480px; margin: var(--sp-16) auto; }
 .login-logo { text-align: center; margin-bottom: var(--sp-5); }
 .login-logo img { height: 48px; margin: 0 auto; }
 
@@ -1149,10 +1225,17 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
    26. 装饰性效果统一去除（保留 class 名以免报错，但清除视觉噪音）
    ---------------------------------------------------------------------------- */
 .particle-bg, .mouse-glow, .border-glow, .btn-neon, .bounce-arrow,
-.gradient-text, .gradient-text-cool, .gradient-text-warm,
-.text-gradient-fire, .text-gradient-forest, .text-gradient-ocean, .text-masked,
 .watermark-card::before, .watermark-card::after {
     display: none !important;
+}
+/* 渐变文字类：保留文字可见，只去掉渐变，改为主色实色（修复之前版本把这些标题整个隐藏掉的问题） */
+.gradient-text, .gradient-text-cool, .gradient-text-warm,
+.text-gradient-fire, .text-gradient-forest, .text-gradient-ocean, .text-masked {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: unset !important;
+    background-clip: unset !important;
+    color: var(--primary-600) !important;
 }
 .glass-card, .glass-card-dark {
     background: #fff; backdrop-filter: none; border: 1px solid var(--border); box-shadow: var(--shadow-sm);
@@ -1203,12 +1286,16 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 <body>
     <!-- 学生查询页面 -->
     <div id="student-query-page" class="container">
-        <div class="student-query-container">
-            <div class="login-logo">
-                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 80px;">
+        <div class="query-shell">
+            <div class="query-brand-panel">
+                <div class="login-logo">
+                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 56px;">
+                </div>
+                <h2 class="student-query-title">新山宽柔中学<br>电脑协会成绩系统</h2>
+                <hr class="query-divider">
+                <p class="query-brand-tagline">让每一份成绩，都被看见</p>
             </div>
-            <h2 class="student-query-title">新山宽柔中学电脑协会成绩系统</h2>
-            
+            <div class="query-form-panel">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
                     <a class="nav-link active student-query-link" data-bs-toggle="tab" href="#query-form-tab">
@@ -1422,15 +1509,16 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 <!-- 学生签到标签页结束 -->
 
             </div>
+            </div>
         </div>
     </div>
 
    <!-- 主系统页面 (默认隐藏) -->
     <div id="main-system" style="display: none;">
-        <nav class="navbar navbar-expand-lg navbar-dark">
+        <nav class="navbar navbar-expand-lg">
             <div class="container-fluid">
                 <a class="navbar-brand" href="javascript:void(0)">
-                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 40px; margin-right: 10px;">
+                <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 32px; margin-right: 10px;">
                     <span>新山宽柔中学电脑协会评分系统</span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -1481,11 +1569,11 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                         </li>
                     </ul>
                     <div class="d-flex align-items-center">
-                        <div class="text-white me-3">
-                            <i class="fas fa-user-circle me-1"></i>
+                        <div class="navbar-user-chip me-3">
+                            <span class="navbar-user-avatar"><i class="fas fa-user"></i></span>
                             <span id="user-email">admin@example.com</span>
                         </div>
-                        <button id="logout-btn" class="btn btn-outline-light">
+                        <button id="logout-btn" class="btn btn-ghost btn-sm">
                             <i class="fas fa-sign-out-alt me-1"></i>退出
                         </button>
                     </div>
