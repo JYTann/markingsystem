@@ -1225,10 +1225,10 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 }
 
 .query-shell {
-    max-width: 920px;
+    max-width: 1080px;
     margin: var(--sp-16) auto;
     display: grid;
-    grid-template-columns: 0.85fr 1.15fr;
+    grid-template-columns: 0.8fr 1.2fr;
     border-radius: var(--r-xl);
     overflow: hidden;
     box-shadow: 0 20px 50px -12px rgba(15,23,42,0.15);
@@ -1237,6 +1237,9 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     background: #fff;
     position: relative;
     z-index: 1;
+}
+@media (min-width: 1440px) {
+    .query-shell { max-width: 1180px; }
 }
 
 /* ============ 左侧品牌区 ============ */
@@ -2099,43 +2102,51 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav navbar-subnav me-auto">
     <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#members-tab">
+        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#members-tab"
+           data-page-icon="fa-address-book" data-page-title="会员管理" data-page-subtitle="维护协会全体会员名单，用于点名签到">
             <i class="fas fa-address-book me-1"></i>会员管理
         </a>
     </li>
 
                         <li class="nav-item">
-                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                            <a class="nav-link active" data-bs-toggle="tab" data-bs-target="#dashboard-tab"
+                               data-page-icon="fa-tachometer-alt" data-page-title="仪表盘" data-page-subtitle="协会评分系统运行概览">
                                 <i class="fas fa-tachometer-alt me-1"></i>仪表盘
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#students-tab"
+                               data-page-icon="fa-user-graduate" data-page-title="学生管理" data-page-subtitle="管理学生档案、级别与分组信息">
                                 <i class="fas fa-user-graduate me-1"></i>学生管理
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#projects-tab"
+                               data-page-icon="fa-tasks" data-page-title="评分项目" data-page-subtitle="创建与维护各类评分项目及权重">
                                 <i class="fas fa-tasks me-1"></i>评分项目
                             </a>
                         </li>
                         <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#levels-tab">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#levels-tab"
+       data-page-icon="fa-layer-group" data-page-title="级别管理" data-page-subtitle="设置学生级别，并关联对应的评分项目">
         <i class="fas fa-layer-group me-1"></i>级别管理
     </a>
 </li>
                         <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab">
+    <a class="nav-link" data-bs-toggle="tab" data-bs-target="#attendance-tab"
+       data-page-icon="fa-clipboard-check" data-page-title="点名系统" data-page-subtitle="发起联课点名，查看签到记录">
         <i class="fas fa-clipboard-check me-1"></i>点名系统
     </a>
 </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#scores-tab"
+                               data-page-icon="fa-edit" data-page-title="分数录入" data-page-subtitle="录入、导入与批量管理学生成绩">
                                 <i class="fas fa-edit me-1"></i>分数录入
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab">
+                            <a class="nav-link" data-bs-toggle="tab" data-bs-target="#reports-tab"
+                               data-page-icon="fa-file-pdf" data-page-title="成绩报告" data-page-subtitle="按班级或级别生成打印/导出报告">
                                 <i class="fas fa-file-pdf me-1"></i>成绩报告
                             </a>
                         </li>
@@ -2145,6 +2156,14 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
         </nav>
 
         <div class="container mt-4">
+            <!-- 管理后台统一页头：随 Tab 切换联动图标/标题/副标题 -->
+            <div class="admin-page-header">
+                <div class="admin-page-header-icon"><i id="admin-page-icon" class="fas fa-tachometer-alt"></i></div>
+                <div>
+                    <h2 id="admin-page-title">仪表盘</h2>
+                    <p id="admin-page-subtitle">协会评分系统运行概览</p>
+                </div>
+            </div>
             <div class="tab-content">
                 <!-- 会员管理 -->
 <div class="tab-pane fade" id="members-tab">
