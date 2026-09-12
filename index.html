@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能评分系统 | 新山宽柔中学电脑协会杂家制作组</title>
+    <title>智能评分系统 | 新山宽柔中学电脑协会</title>
     <link rel="icon" href="favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
@@ -257,8 +257,34 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
     position: sticky;
     top: 0;
     z-index: 1000;
+    flex-wrap: wrap;
 }
 .navbar::after { content: none; display: none; }
+.navbar > .container-fluid { min-height: 64px; }
+/* 强制副栏另起一行，做出「顶栏 64px + 副栏 48px」两层结构 */
+.navbar .navbar-collapse {
+    flex-basis: 100%;
+    border-top: 1px solid var(--border-subtle);
+    margin: 0 calc(-1 * var(--sp-8));
+    padding: 0 var(--sp-8);
+}
+.navbar-subnav {
+    min-height: 48px;
+    gap: var(--sp-1);
+}
+.navbar-subnav .nav-link {
+    background: transparent !important;
+    border-radius: 0 !important;
+    border-bottom: 2px solid transparent;
+    padding: var(--sp-3) var(--sp-3) !important;
+    margin: 0 !important;
+}
+.navbar-subnav .nav-link:hover { background: transparent !important; color: var(--gray-900) !important; }
+.navbar-subnav .nav-link.active {
+    background: transparent !important;
+    color: var(--primary-600) !important;
+    border-bottom-color: var(--primary-500);
+}
 
 .navbar-brand {
     font-weight: var(--fw-semibold);
@@ -565,6 +591,20 @@ textarea.form-control { height: auto; padding: 10px 12px; }
 .stat-card::before { content: none; display: none; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
 .stat-card:hover::before { opacity: 0; }
+/* 彩色图标徽章 — 让统计卡片有色彩层次，但不破坏卡片本身的白底克制感 */
+.stat-icon-chip {
+    width: 40px !important; height: 40px !important;
+    border-radius: var(--r-md);
+    display: inline-flex !important;
+    align-items: center; justify-content: center;
+    font-size: 17px !important;
+    margin-bottom: var(--sp-3) !important;
+}
+.stat-icon-primary { background: var(--primary-50); color: var(--primary-600) !important; }
+.stat-icon-info    { background: var(--info-bg);    color: var(--info) !important; }
+.stat-icon-success { background: var(--success-bg); color: var(--success) !important; }
+.stat-icon-warning { background: var(--warning-bg); color: var(--warning) !important; }
+.stat-icon-danger  { background: var(--danger-bg);  color: var(--danger) !important; }
 .stat-card i { font-size: 20px; margin-bottom: var(--sp-3); opacity: 1; color: var(--primary-500); }
 .stat-card .card-title, .stat-card .stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--gray-900); }
 .stat-card .card-text, .stat-card .stat-label { font-size: var(--fs-base); color: var(--gray-500); font-weight: var(--fw-medium); }
@@ -1154,8 +1194,36 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 .status-dot.offline { background: var(--gray-300); }
 
 /* ----------------------------------------------------------------------------
-   25. 学生查询页 — 左品牌区 + 右功能卡（Stripe 式双栏登录）
+   25. 学生查询页 — 左品牌区 + 右功能卡（Stripe 式双栏登录，带氛围感）
    ---------------------------------------------------------------------------- */
+#student-query-page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+/* 页面背景氛围：两团极淡的主色光晕，静态不闪烁 */
+#student-query-page::before,
+#student-query-page::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+    pointer-events: none;
+}
+#student-query-page::before {
+    width: 480px; height: 480px;
+    background: rgba(79,70,229,0.08);
+    top: -160px; left: -120px;
+}
+#student-query-page::after {
+    width: 420px; height: 420px;
+    background: rgba(219,39,119,0.06);
+    bottom: -160px; right: -100px;
+}
+
 .query-shell {
     max-width: 880px;
     margin: var(--sp-16) auto;
@@ -1163,25 +1231,63 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     grid-template-columns: 0.85fr 1.15fr;
     border-radius: var(--r-xl);
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
     border: 1px solid var(--border);
     animation: fadeInUp var(--dur-slow) var(--ease-out);
     background: #fff;
+    position: relative;
+    z-index: 1;
 }
 .query-brand-panel {
-    background: linear-gradient(180deg, var(--primary-500) 0%, var(--primary-700) 100%);
+    background: linear-gradient(135deg, #4F46E5 0%, #9333EA 55%, #DB2777 100%);
+    background-image:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0),
+        linear-gradient(135deg, #4F46E5 0%, #9333EA 55%, #DB2777 100%);
+    background-size: 22px 22px, 100% 100%;
     color: #fff;
     padding: var(--sp-10) var(--sp-8);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
 }
+/* 两团模糊光斑，做出「氛围感」而不是纯色块 */
+.query-brand-panel::before,
+.query-brand-panel::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+}
+.query-brand-panel::before {
+    width: 220px; height: 220px;
+    background: rgba(255,255,255,0.14);
+    filter: blur(50px);
+    top: -90px; right: -70px;
+}
+.query-brand-panel::after {
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,0.08);
+    filter: blur(40px);
+    bottom: -70px; left: -50px;
+}
+.query-brand-panel > * { position: relative; z-index: 1; animation: fadeInUp 520ms var(--ease-out) backwards; }
+.query-brand-panel > *:nth-child(1) { animation-delay: 0ms; }
+.query-brand-panel > *:nth-child(2) { animation-delay: 70ms; }
+.query-brand-panel > *:nth-child(3) { animation-delay: 130ms; }
+.query-brand-panel > *:nth-child(4) { animation-delay: 190ms; }
+.query-brand-panel > *:nth-child(5) { animation-delay: 250ms; }
+.query-brand-panel > *:nth-child(6) { animation-delay: 310ms; }
+.query-brand-panel > *:nth-child(7) { animation-delay: 370ms; }
+
 .query-brand-panel .login-logo { text-align: left; margin-bottom: var(--sp-6); }
 .query-brand-panel .login-logo img { height: 56px; margin: 0; filter: brightness(0) invert(1); }
 .query-brand-panel .student-query-title {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 28px;
+    font-size: 30px;
     line-height: 1.35;
     text-align: left;
     color: #fff;
@@ -1190,22 +1296,61 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 }
 .query-brand-tagline {
     font-size: var(--fs-base);
-    color: rgba(255,255,255,0.82);
+    color: rgba(255,255,255,0.85);
     line-height: 1.6;
     letter-spacing: 0.01em;
     margin: 0;
 }
 .query-brand-panel .query-divider { width: 32px; height: 2px; background: rgba(255,255,255,0.4); margin: var(--sp-5) 0; border: none; }
 
+/* 问候语 + 实时时间 */
+.query-brand-greeting { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--sp-5); }
+.query-brand-greeting .greeting-line { font-size: var(--fs-md); font-weight: var(--fw-medium); color: #fff; }
+.query-brand-greeting .clock-line { font-size: var(--fs-xs); color: rgba(255,255,255,0.72); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+/* 实时数据预览 */
+.query-brand-stats { display: flex; gap: var(--sp-6); margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid rgba(255,255,255,0.18); }
+.query-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.query-stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: #fff; font-variant-numeric: tabular-nums; line-height: 1; }
+.query-stat-value.is-loading { position: relative; color: transparent; }
+.query-stat-value.is-loading::before {
+    content: '';
+    position: absolute; left: 0; top: 2px;
+    width: 36px; height: 20px;
+    border-radius: var(--r-sm);
+    background: rgba(255,255,255,0.18);
+    animation: skeletonLoading 1.5s ease-in-out infinite;
+    background-image: linear-gradient(90deg, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.12) 75%);
+    background-size: 200% 100%;
+}
+.query-stat-label { font-size: var(--fs-2xs); color: rgba(255,255,255,0.68); letter-spacing: 0.02em; }
+
+/* 三条价值点，填满品牌区的视觉重量，也让首屏更有内容感 */
+.query-brand-features { list-style: none; padding: 0; margin: var(--sp-6) 0 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.query-brand-features li { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-sm); color: rgba(255,255,255,0.9); }
+.query-feature-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--r-sm);
+    background: rgba(255,255,255,0.16);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
 .query-form-panel {
     padding: var(--sp-10) var(--sp-8);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    position: relative;
+    z-index: 1;
+    background: #fff;
 }
 .query-form-panel .nav-tabs { margin-bottom: var(--sp-6); }
+.query-form-panel > * { animation: fadeInUp 420ms var(--ease-out) backwards; animation-delay: 260ms; }
 
 @media (max-width: 768px) {
+    #student-query-page { display: block; }
     .query-shell { grid-template-columns: 1fr; margin: 0; border-radius: 0; box-shadow: none; border: none; min-height: 100vh; }
     .query-brand-panel { padding: var(--sp-8) var(--sp-6) var(--sp-6); }
     .query-brand-panel .login-logo { text-align: center; }
@@ -1213,6 +1358,9 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     .query-brand-panel .student-query-title { text-align: center; font-size: 24px; }
     .query-brand-tagline { text-align: center; }
     .query-brand-panel .query-divider { margin: var(--sp-4) auto; }
+    .query-brand-greeting { align-items: center; }
+    .query-brand-features { align-items: center; }
+    .query-brand-stats { justify-content: center; }
     .query-form-panel { padding: var(--sp-6); }
 }
 
@@ -1291,9 +1439,28 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 <div class="login-logo">
                     <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 56px;">
                 </div>
-                <h2 class="student-query-title">新山宽柔中学电脑协会<br>杂家制作组成绩系统</h2>
+                <h2 class="student-query-title">新山宽柔中学<br>电脑协会成绩系统</h2>
                 <hr class="query-divider">
+                <div class="query-brand-greeting">
+                    <span class="greeting-line" id="query-greeting-text">你好</span>
+                    <span class="clock-line" id="query-clock-text">--</span>
+                </div>
                 <p class="query-brand-tagline">让每一份成绩，都被看见</p>
+                <ul class="query-brand-features">
+                    <li><span class="query-feature-icon"><i class="fas fa-bolt"></i></span>实时查询，成绩即录即查</li>
+                    <li><span class="query-feature-icon"><i class="fas fa-mobile-alt"></i></span>手机电脑，随时随地访问</li>
+                    <li><span class="query-feature-icon"><i class="fas fa-shield-alt"></i></span>数据加密，安全可靠</li>
+                </ul>
+                <div class="query-brand-stats">
+                    <div class="query-stat-item">
+                        <span class="query-stat-value is-loading" id="query-stat-students">0</span>
+                        <span class="query-stat-label">位学生</span>
+                    </div>
+                    <div class="query-stat-item">
+                        <span class="query-stat-value is-loading" id="query-stat-projects">0</span>
+                        <span class="query-stat-label">个评分项目</span>
+                    </div>
+                </div>
             </div>
             <div class="query-form-panel">
             <ul class="nav nav-tabs">
@@ -1521,11 +1688,20 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 32px; margin-right: 10px;">
                     <span>新山宽柔中学电脑协会评分系统</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                <div class="d-flex align-items-center order-lg-2">
+                    <div class="navbar-user-chip me-2">
+                        <span class="navbar-user-avatar"><i class="fas fa-user"></i></span>
+                        <span id="user-email">admin@example.com</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-ghost btn-sm me-2">
+                        <i class="fas fa-sign-out-alt me-1"></i>退出
+                    </button>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
+                    <ul class="navbar-nav navbar-subnav me-auto">
     <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" data-bs-target="#members-tab">
             <i class="fas fa-address-book me-1"></i>会员管理
@@ -1568,15 +1744,6 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                             </a>
                         </li>
                     </ul>
-                    <div class="d-flex align-items-center">
-                        <div class="navbar-user-chip me-3">
-                            <span class="navbar-user-avatar"><i class="fas fa-user"></i></span>
-                            <span id="user-email">admin@example.com</span>
-                        </div>
-                        <button id="logout-btn" class="btn btn-ghost btn-sm">
-                            <i class="fas fa-sign-out-alt me-1"></i>退出
-                        </button>
-                    </div>
                 </div>
             </div>
         </nav>
@@ -1643,22 +1810,22 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 <div class="tab-pane fade show active" id="dashboard-tab">
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="stat-card" style="background: linear-gradient(135deg, #4361ee, #3a0ca3);">
-                                <i class="fas fa-users"></i>
+                            <div class="stat-card">
+                                <i class="fas fa-users stat-icon-chip stat-icon-primary"></i>
                                 <h5 class="card-title" id="student-count">0</h5>
                                 <p class="card-text">已注册学生总数</p>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #4895ef);">
-                                <i class="fas fa-tasks"></i>
+                            <div class="stat-card">
+                                <i class="fas fa-tasks stat-icon-chip stat-icon-info"></i>
                                 <h5 class="card-title" id="project-count">0</h5>
                                 <p class="card-text">已创建评分项目</p>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);">
-                                <i class="fas fa-chart-line"></i>
+                            <div class="stat-card">
+                                <i class="fas fa-chart-line stat-icon-chip stat-icon-success"></i>
                                 <h5 class="card-title" id="score-count">0</h5>
                                 <p class="card-text">已录入分数记录</p>
                             </div>
@@ -2936,9 +3103,10 @@ function loadAllProjectsToSelect() {
 
              // 显示登录页面
         function showLoginPage() {
-    document.getElementById('student-query-page').style.display = 'block';
+    document.getElementById('student-query-page').style.removeProperty('display');
     document.getElementById('main-system').style.display = 'none';
     document.getElementById('login-form').reset();
+    initQueryLandingExtras();
 }
 
             // Google登录按钮
@@ -3505,9 +3673,10 @@ async function loadAllDataForQuery() {
 
         // 显示学生查询页面
         function showStudentQueryPage() {
-            document.getElementById('student-query-page').style.display = 'block';
+            document.getElementById('student-query-page').style.removeProperty('display');
             document.getElementById('main-system').style.display = 'none';
             document.getElementById('login-form').reset();
+            initQueryLandingExtras();
         }
 
         // 显示主系统
@@ -10815,22 +10984,22 @@ async function viewAttendanceDetail(attendanceId) {
         
         <div class="row mb-3">
             <div class="col-md-3">
-                <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #34d399);">
-                    <i class="fas fa-user-check"></i>
+                <div class="stat-card">
+                    <i class="fas fa-user-check stat-icon-chip stat-icon-success"></i>
                     <h5 class="card-title">${checkedInStudents.length}</h5>
                     <p class="card-text">已签到</p>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card" style="background: linear-gradient(135deg, #ef4444, #f87171);">
-                    <i class="fas fa-user-times"></i>
+                <div class="stat-card">
+                    <i class="fas fa-user-times stat-icon-chip stat-icon-danger"></i>
                     <h5 class="card-title">${absentMembers.length}</h5>
                     <p class="card-text">未签到</p>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
-                    <i class="fas fa-percentage"></i>
+                <div class="stat-card">
+                    <i class="fas fa-percentage stat-icon-chip stat-icon-warning"></i>
                     <h5 class="card-title">${targetMembers.length > 0 ? Math.round((checkedInStudents.length/targetMembers.length)*100) : 0}%</h5>
                     <p class="card-text">出勤率</p>
                 </div>
