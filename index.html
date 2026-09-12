@@ -1194,7 +1194,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 .status-dot.offline { background: var(--gray-300); }
 
 /* ----------------------------------------------------------------------------
-   25. 学生查询页 — 左品牌区 + 右功能卡（Stripe 式双栏登录，带氛围感）
+   25. 学生查询页 — 左品牌区 + 右功能卡（Stripe 式双栏，带氛围感 v2）
    ---------------------------------------------------------------------------- */
 #student-query-page {
     position: relative;
@@ -1225,120 +1225,233 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 }
 
 .query-shell {
-    max-width: 880px;
+    max-width: 920px;
     margin: var(--sp-16) auto;
     display: grid;
     grid-template-columns: 0.85fr 1.15fr;
     border-radius: var(--r-xl);
     overflow: hidden;
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 20px 50px -12px rgba(15,23,42,0.15);
     border: 1px solid var(--border);
     animation: fadeInUp var(--dur-slow) var(--ease-out);
     background: #fff;
     position: relative;
     z-index: 1;
 }
+
+/* ============ 左侧品牌区 ============ */
 .query-brand-panel {
-    background: linear-gradient(135deg, #4F46E5 0%, #9333EA 55%, #DB2777 100%);
-    background-image:
-        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.10) 1px, transparent 0),
-        linear-gradient(135deg, #4F46E5 0%, #9333EA 55%, #DB2777 100%);
-    background-size: 22px 22px, 100% 100%;
+    background:
+        radial-gradient(circle at 20% 0%, rgba(255,255,255,0.15), transparent 40%),
+        radial-gradient(circle at 80% 100%, rgba(236,72,153,0.25), transparent 45%),
+        linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #DB2777 100%);
     color: #fff;
-    padding: var(--sp-10) var(--sp-8);
+    padding: var(--sp-8) var(--sp-8) var(--sp-6);
     display: flex;
     flex-direction: column;
-    justify-content: center;
     position: relative;
     overflow: hidden;
 }
-/* 两团模糊光斑，做出「氛围感」而不是纯色块 */
-.query-brand-panel::before,
-.query-brand-panel::after {
+/* 极细网格纹理，几乎不可见，只增加质感 */
+.query-brand-panel::before {
     content: '';
     position: absolute;
-    border-radius: 50%;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
     z-index: 0;
     pointer-events: none;
 }
-.query-brand-panel::before {
-    width: 220px; height: 220px;
-    background: rgba(255,255,255,0.14);
-    filter: blur(50px);
-    top: -90px; right: -70px;
-}
+/* 两团模糊光斑，缓慢漂移，做出「活着」的氛围 */
 .query-brand-panel::after {
-    width: 180px; height: 180px;
-    background: rgba(255,255,255,0.08);
-    filter: blur(40px);
-    bottom: -70px; left: -50px;
+    content: '';
+    position: absolute;
+    width: 260px; height: 260px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.16);
+    filter: blur(60px);
+    top: -100px; right: -80px;
+    z-index: 0;
+    pointer-events: none;
+    animation: queryBlobDrift1 30s ease-in-out infinite;
 }
-.query-brand-panel > * { position: relative; z-index: 1; animation: fadeInUp 520ms var(--ease-out) backwards; }
-.query-brand-panel > *:nth-child(1) { animation-delay: 0ms; }
-.query-brand-panel > *:nth-child(2) { animation-delay: 70ms; }
-.query-brand-panel > *:nth-child(3) { animation-delay: 130ms; }
-.query-brand-panel > *:nth-child(4) { animation-delay: 190ms; }
-.query-brand-panel > *:nth-child(5) { animation-delay: 250ms; }
-.query-brand-panel > *:nth-child(6) { animation-delay: 310ms; }
-.query-brand-panel > *:nth-child(7) { animation-delay: 370ms; }
+.query-brand-glow-2 {
+    position: absolute;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: rgba(236,72,153,0.35);
+    filter: blur(80px);
+    bottom: -90px; left: -60px;
+    z-index: 0;
+    pointer-events: none;
+    animation: queryBlobDrift2 34s ease-in-out infinite;
+}
+@keyframes queryBlobDrift1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-18px, 14px); }
+}
+@keyframes queryBlobDrift2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(16px, -12px); }
+}
+/* 浮动光点，最多 3 个，缓慢上下浮动 */
+.query-float-dots { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.query-float-dot {
+    position: absolute;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.55);
+    filter: blur(1.5px);
+    animation: queryDotFloat 10s ease-in-out infinite;
+}
+.query-float-dot:nth-child(1) { top: 22%; left: 68%; animation-duration: 9s; }
+.query-float-dot:nth-child(2) { top: 58%; left: 20%; animation-duration: 11s; animation-delay: 1.5s; }
+.query-float-dot:nth-child(3) { top: 78%; left: 62%; animation-duration: 8s; animation-delay: 3s; }
+@keyframes queryDotFloat {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50% { transform: translateY(-14px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .query-brand-panel::after, .query-brand-glow-2, .query-float-dot { animation: none; }
+}
 
-.query-brand-panel .login-logo { text-align: left; margin-bottom: var(--sp-6); }
-.query-brand-panel .login-logo img { height: 56px; margin: 0; filter: brightness(0) invert(1); }
+.query-brand-panel > * { position: relative; z-index: 1; }
+.query-brand-panel [data-qa-in] {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.query-brand-panel [data-qa-in].qa-in {
+    animation: fadeInUp 500ms var(--ease-out) forwards;
+}
+
+.query-brand-panel .login-logo { text-align: left; margin-bottom: var(--sp-5); }
+.query-brand-panel .login-logo img { height: 44px; margin: 0; filter: brightness(0) invert(1); }
+
 .query-brand-panel .student-query-title {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: 30px;
+    font-size: 22px;
     line-height: 1.35;
     text-align: left;
     color: #fff;
-    margin-bottom: var(--sp-4);
-    letter-spacing: 0.02em;
-}
-.query-brand-tagline {
-    font-size: var(--fs-base);
-    color: rgba(255,255,255,0.85);
-    line-height: 1.6;
+    margin: 0 0 var(--sp-5);
     letter-spacing: 0.01em;
-    margin: 0;
+    opacity: 0.92;
 }
-.query-brand-panel .query-divider { width: 32px; height: 2px; background: rgba(255,255,255,0.4); margin: var(--sp-5) 0; border: none; }
 
-/* 问候语 + 实时时间 */
-.query-brand-greeting { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--sp-5); }
-.query-brand-greeting .greeting-line { font-size: var(--fs-md); font-weight: var(--fw-medium); color: #fff; }
-.query-brand-greeting .clock-line { font-size: var(--fs-xs); color: rgba(255,255,255,0.72); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+/* 问候语 + 实时时钟 */
+.query-brand-greeting {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: var(--sp-5);
+    margin-bottom: var(--sp-5);
+    border-bottom: 1px solid rgba(255,255,255,0.16);
+}
+.query-brand-greeting .greeting-line { font-size: 18px; font-weight: var(--fw-medium); color: #fff; }
+.query-brand-greeting .clock-date { font-size: var(--fs-sm); color: rgba(255,255,255,0.72); }
+.query-brand-greeting .clock-line {
+    font-size: var(--fs-sm);
+    color: rgba(255,255,255,0.8);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+}
 
-/* 实时数据预览 */
-.query-brand-stats { display: flex; gap: var(--sp-6); margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid rgba(255,255,255,0.18); }
-.query-stat-item { display: flex; flex-direction: column; gap: 2px; }
-.query-stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: #fff; font-variant-numeric: tabular-nums; line-height: 1; }
+/* 实时数据卡片 */
+.query-brand-stats-card {
+    background: rgba(255,255,255,0.08);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4) var(--sp-4);
+    margin-bottom: var(--sp-5);
+}
+.query-stats-title {
+    font-size: var(--fs-2xs);
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.03em;
+    margin-bottom: var(--sp-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.query-brand-stats { display: flex; align-items: stretch; }
+.query-stat-item { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 0 var(--sp-2); }
+.query-stat-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.14); }
+.query-stat-item:first-child { padding-left: 0; }
+.query-stat-value {
+    font-size: 22px;
+    font-weight: var(--fw-bold);
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
 .query-stat-value.is-loading { position: relative; color: transparent; }
 .query-stat-value.is-loading::before {
     content: '';
     position: absolute; left: 0; top: 2px;
-    width: 36px; height: 20px;
+    width: 32px; height: 18px;
     border-radius: var(--r-sm);
     background: rgba(255,255,255,0.18);
     animation: skeletonLoading 1.5s ease-in-out infinite;
     background-image: linear-gradient(90deg, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.12) 75%);
     background-size: 200% 100%;
 }
-.query-stat-label { font-size: var(--fs-2xs); color: rgba(255,255,255,0.68); letter-spacing: 0.02em; }
+.query-stat-label { font-size: 10px; color: rgba(255,255,255,0.65); letter-spacing: 0.02em; }
+.query-stats-today {
+    font-size: var(--fs-2xs);
+    color: rgba(255,255,255,0.75);
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid rgba(255,255,255,0.14);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.query-stats-today i { color: #86EFAC; font-size: 10px; }
 
-/* 三条价值点，填满品牌区的视觉重量，也让首屏更有内容感 */
-.query-brand-features { list-style: none; padding: 0; margin: var(--sp-6) 0 0; display: flex; flex-direction: column; gap: var(--sp-3); }
-.query-brand-features li { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-sm); color: rgba(255,255,255,0.9); }
+/* 价值点：图标卡片 */
+.query-brand-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--sp-5);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+}
+.query-brand-features li {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: var(--r-md);
+    padding: var(--sp-3);
+    transition: background var(--dur-fast) var(--ease);
+}
+.query-brand-features li:hover { background: rgba(255,255,255,0.12); }
 .query-feature-icon {
-    width: 28px; height: 28px;
+    width: 26px; height: 26px;
     border-radius: var(--r-sm);
-    background: rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.14);
     display: inline-flex; align-items: center; justify-content: center;
     font-size: 12px;
     flex-shrink: 0;
 }
+.query-feature-title { font-size: 12px; font-weight: var(--fw-semibold); color: #fff; }
+.query-feature-desc { font-size: 10px; color: rgba(255,255,255,0.68); line-height: 1.4; }
 
+.query-brand-panel .query-brand-spacer { flex: 1 1 auto; }
+
+/* 底部版本/版权 */
+.query-brand-footer {
+    font-size: 10px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    margin-top: var(--sp-4);
+}
+
+/* ============ 右侧功能卡 ============ */
 .query-form-panel {
-    padding: var(--sp-10) var(--sp-8);
+    padding: var(--sp-8) var(--sp-8);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -1346,22 +1459,235 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     z-index: 1;
     background: #fff;
 }
-.query-form-panel .nav-tabs { margin-bottom: var(--sp-6); }
-.query-form-panel > * { animation: fadeInUp 420ms var(--ease-out) backwards; animation-delay: 260ms; }
+.query-form-panel [data-qa-in] {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.query-form-panel [data-qa-in].qa-in {
+    animation: fadeInUp 500ms var(--ease-out) forwards;
+}
+
+.query-form-header { margin-bottom: var(--sp-5); }
+.query-form-title {
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-bold);
+    color: #0F172A;
+    margin: 0 0 4px;
+    transition: opacity 200ms var(--ease);
+}
+.query-form-subtitle {
+    font-size: var(--fs-base);
+    color: #64748B;
+    margin: 0;
+    transition: opacity 200ms var(--ease);
+}
+
+/* 分段控件 Tab */
+.query-form-panel .nav-tabs {
+    display: flex;
+    gap: 2px;
+    background: #F1F5F9;
+    border: none;
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: var(--sp-6);
+}
+.query-form-panel .nav-tabs .nav-item { flex: 1; }
+.query-form-panel .nav-tabs .nav-link {
+    width: 100%;
+    text-align: center;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    color: #64748B;
+    background: transparent;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    white-space: nowrap;
+}
+.query-form-panel .nav-tabs .nav-link:hover { background: #E2E8F0; color: #334155; }
+.query-form-panel .nav-tabs .nav-link.active {
+    background: #fff;
+    color: var(--primary-600);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Tab 内容切换动效 */
+.query-form-panel .tab-pane { transition: none; }
+.query-form-panel .tab-pane.fade { opacity: 0; transform: translateY(4px); transition: opacity 200ms var(--ease), transform 200ms var(--ease); }
+.query-form-panel .tab-pane.fade.show { opacity: 1; transform: translateY(0); }
+
+/* 带图标的输入框 */
+.query-input-group { position: relative; margin-bottom: var(--sp-4); }
+.query-input-group label { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: #334155; margin-bottom: 6px; display: block; }
+.query-input-group .query-input-icon {
+    position: absolute;
+    left: 14px;
+    top: 41px;
+    color: #94A3B8;
+    font-size: 14px;
+    pointer-events: none;
+}
+.query-input-group input.form-control {
+    height: 48px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: var(--fs-base);
+    padding: 0 var(--sp-4);
+    transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.query-input-group input.form-control.has-icon { padding-left: 40px; }
+.query-input-group input.form-control:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
+.query-input-group .query-password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 41px;
+    color: #94A3B8;
+    font-size: 14px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+}
+.query-input-group .query-password-toggle:hover { color: #64748B; }
+
+/* 主按钮 */
+.query-btn-primary {
+    height: 48px;
+    border-radius: 10px;
+    background: var(--primary-500);
+    border: none;
+    color: #fff;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-semibold);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.query-btn-primary:hover { background: var(--primary-600); transform: translateY(-1px); box-shadow: 0 8px 16px -4px rgba(79,70,229,0.35); color: #fff; }
+.query-btn-primary:active { transform: translateY(0); }
+.query-btn-primary .arrow { transition: transform var(--dur-fast) var(--ease); }
+.query-btn-primary:hover .arrow { transform: translateX(2px); }
+
+/* Google 按钮 */
+.query-btn-google {
+    height: 48px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: #334155;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-medium);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.query-btn-google:hover { background: #F8FAFC; border-color: var(--border-strong); transform: translateY(-1px); }
+.query-btn-google.is-large { height: 52px; background: var(--primary-500); border-color: var(--primary-500); color: #fff; }
+.query-btn-google.is-large:hover { background: var(--primary-600); }
+
+/* 分隔线「或」 */
+.query-divider-or {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin: var(--sp-5) 0;
+    color: #94A3B8;
+    font-size: var(--fs-xs);
+}
+.query-divider-or::before, .query-divider-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+/* 记住我 / 忘记密码 */
+.query-form-row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-5);
+    font-size: var(--fs-sm);
+}
+.query-form-row-between .form-check { display: flex; align-items: center; gap: 6px; }
+.query-form-row-between label { color: #64748B; margin: 0; }
+.query-form-row-between a { color: var(--primary-500); font-weight: var(--fw-medium); }
+
+/* 底部小提示 */
+.query-hint-line {
+    text-align: center;
+    font-size: var(--fs-xs);
+    color: #94A3B8;
+    margin-top: var(--sp-4);
+}
+
+/* 信任徽章 */
+.query-trust-badges {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-5);
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--border);
+}
+.query-trust-badges span {
+    font-size: 11px;
+    color: #94A3B8;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.query-trust-badges i { font-size: 12px; }
 
 @media (max-width: 768px) {
     #student-query-page { display: block; }
     .query-shell { grid-template-columns: 1fr; margin: 0; border-radius: 0; box-shadow: none; border: none; min-height: 100vh; }
-    .query-brand-panel { padding: var(--sp-8) var(--sp-6) var(--sp-6); }
-    .query-brand-panel .login-logo { text-align: center; }
-    .query-brand-panel .login-logo img { margin: 0 auto; }
-    .query-brand-panel .student-query-title { text-align: center; font-size: 24px; }
-    .query-brand-tagline { text-align: center; }
-    .query-brand-panel .query-divider { margin: var(--sp-4) auto; }
-    .query-brand-greeting { align-items: center; }
-    .query-brand-features { align-items: center; }
-    .query-brand-stats { justify-content: center; }
-    .query-form-panel { padding: var(--sp-6); }
+
+    .query-brand-panel {
+        padding: var(--sp-4) var(--sp-5);
+        flex-direction: row;
+        align-items: center;
+        min-height: 56px;
+        gap: var(--sp-3);
+    }
+    .query-brand-panel .login-logo { margin: 0; }
+    .query-brand-panel .login-logo img { height: 28px; }
+    .query-brand-panel .student-query-title { font-size: 15px; margin: 0; opacity: 0.95; }
+    .query-brand-panel .query-brand-greeting,
+    .query-brand-panel .query-brand-stats-card,
+    .query-brand-panel .query-brand-features,
+    .query-brand-panel .query-brand-footer,
+    .query-brand-panel .query-brand-spacer,
+    .query-float-dots,
+    .query-brand-glow-2 { display: none; }
+
+    .query-mobile-clock {
+        display: flex !important;
+        flex-direction: column;
+        gap: var(--sp-1);
+        padding: var(--sp-5);
+        background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #DB2777 100%);
+        color: #fff;
+    }
+    .query-mobile-clock .greeting-line { font-size: var(--fs-md); font-weight: var(--fw-medium); }
+    .query-mobile-clock .clock-line { font-size: var(--fs-xs); color: rgba(255,255,255,0.75); font-variant-numeric: tabular-nums; }
+
+    .query-form-panel { padding: var(--sp-5); }
+    .query-brand-features { grid-template-columns: 1fr 1fr 1fr; }
+}
+@media (min-width: 769px) {
+    .query-mobile-clock { display: none; }
 }
 
 /* 旧变量名兼容映射，避免其它引用失效 */
@@ -1436,64 +1762,123 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     <div id="student-query-page" class="container">
         <div class="query-shell">
             <div class="query-brand-panel">
-                <div class="login-logo">
-                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 56px;">
+                <!-- 浮动光点 + 第二团光斑，只在桌面端显示（移动端由 CSS 隐藏） -->
+                <div class="query-brand-glow-2"></div>
+                <div class="query-float-dots">
+                    <span class="query-float-dot"></span>
+                    <span class="query-float-dot"></span>
+                    <span class="query-float-dot"></span>
                 </div>
-                <h2 class="student-query-title">新山宽柔中学<br>电脑协会成绩系统</h2>
-                <hr class="query-divider">
-                <div class="query-brand-greeting">
-                    <span class="greeting-line" id="query-greeting-text">你好</span>
-                    <span class="clock-line" id="query-clock-text">--</span>
+
+                <div class="login-logo" data-qa-in style="animation-delay:0ms;">
+                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 44px;">
                 </div>
-                <p class="query-brand-tagline">让每一份成绩，都被看见</p>
-                <ul class="query-brand-features">
-                    <li><span class="query-feature-icon"><i class="fas fa-bolt"></i></span>实时查询，成绩即录即查</li>
-                    <li><span class="query-feature-icon"><i class="fas fa-mobile-alt"></i></span>手机电脑，随时随地访问</li>
-                    <li><span class="query-feature-icon"><i class="fas fa-shield-alt"></i></span>数据加密，安全可靠</li>
+                <h2 class="student-query-title" data-qa-in style="animation-delay:40ms;">新山宽柔中学<br>电脑协会成绩系统</h2>
+
+                <!-- 3.1 问候语 + 实时时钟 -->
+                <div class="query-brand-greeting" data-qa-in style="animation-delay:80ms;">
+                    <span class="greeting-line" id="query-greeting-text">你好，欢迎回来</span>
+                    <span class="clock-date" id="query-date-text">--</span>
+                    <span class="clock-line" id="query-clock-text">--:--:--</span>
+                </div>
+
+                <!-- 3.2 系统实时数据 -->
+                <div class="query-brand-stats-card" data-qa-in style="animation-delay:160ms;">
+                    <div class="query-stats-title"><i class="fas fa-chart-bar"></i> 系统实时数据</div>
+                    <div class="query-brand-stats">
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-students">0</span>
+                            <span class="query-stat-label">位学生</span>
+                        </div>
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-projects">0</span>
+                            <span class="query-stat-label">个评分项目</span>
+                        </div>
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-scores">0</span>
+                            <span class="query-stat-label">条成绩</span>
+                        </div>
+                    </div>
+                    <div class="query-stats-today"><i class="fas fa-arrow-up"></i> <span id="query-stat-today">正在统计今日动态…</span></div>
+                </div>
+
+                <!-- 3.3 价值点：图标卡片 -->
+                <ul class="query-brand-features" data-qa-in style="animation-delay:240ms;">
+                    <li>
+                        <span class="query-feature-icon"><i class="fas fa-bolt"></i></span>
+                        <span class="query-feature-title">实时查询</span>
+                        <span class="query-feature-desc">成绩即录即查</span>
+                    </li>
+                    <li>
+                        <span class="query-feature-icon"><i class="fas fa-mobile-alt"></i></span>
+                        <span class="query-feature-title">移动端适配</span>
+                        <span class="query-feature-desc">随时随地访问</span>
+                    </li>
+                    <li>
+                        <span class="query-feature-icon"><i class="fas fa-shield-alt"></i></span>
+                        <span class="query-feature-title">数据加密</span>
+                        <span class="query-feature-desc">安全可靠</span>
+                    </li>
                 </ul>
-                <div class="query-brand-stats">
-                    <div class="query-stat-item">
-                        <span class="query-stat-value is-loading" id="query-stat-students">0</span>
-                        <span class="query-stat-label">位学生</span>
-                    </div>
-                    <div class="query-stat-item">
-                        <span class="query-stat-value is-loading" id="query-stat-projects">0</span>
-                        <span class="query-stat-label">个评分项目</span>
-                    </div>
+
+                <div class="query-brand-spacer"></div>
+
+                <!-- 3.4 版本 / 版权 -->
+                <div class="query-brand-footer" data-qa-in style="animation-delay:320ms;">
+                    v2.5.0 · 杂家——MAKER 出品<br>
+                    © 2025 新山宽柔中学电脑协会
                 </div>
             </div>
+
+            <!-- 移动端专属：紧凑品牌条 + 时钟（桌面端隐藏） -->
+            <div class="query-mobile-clock">
+                <span class="greeting-line" id="query-greeting-text-mobile">你好，欢迎回来</span>
+                <span class="clock-line" id="query-clock-text-mobile">--:--:--</span>
+            </div>
+
             <div class="query-form-panel">
-            <ul class="nav nav-tabs">
+                <div class="query-form-header" data-qa-in style="animation-delay:400ms;">
+                    <h3 class="query-form-title" id="query-form-title">成绩查询</h3>
+                    <p class="query-form-subtitle" id="query-form-subtitle">输入学号即可查看你的成绩单</p>
+                </div>
+            <ul class="nav nav-tabs" data-qa-in style="animation-delay:480ms;">
                 <li class="nav-item">
-                    <a class="nav-link active student-query-link" data-bs-toggle="tab" href="#query-form-tab">
+                    <a class="nav-link active student-query-link" data-bs-toggle="tab" href="#query-form-tab"
+                       data-query-title="成绩查询" data-query-subtitle="输入学号即可查看你的成绩单">
                         <i class="fas fa-search me-1"></i>成绩查询
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#login-tab">
+                    <a class="nav-link" data-bs-toggle="tab" href="#login-tab"
+                       data-query-title="管理员登录" data-query-subtitle="使用授权账号登录管理系统">
                         <i class="fas fa-sign-in-alt me-1"></i>管理员登录
                     </a>
                 </li>
                 <li class="nav-item">
-    <a class="nav-link" data-bs-toggle="tab" href="#student-attendance-tab">
+    <a class="nav-link" data-bs-toggle="tab" href="#student-attendance-tab"
+       data-query-title="联课点名" data-query-subtitle="使用学校账号或学号签到">
         <i class="fas fa-clipboard-check me-1"></i>联课点名
     </a>
 </li>
             </ul>
             
-            <div class="tab-content">
+            <div class="tab-content" data-qa-in style="animation-delay:560ms;">
                 <!-- 成绩查询标签页 -->
                 <div class="tab-pane fade show active" id="query-form-tab">
                     <form id="student-query-form">
-                        <div class="mb-3">
-                            <label for="student-id-query" class="form-label">学号</label>
-                            <input type="text" class="form-control" id="student-id-query" placeholder="请输入您的学号" required>
+                        <div class="query-input-group">
+                            <label for="student-id-query">学号</label>
+                            <i class="fas fa-search query-input-icon"></i>
+                            <input type="text" class="form-control has-icon" id="student-id-query" placeholder="请输入您的学号" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 mt-3">
-                            <i class="fas fa-search me-2"></i>查询成绩
+                        <button type="submit" class="query-btn-primary mt-3">
+                            查询成绩 <i class="fas fa-arrow-right arrow"></i>
                         </button>
                     </form>
-                    
+
+                    <div class="query-divider-or">或</div>
+                    <p class="query-hint-line"><i class="fas fa-lightbulb"></i> 不知道学号？联系管理员</p>
+
                     <div id="query-results" class="mt-4" style="display: none;">
                         <div class="card student-score-card">
                             <div class="student-score-header d-flex align-items-center">
@@ -1567,25 +1952,35 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                            <!-- 管理员登录标签页 -->
                 <div class="tab-pane fade" id="login-tab">
                     <form id="login-form">
-                        <div class="mb-3">
-                            <label for="login-email" class="form-label">邮箱</label>
-                            <input type="email" class="form-control" id="login-email" required>
+                        <div class="query-input-group">
+                            <label for="login-email">邮箱</label>
+                            <i class="fas fa-envelope query-input-icon"></i>
+                            <input type="email" class="form-control has-icon" id="login-email" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="login-password" class="form-label">密码</label>
-                            <input type="password" class="form-control" id="login-password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 mt-3">
-                            <i class="fas fa-sign-in-alt me-2"></i>登录
-                        </button>
-                        
-                        <!-- 添加Google登录按钮 -->
-                        <div class="text-center my-3">
-                            <p class="text-muted">或</p>
-                            <button type="button" id="google-login-btn" class="btn btn-outline-danger w-100">
-                                <i class="fab fa-google me-2"></i>使用Google账号登录
+                        <div class="query-input-group">
+                            <label for="login-password">密码</label>
+                            <i class="fas fa-lock query-input-icon"></i>
+                            <input type="password" class="form-control has-icon" id="login-password" required style="padding-right:40px;">
+                            <button type="button" class="query-password-toggle" data-target="login-password" aria-label="显示/隐藏密码">
+                                <i class="fas fa-eye"></i>
                             </button>
                         </div>
+                        <div class="query-form-row-between">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="login-remember-me">
+                                <label for="login-remember-me">记住我</label>
+                            </div>
+                            <a href="javascript:void(0)" id="login-forgot-password">忘记密码？</a>
+                        </div>
+                        <button type="submit" class="query-btn-primary">
+                            登录 <i class="fas fa-arrow-right arrow"></i>
+                        </button>
+
+                        <!-- 添加Google登录按钮 -->
+                        <div class="query-divider-or">或</div>
+                        <button type="button" id="google-login-btn" class="query-btn-google">
+                            <i class="fab fa-google"></i>使用Google账号登录
+                        </button>
                     </form>
                 </div>
 
@@ -1593,35 +1988,30 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 <div class="tab-pane fade" id="student-attendance-tab">
     <div id="student-attendance-content">
         <div class="text-center py-4">
-            <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
-            <p class="text-muted">请选择签到方式</p>
-            
 <!-- 替换原来的 Google 登录按钮 -->
-<button id="student-attendance-login-btn" class="btn btn-danger w-100 mb-3" onclick="studentGoogleLogin()">
-    <i class="fab fa-google me-2"></i>使用Google账号（自动提取姓名）
+<button id="student-attendance-login-btn" class="query-btn-google is-large mb-3" onclick="studentGoogleLogin()">
+    <i class="fab fa-google"></i>使用Google账号（自动提取姓名）
 </button>
-            
+
             <!-- 分隔线 -->
-            <div class="text-center my-3">
-                <span style="background: #f1f5f9; padding: 5px 15px; border-radius: 20px; color: #94a3b8; font-size: 0.85rem;">
-                    或使用学号登录
-                </span>
-            </div>
-            
+            <div class="query-divider-or">或使用学号登录</div>
+
             <!-- 学号登录表单 -->
-            <form id="student-id-login-form" onsubmit="return handleStudentIdLogin(event)">
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="student-id-login-input" 
-                           placeholder="请输入您的学号" required
-                           style="text-align: center; font-size: 1.1rem;">
+            <form id="student-id-login-form" onsubmit="return handleStudentIdLogin(event)" style="text-align:left;">
+                <div class="query-input-group">
+                    <label for="student-id-login-input">学号</label>
+                    <i class="fas fa-id-card query-input-icon"></i>
+                    <input type="text" class="form-control has-icon" id="student-id-login-input"
+                           placeholder="请输入您的学号" required>
                 </div>
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="student-name-login-input" 
-                           placeholder="请输入您的姓名（验证用）" required
-                           style="text-align: center;">
+                <div class="query-input-group">
+                    <label for="student-name-login-input">姓名</label>
+                    <i class="fas fa-user query-input-icon"></i>
+                    <input type="text" class="form-control has-icon" id="student-name-login-input"
+                           placeholder="请输入您的姓名（验证用）" required>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-sign-in-alt me-2"></i>学号登录签到
+                <button type="submit" class="query-btn-primary">
+                    学号登录签到 <i class="fas fa-arrow-right arrow"></i>
                 </button>
             </form>
             <div id="student-id-login-error" class="text-danger mt-2" style="display: none;"></div>
@@ -1675,6 +2065,12 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                 </div>
                 <!-- 学生签到标签页结束 -->
 
+            </div>
+
+            <div class="query-trust-badges" data-qa-in style="animation-delay:560ms;">
+                <span><i class="fas fa-lock"></i> 数据加密</span>
+                <span><i class="fas fa-bolt"></i> 实时同步</span>
+                <span><i class="fas fa-check-circle"></i> 官方</span>
             </div>
             </div>
         </div>
@@ -15847,6 +16243,217 @@ window.addEventListener('resize', debounce(() => {
     }
 }, 500));
     </script>
+
+    <!-- ============================================================
+         学生查询欢迎页 — 视觉升级新增脚本
+         只新增函数，不修改任何既有函数/事件绑定
+         ============================================================ -->
+    <script>
+    // ---------- 3.1 问候语 ----------
+    function initQueryGreeting() {
+        const hour = new Date().getHours();
+        let text;
+        if (hour >= 5 && hour < 11) text = '上午好，欢迎回来';
+        else if (hour >= 11 && hour < 13) text = '中午好，欢迎回来';
+        else if (hour >= 13 && hour < 18) text = '下午好，欢迎回来';
+        else if (hour >= 18 && hour < 23) text = '晚上好，欢迎回来';
+        else text = '夜深了，注意休息';
+
+        const el = document.getElementById('query-greeting-text');
+        if (el) el.textContent = text;
+        const elMobile = document.getElementById('query-greeting-text-mobile');
+        if (elMobile) elMobile.textContent = text;
+    }
+
+    // ---------- 3.1 实时时钟（每秒更新） ----------
+    function initQueryClock() {
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const pad = n => String(n).padStart(2, '0');
+
+        function tick() {
+            const now = new Date();
+            const dateText = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
+            const timeText = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+            const dateEl = document.getElementById('query-date-text');
+            if (dateEl) dateEl.textContent = dateText;
+            const timeEl = document.getElementById('query-clock-text');
+            if (timeEl) timeEl.textContent = timeText;
+
+            const mobileTimeEl = document.getElementById('query-clock-text-mobile');
+            if (mobileTimeEl) mobileTimeEl.textContent = `${dateText.split(' ')[0]} ${timeText}`;
+
+            // 跨小时/跨时段时问候语自动切换，开销可忽略
+            initQueryGreeting();
+        }
+
+        if (window._queryClockInterval) {
+            clearInterval(window._queryClockInterval);
+        }
+        tick();
+        window._queryClockInterval = setInterval(tick, 1000);
+    }
+
+    // 数字从 0 滚动到目标值（easeOutExpo，约 800ms）
+    function _animateQueryStatValue(el, target, duration = 800) {
+        if (!el) return;
+        const startTime = performance.now();
+        const easeOutExpo = t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+
+        function frame(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const value = Math.round(target * easeOutExpo(progress));
+            el.textContent = value.toLocaleString('zh-CN');
+            if (progress < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.textContent = target.toLocaleString('zh-CN');
+            }
+        }
+        requestAnimationFrame(frame);
+    }
+
+    // ---------- 3.2 系统实时数据（从 Firestore 读取） ----------
+    async function initQueryStats() {
+        const studentsEl = document.getElementById('query-stat-students');
+        const projectsEl = document.getElementById('query-stat-projects');
+        const scoresEl = document.getElementById('query-stat-scores');
+        const todayEl = document.getElementById('query-stat-today');
+
+        if (typeof db === 'undefined' || !db) return;
+
+        try {
+            const [studentsSnap, projectsSnap, scoresSnap] = await Promise.all([
+                db.collection('students').get(),
+                db.collection('projects').get(),
+                db.collection('scores').get()
+            ]);
+
+            [studentsEl, projectsEl, scoresEl].forEach(el => el && el.classList.remove('is-loading'));
+
+            _animateQueryStatValue(studentsEl, studentsSnap.size);
+            _animateQueryStatValue(projectsEl, projectsSnap.size);
+            _animateQueryStatValue(scoresEl, scoresSnap.size);
+
+            // 今日动态：统计今天新增的学生数（依据 createdAt 字段）
+            if (todayEl) {
+                const now = new Date();
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                let newStudentsToday = 0;
+                studentsSnap.forEach(doc => {
+                    const data = doc.data();
+                    const ts = data.createdAt;
+                    if (ts && typeof ts.toMillis === 'function' && ts.toMillis() >= startOfToday) {
+                        newStudentsToday++;
+                    }
+                });
+
+                todayEl.textContent = newStudentsToday > 0
+                    ? `今日新增 ${newStudentsToday} 位学生`
+                    : '系统运行正常，数据实时同步';
+            }
+        } catch (error) {
+            console.warn('加载查询页实时数据失败: ', error);
+            [studentsEl, projectsEl, scoresEl].forEach(el => {
+                if (el) { el.classList.remove('is-loading'); el.textContent = '--'; }
+            });
+            if (todayEl) todayEl.textContent = '数据暂时无法加载';
+        }
+    }
+
+    // ---------- 5.1 错峰进入动画 ----------
+    function initQueryAnimations() {
+        const page = document.getElementById('student-query-page');
+        if (!page) return;
+        const nodes = page.querySelectorAll('[data-qa-in]');
+        nodes.forEach(node => node.classList.remove('qa-in'));
+        // 强制重排，确保重新显示欢迎页时动画可以再次触发
+        void page.offsetWidth;
+        requestAnimationFrame(() => {
+            nodes.forEach(node => node.classList.add('qa-in'));
+        });
+    }
+
+    // ---------- 4.1 Tab 切换时联动标题 + 副标题 ----------
+    function initQueryTabTitles() {
+        const titleEl = document.getElementById('query-form-title');
+        const subtitleEl = document.getElementById('query-form-subtitle');
+        const tabLinks = document.querySelectorAll('#student-query-page .nav-tabs [data-bs-toggle="tab"]');
+        if (!titleEl || !subtitleEl || !tabLinks.length) return;
+
+        tabLinks.forEach(link => {
+            if (link.dataset.qaTitleBound === '1') return;
+            link.dataset.qaTitleBound = '1';
+            link.addEventListener('shown.bs.tab', function () {
+                if (this.dataset.queryTitle) titleEl.textContent = this.dataset.queryTitle;
+                if (this.dataset.querySubtitle) subtitleEl.textContent = this.dataset.querySubtitle;
+            });
+        });
+
+        // 同步当前激活 Tab 的标题（首次进入 / 重新显示时）
+        const activeLink = document.querySelector('#student-query-page .nav-tabs .nav-link.active') || tabLinks[0];
+        if (activeLink) {
+            if (activeLink.dataset.queryTitle) titleEl.textContent = activeLink.dataset.queryTitle;
+            if (activeLink.dataset.querySubtitle) subtitleEl.textContent = activeLink.dataset.querySubtitle;
+        }
+    }
+
+    // ---------- 4.4 密码显示 / 隐藏 ----------
+    function initQueryPasswordToggle() {
+        const toggles = document.querySelectorAll('#student-query-page .query-password-toggle');
+        toggles.forEach(btn => {
+            if (btn.dataset.qaToggleBound === '1') return;
+            btn.dataset.qaToggleBound = '1';
+            btn.addEventListener('click', function () {
+                const input = document.getElementById(this.dataset.target);
+                if (!input) return;
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+                } else {
+                    input.type = 'password';
+                    if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+                }
+            });
+        });
+    }
+
+    // 「忘记密码」仅给出提示，不涉及任何登录逻辑改动
+    function _initQueryForgotPasswordHint() {
+        const link = document.getElementById('login-forgot-password');
+        if (!link || link.dataset.qaBound === '1') return;
+        link.dataset.qaBound = '1';
+        link.addEventListener('click', function () {
+            if (typeof showAlert === 'function') {
+                showAlert('请联系系统管理员重置密码', 'info');
+            }
+        });
+    }
+
+    // ---------- 统一入口：欢迎页每次显示时调用 ----------
+    function initQueryLandingExtras() {
+        initQueryGreeting();
+        initQueryClock();
+        initQueryStats();
+        initQueryAnimations();
+        initQueryTabTitles();
+        initQueryPasswordToggle();
+        _initQueryForgotPasswordHint();
+    }
+
+    // 兜底：即使认证流程未主动调用 showStudentQueryPage / showLoginPage，
+    // 也确保欢迎页的视觉效果能够生效（幂等，可安全重复调用）
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => {
+            const page = document.getElementById('student-query-page');
+            if (page && page.style.display !== 'none') {
+                initQueryLandingExtras();
+            }
+        }, 300);
+    });
+    </script>
+
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
 </footer>
