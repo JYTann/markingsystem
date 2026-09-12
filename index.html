@@ -7,7 +7,7 @@
     <link rel="icon" href="favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Long+Cang&display=swap" rel="stylesheet">
     <!-- 在 head 标签中添加 Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client"></script>
     <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/lz-string.min.js"></script>
@@ -26,24 +26,25 @@
    0. Design Tokens
    ---------------------------------------------------------------------------- */
 :root {
-    /* 主色 */
+    /* ============ 主色阶（Stripe 式，比原来多一级 100，做出层次） ============ */
     --primary-50:  #EEF2FF;
     --primary-100: #E0E7FF;
+    --primary-200: #C7D2FE;
     --primary-500: #4F46E5;
     --primary-600: #4338CA;
     --primary-700: #3730A3;
 
-    /* 灰阶 */
-    --gray-50:  #F8FAFC;
-    --gray-100: #F1F5F9;
-    --gray-200: #E2E8F0;
-    --gray-300: #CBD5E1;
-    --gray-400: #94A3B8;
-    --gray-500: #64748B;
-    --gray-600: #475569;
-    --gray-700: #334155;
-    --gray-800: #1E293B;
-    --gray-900: #0F172A;
+    /* ============ 灰阶：9 档，带蓝味的灰（比原来更细腻） ============ */
+    --gray-50:  #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
 
     /* 语义色 */
     --success-bg: #ECFDF5; --success-fg: #065F46; --success: #10B981;
@@ -51,16 +52,26 @@
     --danger-bg:  #FEF2F2; --danger-fg:  #991B1B; --danger:  #EF4444;
     --info-bg:    #EFF6FF; --info-fg:    #1E40AF; --info:    #3B82F6;
 
-    /* 圆角 / 间距 / 字号（8pt 网格） */
-    --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 24px; --r-full: 999px;
+    /* ============ 圆角：从内到外递增，不再全是 12px ============ */
+    --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px; --r-full: 9999px;
+
+    /* ============ 间距：留白更充足 ============ */
     --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
     --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
-    --fs-xs: 11px; --fs-sm: 12px; --fs-base: 14px; --fs-md: 16px;
-    --fs-lg: 20px; --fs-xl: 24px; --fs-2xl: 32px; --fs-3xl: 40px;
+
+    /* ============ 字阶：10 档 ============ */
+    --fs-2xs: 11px; --fs-xs: 12px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
+    --fs-lg: 18px; --fs-xl: 20px; --fs-2xl: 24px; --fs-3xl: 30px; --fs-4xl: 36px;
     --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
 
+    /* 字距 */
+    --ls-tight: -0.02em;   /* 大标题 */
+    --ls-normal: 0;
+    --ls-wide: 0.05em;     /* 全大写小标签 */
+
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --dur-fast: 120ms; --dur-base: 200ms; --dur-slow: 300ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 150ms; --dur-base: 200ms; --dur-slow: 300ms;
     --ring: 0 0 0 3px rgba(79,70,229,0.15);
 
     /* -------- 以下保留原变量名，做兼容映射（避免任何遗漏引用失效） -------- */
@@ -72,7 +83,7 @@
     --danger: var(--danger);
     --info: var(--info);
 
-    /* 原本的“渐变”变量统一改为纯色，任何 background: var(--xxx-gradient) 的地方会自动变成纯色 */
+    /* 原本的“渐变”变量统一改为纯色（品牌区/报告头/名次徽章除外，在各自区块单独允许渐变） */
     --primary-gradient: var(--primary-500);
     --secondary-gradient: var(--gray-400);
     --success-gradient: var(--success);
@@ -87,32 +98,39 @@
     --bg-card: #FFFFFF;
     --bg-light: var(--gray-50);
     --bg-page: var(--gray-50);
+    --bg-subtle: var(--gray-100);
+    --bg-hover: var(--gray-50);
     --bg-muted: var(--gray-100);
 
-    --text-primary: var(--gray-800);
-    --text-secondary: var(--gray-500);
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-700);
+    --text-tertiary: var(--gray-500);
+    --text-quaternary: var(--gray-400);
     --text-light: var(--gray-400);
 
+    --border-subtle: var(--gray-100);
     --border-color: var(--gray-200);
     --border-light: var(--gray-200);
     --border: var(--gray-200);
     --border-strong: var(--gray-300);
 
-    /* 阴影统一改为中性灰，去掉彩色光晕 */
-    --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
-    --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
-    --shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
-    --shadow-md: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
-    --shadow-lg: 0 12px 32px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.04);
-    --shadow-xl: 0 12px 32px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.04);
-    --card-shadow: var(--shadow-sm);
-    --card-shadow-hover: var(--shadow-md);
+    /* ============ 阴影：多层叠加 + 极低透明度（Stripe 式「温柔阴影」） ============ */
+    --shadow-xs: 0 1px 2px 0 rgba(17,24,39,0.03);
+    --shadow-sm: 0 1px 2px 0 rgba(17,24,39,0.04), 0 1px 3px 0 rgba(17,24,39,0.03);
+    --shadow: 0 1px 2px 0 rgba(17,24,39,0.04), 0 1px 3px 0 rgba(17,24,39,0.03);
+    --shadow-md: 0 2px 4px -1px rgba(17,24,39,0.04), 0 4px 8px -2px rgba(17,24,39,0.04);
+    --shadow-lg: 0 4px 8px -2px rgba(17,24,39,0.05), 0 12px 24px -4px rgba(17,24,39,0.05);
+    --shadow-xl: 0 8px 16px -4px rgba(17,24,39,0.06), 0 20px 40px -8px rgba(17,24,39,0.06);
+    --shadow-card: 0 1px 3px 0 rgba(17,24,39,0.02), 0 1px 2px -1px rgba(17,24,39,0.02);
+    --shadow-card-hover: 0 4px 6px -1px rgba(17,24,39,0.05), 0 2px 4px -2px rgba(17,24,39,0.04);
+    --card-shadow: var(--shadow-card);
+    --card-shadow-hover: var(--shadow-card-hover);
 
     --radius-sm: var(--r-sm);
     --radius: var(--r-md);
     --radius-lg: var(--r-lg);
     --radius-xl: var(--r-xl);
-    --radius-2xl: var(--r-lg); /* 原来的“大圆角/药丸”统一收紧为 12px */
+    --radius-2xl: var(--r-2xl);
 
     /* 动效：去掉回弹曲线，统一用克制的 ease */
     --transition-smooth: all var(--dur-base) var(--ease);
@@ -120,6 +138,8 @@
 
     --content-max: 1280px;
     --font-sans: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+    /* 书法体：只用于品牌名 / 报告大标题，绝不用在表格、按钮、表单等数据密集区域，避免影响可读性 */
+    --font-display: 'Long Cang', 'Noto Sans SC', var(--font-sans);
 }
 
 /* ----------------------------------------------------------------------------
@@ -185,6 +205,10 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes modalPolishIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes skeletonLoading {
     0%   { background-position: 200% 0; }
@@ -246,6 +270,13 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
     letter-spacing: -0.01em;
     text-shadow: none;
 }
+/* 品牌名用书法体，放大一点、松开字距，让笔画舒展 */
+.navbar-brand span {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+}
 .navbar-brand img { filter: none; transition: none; height: 32px; }
 .navbar-brand:hover img { transform: none; }
 
@@ -286,17 +317,17 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
     border-radius: var(--r-lg);
     background: #FFFFFF;
     backdrop-filter: none;
-    box-shadow: var(--shadow-sm);
-    transition: box-shadow var(--dur-base) var(--ease), transform var(--dur-base) var(--ease);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
     margin-bottom: var(--sp-6);
     overflow: hidden;
     position: relative;
 }
 .card::before { content: none; display: none; }
-.card:hover { transform: none; box-shadow: var(--shadow-sm); border-color: var(--border); }
+.card:hover { transform: none; box-shadow: var(--shadow-card); border-color: var(--border); }
 .card.card-clickable:hover,
 a.card:hover,
-.card[role="button"]:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.card[role="button"]:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
 .card:hover::before { opacity: 0; }
 
 .card-header {
@@ -351,10 +382,10 @@ a.card:hover,
 .btn-primary {
     background: var(--primary-500);
     color: #fff;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-xs);
 }
-.btn-primary:hover { background: var(--primary-600); box-shadow: var(--shadow-sm); }
-.btn-primary:active { background: var(--primary-700); }
+.btn-primary:hover { background: var(--primary-600); box-shadow: var(--shadow-md); }
+.btn-primary:active { background: var(--primary-700); box-shadow: var(--shadow-xs); }
 
 .btn-secondary {
     background: #fff;
@@ -497,16 +528,16 @@ textarea.form-control { height: auto; padding: 10px 12px; }
     color: var(--gray-900);
     background: #fff;
     border: 1px solid var(--border);
-    transition: box-shadow var(--dur-base) var(--ease);
+    transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-card);
     transform-style: flat;
     perspective: none;
     cursor: default;
 }
 .stat-card::before { content: none; display: none; }
-.stat-card:hover { transform: none; box-shadow: var(--shadow-sm); }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
 .stat-card:hover::before { opacity: 0; }
 .stat-card i { font-size: 20px; margin-bottom: var(--sp-3); opacity: 1; color: var(--primary-500); }
 .stat-card .card-title, .stat-card .stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--gray-900); }
@@ -647,20 +678,24 @@ textarea.form-control { height: auto; padding: 10px 12px; }
     font-size: var(--fs-base);
 }
 .table thead th {
-    background: var(--bg-muted);
+    background: var(--bg-subtle);
     font-weight: var(--fw-semibold);
-    color: var(--gray-600);
+    font-size: var(--fs-xs);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
     border-bottom: 1px solid var(--border);
     padding: var(--sp-3) var(--sp-4);
     white-space: nowrap;
 }
-.table tbody td { padding: var(--sp-3) var(--sp-4); height: 48px; vertical-align: middle; border-bottom: 1px solid var(--border); color: var(--gray-800); }
-.table tbody tr:hover { background: var(--gray-50); }
+.table tbody td { padding: var(--sp-3) var(--sp-4); height: 52px; vertical-align: middle; border-bottom: 1px solid var(--border); color: var(--gray-800); transition: background var(--dur-fast) var(--ease); }
+.table tbody tr { transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+.table tbody tr:hover { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--primary-500); }
 .table tbody tr.table-active,
 .level-row.table-active { background: var(--primary-50) !important; box-shadow: inset 3px 0 0 var(--primary-500); }
 .table-responsive { border-radius: var(--r-lg); overflow: hidden; box-shadow: none; border: 1px solid var(--border); }
 .table-striped tbody tr:nth-of-type(odd) { background: transparent; } /* 去掉斑马纹，统一为纯白 + hover 高亮 */
-.table-hover tbody tr:hover { background: var(--gray-50); }
+.table-hover tbody tr:hover { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--primary-500); }
 .table-empty { text-align: center; padding: var(--sp-12) var(--sp-4) !important; color: var(--gray-400); }
 .score-table, .score-detail-table { width: 100%; border-collapse: collapse; }
 .horizontal-score-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: var(--sp-4); }
@@ -732,21 +767,21 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
    10. 模态框
    ---------------------------------------------------------------------------- */
 .modal-backdrop { z-index: 1050 !important; background: var(--gray-900); }
-.modal-backdrop.show { opacity: 0.4 !important; }
+.modal-backdrop.show { opacity: 0.4 !important; backdrop-filter: blur(4px); }
 .modal.show { display: flex !important; align-items: center; justify-content: center; }
 .modal-content {
     border: none;
     border-radius: var(--r-xl);
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-xl);
     background: #fff;
     backdrop-filter: none;
     position: relative;
     z-index: 1060;
-    animation: fadeInUp var(--dur-base) var(--ease);
+    animation: modalPolishIn var(--dur-base) var(--ease-out);
 }
 .modal.slide-up .modal-content,
-.modal.zoom-in .modal-content { animation: fadeInUp var(--dur-base) var(--ease); transform: none; }
+.modal.zoom-in .modal-content { animation: modalPolishIn var(--dur-base) var(--ease-out); transform: none; }
 .modal-header {
     background: #fff;
     color: var(--gray-900);
@@ -6337,7 +6372,7 @@ function createBeautifulReportHTML(data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} 成绩报告 | 新山宽柔中学电脑协会</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=Long+Cang&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
@@ -6444,12 +6479,11 @@ function createBeautifulReportHTML(data) {
         }
         
         .report-title {
-            font-size: 1.3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: 'Long Cang', 'Noto Sans SC', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            color: #4F46E5;
         }
         
         .report-date {
@@ -7299,7 +7333,7 @@ function createHorizontalReportHTML(data) {
 <head>
     <meta charset="UTF-8">
     <title>${title}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Long+Cang&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
@@ -7601,7 +7635,7 @@ function createProfessionalReportHTML(data) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${SCHOOL_CONFIG.name} - ${title}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;800&family=Long+Cang&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
@@ -7703,8 +7737,10 @@ function createProfessionalReportHTML(data) {
         }
         
         .report-meta .report-title {
-            font-size: 1.3rem;
-            font-weight: 700;
+            font-family: 'Long Cang', 'Noto Sans SC', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
             margin-bottom: 5px;
         }
         
