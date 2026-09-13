@@ -379,7 +379,7 @@ a:hover { color: var(--primary-600); text-decoration: underline; }
 .card:hover { transform: none; box-shadow: var(--shadow-card); border-color: var(--border); }
 .card.card-clickable:hover,
 a.card:hover,
-.card[role="button"]:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.card[role="button"]:hover { box-shadow: var(--shadow-card-hover); }
 .card:hover::before { opacity: 0; }
 
 .card-header {
@@ -426,9 +426,10 @@ a.card:hover,
 }
 .btn i { font-size: 16px; }
 .btn::after { content: none; display: none; }
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: translateY(0) scale(0.98); }
-.btn:disabled, .btn.disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+/* 按钮 hover 只改背景色，不做位移（!important 压过下方各变体残留的 translateY 声明） */
+.btn:hover { transform: none !important; }
+.btn:active { transform: scale(0.98); }
+.btn:disabled, .btn.disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn:focus-visible { box-shadow: var(--ring); }
 
 .btn-primary {
@@ -451,28 +452,28 @@ a.card:hover,
     color: #fff;
     box-shadow: var(--shadow-sm);
 }
-.btn-success:hover { background: #0EA271; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn-success:hover { background: #0EA271; box-shadow: var(--shadow-sm); }
 
 .btn-danger {
     background: var(--danger);
     color: #fff;
     box-shadow: var(--shadow-sm);
 }
-.btn-danger:hover { background: #DC2626; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn-danger:hover { background: #DC2626; box-shadow: var(--shadow-sm); }
 
 .btn-warning {
     background: var(--warning);
     color: #fff;
     box-shadow: var(--shadow-sm);
 }
-.btn-warning:hover { background: #D97706; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn-warning:hover { background: #D97706; box-shadow: var(--shadow-sm); }
 
 .btn-outline-primary {
     border: 1px solid var(--primary-500);
     color: var(--primary-500);
     background: transparent;
 }
-.btn-outline-primary:hover { background: var(--primary-50); color: var(--primary-600); transform: translateY(-1px); }
+.btn-outline-primary:hover { background: var(--primary-50); color: var(--primary-600); }
 
 .btn-outline-light {
     border: 1px solid var(--border-strong);
@@ -480,7 +481,7 @@ a.card:hover,
     background: #fff;
     backdrop-filter: none;
 }
-.btn-outline-light:hover { background: var(--gray-50); border-color: var(--gray-400); transform: translateY(-1px); }
+.btn-outline-light:hover { background: var(--gray-50); border-color: var(--gray-400); }
 
 /* Ghost / Danger Ghost / Link — 补充新增语义类，供后续页面使用 */
 .btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid transparent; }
@@ -589,25 +590,29 @@ textarea.form-control { height: auto; padding: 10px 12px; }
     cursor: default;
 }
 .stat-card::before { content: none; display: none; }
-.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+/* 统计卡片 hover 只改阴影，不做位移 */
+.stat-card:hover { box-shadow: var(--shadow-card-hover); }
 .stat-card:hover::before { opacity: 0; }
-/* 彩色图标徽章 — 让统计卡片有色彩层次，但不破坏卡片本身的白底克制感 */
+/* 图标徽章：32x32，圆角 8px，背景 = 语义色 10% 透明，图标 = 语义色实色 */
 .stat-icon-chip {
-    width: 40px !important; height: 40px !important;
+    width: 32px !important; height: 32px !important;
     border-radius: var(--r-md);
     display: inline-flex !important;
     align-items: center; justify-content: center;
-    font-size: 17px !important;
+    font-size: 15px !important;
     margin-bottom: var(--sp-3) !important;
 }
-.stat-icon-primary { background: var(--primary-50); color: var(--primary-600) !important; }
-.stat-icon-info    { background: var(--info-bg);    color: var(--info) !important; }
-.stat-icon-success { background: var(--success-bg); color: var(--success) !important; }
-.stat-icon-warning { background: var(--warning-bg); color: var(--warning) !important; }
-.stat-icon-danger  { background: var(--danger-bg);  color: var(--danger) !important; }
-.stat-card i { font-size: 20px; margin-bottom: var(--sp-3); opacity: 1; color: var(--primary-500); }
-.stat-card .card-title, .stat-card .stat-value { font-size: var(--fs-2xl); font-weight: var(--fw-bold); color: var(--gray-900); }
-.stat-card .card-text, .stat-card .stat-label { font-size: var(--fs-base); color: var(--gray-500); font-weight: var(--fw-medium); }
+.stat-icon-primary { background: rgba(79,70,229,0.10); color: var(--primary-500) !important; }
+.stat-icon-info    { background: rgba(59,130,246,0.10); color: var(--info) !important; }
+.stat-icon-success { background: rgba(16,185,129,0.10); color: var(--success) !important; }
+.stat-icon-warning { background: rgba(245,158,11,0.10); color: var(--warning) !important; }
+.stat-icon-danger  { background: rgba(239,68,68,0.10);  color: var(--danger) !important; }
+.stat-card i { font-size: 18px; margin-bottom: var(--sp-3); opacity: 1; color: var(--primary-500); }
+.stat-card .card-title, .stat-card .stat-value {
+    font-size: var(--text-3xl); line-height: var(--text-3xl-lh); font-weight: var(--text-3xl-fw);
+    letter-spacing: var(--ls-num); color: var(--gray-900); font-variant-numeric: tabular-nums;
+}
+.stat-card .card-text, .stat-card .stat-label { font-size: var(--text-sm); color: var(--gray-500); font-weight: var(--text-md-fw); }
 .stat-card-3d, .stat-card-3d-inner, .stat-card-3d .stat-card-front { transform: none !important; transform-style: flat !important; }
 
 /* ---------- 仪表盘：欢迎横幅 / 统计卡增量 / 待处理事项 ---------- */
@@ -686,7 +691,7 @@ textarea.form-control { height: auto; padding: 10px 12px; }
     background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg);
     padding: var(--sp-5); cursor: pointer; transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
-.level-summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.level-summary-card:hover { box-shadow: var(--shadow-card-hover); }
 .level-summary-card.active-level-card { border-color: var(--primary-500); box-shadow: 0 0 0 2px var(--primary-100, var(--primary-50)); }
 .level-summary-card h5 { font-size: var(--fs-lg); font-weight: var(--fw-bold); margin: 0 0 var(--sp-3); color: var(--gray-900); }
 .level-summary-card .level-stat-row { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--gray-500); padding: 3px 0; }
@@ -838,12 +843,12 @@ textarea.form-control { height: auto; padding: 10px 12px; }
 }
 .table tbody td { padding: var(--sp-3) var(--sp-4); height: 52px; vertical-align: middle; border-bottom: 1px solid var(--border); color: var(--gray-800); transition: background var(--dur-fast) var(--ease); }
 .table tbody tr { transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
-.table tbody tr:hover { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--primary-500); }
+.table tbody tr:hover { background: var(--bg-hover); }
 .table tbody tr.table-active,
 .level-row.table-active { background: var(--primary-50) !important; box-shadow: inset 3px 0 0 var(--primary-500); }
 .table-responsive { border-radius: var(--r-lg); overflow: hidden; box-shadow: none; border: 1px solid var(--border); }
 .table-striped tbody tr:nth-of-type(odd) { background: transparent; } /* 去掉斑马纹，统一为纯白 + hover 高亮 */
-.table-hover tbody tr:hover { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--primary-500); }
+.table-hover tbody tr:hover { background: var(--bg-hover); }
 .table-empty { text-align: center; padding: var(--sp-12) var(--sp-4) !important; color: var(--gray-400); }
 .score-table, .score-detail-table { width: 100%; border-collapse: collapse; }
 .horizontal-score-table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: var(--sp-4); }
@@ -1656,7 +1661,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     width: 100%;
     transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
-.query-btn-primary:hover { background: var(--primary-600); transform: translateY(-1px); box-shadow: 0 8px 16px -4px rgba(79,70,229,0.35); color: #fff; }
+.query-btn-primary:hover { background: var(--primary-600); box-shadow: 0 8px 16px -4px rgba(79,70,229,0.35); color: #fff; }
 .query-btn-primary:active { transform: translateY(0); }
 .query-btn-primary .arrow { transition: transform var(--dur-fast) var(--ease); }
 .query-btn-primary:hover .arrow { transform: translateX(2px); }
@@ -1677,7 +1682,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     width: 100%;
     transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
-.query-btn-google:hover { background: #F8FAFC; border-color: var(--border-strong); transform: translateY(-1px); }
+.query-btn-google:hover { background: #F8FAFC; border-color: var(--border-strong); }
 .query-btn-google.is-large { height: 52px; background: var(--primary-500); border-color: var(--primary-500); color: #fff; }
 .query-btn-google.is-large:hover { background: var(--primary-600); }
 
@@ -1874,6 +1879,57 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     flex-direction: column;
     min-width: 0;
     min-height: 100vh;
+    transition: margin-left var(--dur-base) var(--ease);
+}
+
+/* ---------- 侧边栏折叠态：64px，仅显示图标，hover 弹出 tooltip ---------- */
+#main-system .admin-layout.sidebar-collapsed .admin-sidebar { width: 64px; transition: width var(--dur-base) var(--ease); }
+#main-system .admin-layout.sidebar-collapsed .admin-main { margin-left: 64px; }
+#main-system .admin-layout.sidebar-collapsed .sidebar-brand span,
+#main-system .admin-layout.sidebar-collapsed .sidebar-group-label,
+#main-system .admin-layout.sidebar-collapsed .admin-sidebar .sidebar-item span {
+    display: none !important;
+}
+#main-system .admin-layout.sidebar-collapsed .sidebar-brand { justify-content: center; padding: 0; }
+#main-system .admin-layout.sidebar-collapsed .admin-sidebar .sidebar-item {
+    justify-content: center;
+    gap: 0;
+    position: relative;
+}
+#main-system .admin-layout.sidebar-collapsed .admin-sidebar .sidebar-item:hover::after {
+    content: attr(data-page-title);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--gray-900);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+    z-index: 200;
+    box-shadow: var(--shadow-card-hover);
+    pointer-events: none;
+    animation: fadeIn 120ms var(--ease-out);
+}
+.sidebar-collapse-btn {
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--bg-card);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: var(--transition-smooth);
+}
+.sidebar-collapse-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.sidebar-collapse-btn i { transition: transform var(--dur-base) var(--ease); }
+.admin-layout.sidebar-collapsed .sidebar-collapse-btn i { transform: rotate(180deg); }
+@media (max-width: 1024px) {
+    .sidebar-collapse-btn { display: none; }
 }
 
 /* ---------- 侧边栏品牌区 ---------- */
@@ -1929,13 +1985,14 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 #main-system .admin-sidebar .nav-link.sidebar-item {
     display: flex !important;
     align-items: center;
-    gap: var(--sp-3);
-    padding: 10px var(--sp-3) !important;
+    gap: 10px;
+    height: 36px;
+    padding: 0 12px !important;
     margin: 0 !important;
     border-radius: var(--r-md) !important;
     border-bottom: none !important;
     border: 1px solid transparent !important;
-    font-size: var(--fs-base);
+    font-size: 14px;
     font-weight: var(--fw-medium);
     color: var(--gray-500) !important;
     background: transparent !important;
@@ -1944,9 +2001,9 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 #main-system .admin-sidebar .sidebar-item i {
-    width: 18px;
+    width: 16px;
     text-align: center;
-    font-size: var(--fs-md);
+    font-size: 16px;
     margin-right: 0 !important;
     flex-shrink: 0;
 }
@@ -2328,76 +2385,130 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
    § 0. Design Tokens — 只保留一个强调色（靛蓝），语义色各司其职
    ══════════════════════════════════════════════════════════════════════ */
 :root {
-    --gray-50:  #F8F8FA;
-    --gray-100: #F1F1F4;
-    --gray-200: #E4E4E9;
-    --gray-300: #CDCDD5;
-    --gray-400: #9C9CA6;
-    --gray-500: #6F6F7B;
-    --gray-600: #52525E;
-    --gray-700: #3D3D48;
-    --gray-800: #292933;
-    --gray-900: #17171E;
+    /* ══════════════════════════════════════════════════════════════════
+       § 0-FINAL. 设计规范 v5 — 精确色值版（覆盖以上所有历史 token 层）
+       1 主色 + 4 语义色，禁止品牌插画以外出现任何"装饰色"
+       ══════════════════════════════════════════════════════════════════ */
 
-    /* 唯一强调色：靛蓝，用于交互元素（按钮/链接/激活态），不做渐变堆叠 */
-    --primary-50:  #EEF0FF;
-    --primary-100: #E0E3FF;
-    --primary-200: #C7CBFF;
-    --primary-500: #5457E5;
-    --primary-600: #4643CE;
-    --primary-700: #3A38AC;
+    /* 灰阶 11 档 */
+    --gray-25:  #FCFCFD;
+    --gray-50:  #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+    --gray-950: #030712;
+
+    /* 主色：靛蓝，唯一品牌色 */
+    --primary-50:  #EEF2FF;
+    --primary-100: #E0E7FF;
+    --primary-200: #C7D2FE;
+    --primary-500: #4F46E5;
+    --primary-600: #4338CA;
+    --primary-700: #3730A3;
     --primary: var(--primary-500);
 
-    --success-bg: #EBFBF3; --success-fg: #0C7A4D; --success: #17A76B; --success-strong: #0F8A57;
-    --warning-bg: #FFF8EA; --warning-fg: #92600A; --warning: #E8A62E; --warning-strong: #B87D0E;
-    --danger-bg:  #FEF1F0; --danger-fg:  #B23A32; --danger:  #E5544A; --danger-strong: #C23A31;
-    --info-bg:    #EEF4FF; --info-fg:    #235BB0; --info:    #4C86E0; --info-strong: #2C64B8;
+    /* 语义色：各 3 档（bg / border / text）+ 主色值 */
+    --success-bg: #ECFDF5; --success-border: #A7F3D0; --success-fg: #065F46; --success: #10B981; --success-strong: #059669;
+    --warning-bg: #FFFBEB; --warning-border: #FDE68A; --warning-fg: #92400E; --warning: #F59E0B; --warning-strong: #D97706;
+    --danger-bg:  #FEF2F2; --danger-border: #FECACA; --danger-fg:  #991B1B; --danger:  #EF4444; --danger-strong: #DC2626;
+    --info-bg:    #EFF6FF; --info-border: #BFDBFE; --info-fg:    #1E40AF; --info:    #3B82F6; --info-strong: #2563EB;
 
     --bg-page: var(--gray-50);
     --bg-card: #FFFFFF;
     --bg-subtle: var(--gray-100);
-    --bg-muted: #EAEAEF;
+    --bg-muted: var(--gray-100);
     --bg-hover: var(--gray-50);
     --text-primary: var(--gray-900);
     --text-secondary: var(--gray-700);
     --text-tertiary: var(--gray-500);
-    --text-quaternary: var(--gray-400);
+    /* 辅助文字对比度须 ≥ 4.5:1（AA）；--gray-400 单独在白底上只有约 2.8:1，
+       故 --text-quaternary 改用 --gray-500（约 4.6:1），--gray-400 继续只用于
+       边框/装饰性图标等非文字场景 */
+    --text-quaternary: var(--gray-500);
     --border: var(--gray-200);
     --border-color: var(--gray-200);
     --border-light: var(--gray-200);
     --border-subtle: var(--gray-100);
     --border-strong: var(--gray-300);
 
-    --r-xs: 5px; --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 14px; --r-2xl: 18px; --r-full: 9999px;
+    /* 圆角：4 档（表单/按钮/卡片 md，弹窗 lg，大卡片 xl，胶囊 full） */
+    --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 16px; --r-full: 9999px;
     --radius-sm: var(--r-sm); --radius: var(--r-md); --radius-lg: var(--r-lg);
     --radius-xl: var(--r-xl); --radius-2xl: var(--r-2xl);
 
+    /* 间距：6 档命名（含派生的 --space-*别名，供规范自查） */
     --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px;
     --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
+    --space-1: var(--sp-1); --space-2: var(--sp-2); --space-3: var(--sp-3); --space-4: var(--sp-4);
+    --space-6: var(--sp-6); --space-8: var(--sp-8); --space-12: var(--sp-12); --space-16: var(--sp-16);
 
-    --fs-2xs: 11px; --fs-xs: 12px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
-    --fs-lg: 16px; --fs-xl: 20px; --fs-2xl: 25px; --fs-3xl: 32px; --fs-4xl: 36px;
-    --ls-tight: -0.02em; --ls-snug: -0.01em; --ls-normal: 0; --ls-wide: 0.02em;
+    /* 字阶：8 档精确规格（字号/行高/字重） */
+    --text-xs:  11px; --text-xs-lh:  1.5; --text-xs-fw:  500;
+    --text-sm:  12px; --text-sm-lh:  1.5; --text-sm-fw:  400;
+    --text-base:13px; --text-base-lh:1.6; --text-base-fw:400;
+    --text-md:  15px; --text-md-lh:  1.6; --text-md-fw:  500;
+    --text-lg:  17px; --text-lg-lh:  1.4; --text-lg-fw:  600;
+    --text-xl:  20px; --text-xl-lh:  1.3; --text-xl-fw:  700;
+    --text-2xl: 26px; --text-2xl-lh: 1.2; --text-2xl-fw: 700;
+    --text-3xl: 34px; --text-3xl-lh: 1.1; --text-3xl-fw: 800;
+    /* 向后兼容旧字阶变量名（大量既有规则仍引用 --fs-*） */
+    --fs-2xs: var(--text-xs); --fs-xs: var(--text-sm); --fs-sm: var(--text-base); --fs-base: var(--text-base);
+    --fs-md: var(--text-md); --fs-lg: var(--text-lg); --fs-xl: var(--text-xl); --fs-2xl: var(--text-2xl);
+    --fs-3xl: var(--text-3xl); --fs-4xl: var(--text-3xl);
+    --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
 
-    /* 单一阴影体系：只分「静止」与「悬浮」两级，不再层层叠加 */
-    --shadow-card: 0 1px 2px 0 rgba(23,23,30,0.05), 0 0 0 1px rgba(23,23,30,0.03);
-    --shadow-card-hover: 0 6px 16px -4px rgba(23,23,30,0.10), 0 0 0 1px rgba(23,23,30,0.04);
-    --shadow-sm: 0 1px 2px 0 rgba(23,23,30,0.05);
-    --shadow-md: 0 4px 10px -2px rgba(23,23,30,0.08);
-    --shadow-lg: 0 12px 28px -8px rgba(23,23,30,0.12);
-    --ring: 0 0 0 3px rgba(84,87,229,0.16);
+    --ls-tight: -0.02em;   /* 大标题 >20px */
+    --ls-num: -0.03em;     /* 大号数字 >26px */
+    --ls-snug: -0.01em;
+    --ls-normal: 0;        /* 中文正文不额外加字距 */
+    --ls-wide: 0.06em;     /* 全大写小标签 */
 
+    /* 阴影：2 档（静止 / 悬浮），不再层层叠加 */
+    --shadow-card: 0 1px 2px 0 rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-sm: var(--shadow-card);
+    --shadow-md: var(--shadow-card-hover);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-xs: var(--shadow-card);
+    --shadow: var(--shadow-card);
+    --shadow-xl: var(--shadow-card-hover);
+    --ring: 0 0 0 3px rgba(79,70,229,0.12);
+
+    /* 动效：进入 ease-out-expo，退出/hover 用克制曲线；上限 300ms */
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0, 0, 0.2, 1);
-    --dur-fast: 140ms; --dur-base: 180ms; --dur-slow: 260ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --dur-fast: 150ms; --dur-base: 200ms; --dur-slow: 300ms;
     --transition-smooth: all var(--dur-base) var(--ease);
+
+    /* 字体栈 */
+    --font-sans: 'Inter var', 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+    --font-display: 'Long Cang', 'Noto Serif SC', serif;
+}
+
+/* 表格数字列 / 统计数字：等宽数字 + 收紧字距 */
+.tabular-nums, td.text-num, .stat-value, .average-score, .indicator-value,
+table td:has(> .score-value), .score-cell, .weight-cell, .count-cell,
+.stat-card .card-title {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--ls-num);
 }
 
 [data-theme="dark"] {
-    --gray-50:  #131316;
-    --gray-100: #19191D;
-    --gray-150: #1E1E23;
-    --gray-200: #29292F;
+    /* 深色模式不是浅色灰阶的简单翻转，而是独立设计：
+       背景带一点暖调的深灰（非纯黑）、卡片略亮一档、边框清晰可辨 */
+    --gray-25:  #050506;
+    --gray-50:  #0A0A0B;
+    --gray-100: #141416;
+    --gray-150: #19191C;
+    --gray-200: #26262B;
     --gray-300: #3A3A42;
     --gray-400: #58585F;
     --gray-500: #85858E;
@@ -2405,39 +2516,47 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     --gray-700: #C9C9CF;
     --gray-800: #DFDFE3;
     --gray-900: #F1F1F3;
+    --gray-950: #FCFCFD;
 
-    --primary-500: #8385FF;
-    --primary-600: #6A6DFF;
-    --primary-700: #5457E5;
-    --primary-100: rgba(84,87,229,0.16);
-    --primary-50:  rgba(84,87,229,0.10);
+    /* 深色下高饱和靛蓝会刺眼，主色整体提亮 */
+    --primary-500: #818CF8;
+    --primary-600: #A5B4FC;
+    --primary-700: #6366F1;
+    --primary-100: rgba(129,140,248,0.18);
+    --primary-50:  rgba(129,140,248,0.10);
 
-    --success-bg: rgba(23,167,107,0.16); --success-fg: #5FD79E; --success: #3BC98A; --success-strong: #17A76B;
-    --warning-bg: rgba(232,166,46,0.16); --warning-fg: #F0BE63; --warning: #E8A62E; --warning-strong: #C4880F;
-    --danger-bg:  rgba(229,84,74,0.16);  --danger-fg:  #F19289; --danger:  #E5544A; --danger-strong: #C23A31;
-    --info-bg:    rgba(76,134,224,0.16); --info-fg:    #8FB4EE; --info:    #4C86E0; --info-strong: #6C9FEA;
+    /* 语义色全部提亮 1 档 */
+    --success-bg: rgba(52,211,153,0.16); --success-border: rgba(52,211,153,0.32); --success-fg: #6EE7B7; --success: #34D399; --success-strong: #10B981;
+    --warning-bg: rgba(251,191,36,0.16); --warning-border: rgba(251,191,36,0.32); --warning-fg: #FCD34D; --warning: #FBBF24; --warning-strong: #F59E0B;
+    --danger-bg:  rgba(248,113,113,0.16); --danger-border: rgba(248,113,113,0.32); --danger-fg:  #FCA5A5; --danger:  #F87171; --danger-strong: #EF4444;
+    --info-bg:    rgba(96,165,250,0.16); --info-border: rgba(96,165,250,0.32); --info-fg:    #93C5FD; --info:    #60A5FA; --info-strong: #3B82F6;
 
-    --bg-page: #0B0B0D;
-    --bg-card: #151518;
+    /* 背景 #0A0A0B（带一点暖的深灰，非纯黑）；卡片 #141416；边框 #26262B */
+    --bg-page: #0A0A0B;
+    --bg-card: #141416;
     --bg-subtle: var(--gray-100);
     --bg-muted: var(--gray-150);
     --bg-hover: var(--gray-100);
     --text-primary: var(--gray-900);
     --text-secondary: var(--gray-700);
     --text-tertiary: var(--gray-500);
-    --text-quaternary: var(--gray-400);
-    --border: var(--gray-200);
-    --border-color: var(--gray-200);
-    --border-light: var(--gray-200);
+    --text-quaternary: var(--gray-600);
+    --border: #26262B;
+    --border-color: #26262B;
+    --border-light: #26262B;
     --border-subtle: var(--gray-100);
     --border-strong: var(--gray-300);
 
-    --shadow-card: 0 1px 2px 0 rgba(0,0,0,0.5), inset 0 1px 0 0 rgba(255,255,255,0.03);
-    --shadow-card-hover: 0 8px 20px -6px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255,255,255,0.04);
-    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.5);
-    --shadow-md: 0 4px 10px -2px rgba(0,0,0,0.55);
-    --shadow-lg: 0 12px 28px -8px rgba(0,0,0,0.65);
-    --ring: 0 0 0 3px rgba(131,133,255,0.28);
+    /* 深色下外阴影不可见，全部改为「内发光」，不用外阴影 */
+    --shadow-card: inset 0 1px 0 0 rgba(255,255,255,0.05);
+    --shadow-card-hover: inset 0 1px 0 0 rgba(255,255,255,0.08);
+    --shadow-sm: inset 0 1px 0 0 rgba(255,255,255,0.05);
+    --shadow-md: inset 0 1px 0 0 rgba(255,255,255,0.06);
+    --shadow-lg: inset 0 1px 0 0 rgba(255,255,255,0.08);
+    --shadow-xs: var(--shadow-sm);
+    --shadow: var(--shadow-card);
+    --shadow-xl: var(--shadow-card-hover);
+    --ring: 0 0 0 3px rgba(129,140,248,0.30);
 }
 
 :focus-visible {
@@ -2665,12 +2784,14 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 /* ══════════════════════════════════════════════════════════════════════
    § 6. 徽章
    ══════════════════════════════════════════════════════════════════════ */
+/* 徽章：6px 直角圆角（不是药丸形，药丸形只用于状态点），22px 高 */
 .badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 3px 9px;
-    border-radius: var(--r-full);
+    height: 22px;
+    padding: 0 8px;
+    border-radius: var(--r-sm);
     font-size: 12px;
     font-weight: 500;
     border: 1px solid transparent;
@@ -2796,11 +2917,31 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     border: 1px solid var(--border);
 }
 .modal.show .modal-content { animation: v4ModalEnter 200ms var(--ease-out); }
-.modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border-subtle); }
-.modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.modal-body { padding: 22px; }
-.modal-footer { padding: 14px 22px; border-top: 1px solid var(--border-subtle); gap: 8px; }
-.modal-dialog.modal-lg .modal-content { max-width: 720px; }
+.modal-header { padding: var(--sp-5) var(--sp-6); border-bottom: 1px solid var(--border-subtle); background: var(--bg-card); }
+.modal-title { font-size: var(--text-lg); font-weight: var(--text-lg-fw); color: var(--text-primary); }
+.modal-body { padding: var(--sp-6); }
+.modal-footer { padding: var(--sp-4) var(--sp-6); border-top: 1px solid var(--border-subtle); gap: var(--sp-2); justify-content: flex-end; }
+/* 弹窗尺寸：sm 400 / md(默认) 560 / lg 720 / xl 960 */
+.modal-dialog { max-width: 560px; }
+.modal-dialog.modal-sm { max-width: 400px; }
+.modal-dialog.modal-lg { max-width: 720px; }
+.modal-dialog.modal-xl { max-width: 960px; }
+.modal-dialog.modal-lg .modal-content,
+.modal-dialog.modal-sm .modal-content,
+.modal-dialog.modal-xl .modal-content { max-width: none; }
+
+/* 移动端：全屏模态框，从底部滑入 */
+@media (max-width: 640px) {
+    .modal-dialog, .modal-dialog.modal-sm, .modal-dialog.modal-lg, .modal-dialog.modal-xl {
+        margin: 0; max-width: 100%; height: 100%;
+    }
+    .modal-content { border-radius: 0; height: 100%; }
+    .modal.show .modal-content { animation: v4ModalEnterMobile 200ms var(--ease-out); }
+}
+@keyframes v4ModalEnterMobile {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -4463,6 +4604,9 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                 <div class="sidebar-brand">
                     <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo">
                     <span>新山宽柔中学电脑协会杂家——MAKER组评分系统</span>
+                    <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" type="button" aria-label="收起侧边栏" style="margin-left:auto;">
+                        <i class="fas fa-angles-left"></i>
+                    </button>
                 </div>
                 <nav class="sidebar-nav">
                     <div class="collapse navbar-collapse show" id="navbarNav">
@@ -5869,6 +6013,53 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
         let deleteType = '';
         let deleteId = '';
         let scoreDistributionChart = null;
+
+        // ==================== 图表主题（设计规范 5.8）====================
+        // 深色模式下自动切换所有颜色；网格线/坐标轴文字/图例/提示框统一风格
+        function getChartTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            return {
+                grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                axisText: dark ? '#85858E' : '#6B7280',
+                tooltipBg: dark ? 'rgba(20,20,22,0.95)' : 'rgba(17,24,39,0.95)',
+                primary: dark ? '#818CF8' : '#4F46E5',
+                success: dark ? '#34D399' : '#10B981',
+                warning: dark ? '#FBBF24' : '#F59E0B',
+                danger: dark ? '#F87171' : '#EF4444',
+                info: dark ? '#60A5FA' : '#3B82F6',
+                gray: dark ? '#58585F' : '#9CA3AF'
+            };
+        }
+        function applyChartDefaults() {
+            if (typeof Chart === 'undefined') return;
+            const t = getChartTheme();
+            Chart.defaults.font.family = "'Inter var','Inter','Noto Sans SC',sans-serif";
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = t.axisText;
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+            Chart.defaults.plugins.legend.labels.boxWidth = 8;
+            Chart.defaults.plugins.legend.labels.boxHeight = 8;
+            Chart.defaults.plugins.legend.labels.font = { size: 12 };
+            Chart.defaults.plugins.legend.position = 'bottom';
+            Chart.defaults.plugins.tooltip.backgroundColor = t.tooltipBg;
+            Chart.defaults.plugins.tooltip.padding = 10;
+            Chart.defaults.plugins.tooltip.cornerRadius = 8;
+            Chart.defaults.plugins.tooltip.titleFont = { size: 12, weight: '600' };
+            Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
+            if (Chart.defaults.scale) {
+                Chart.defaults.scale.grid = Chart.defaults.scale.grid || {};
+                Chart.defaults.scale.grid.color = t.grid;
+                Chart.defaults.scale.ticks = Chart.defaults.scale.ticks || {};
+                Chart.defaults.scale.ticks.color = t.axisText;
+                Chart.defaults.scale.border = Chart.defaults.scale.border || {};
+                Chart.defaults.scale.border.display = false; // 轴线：无
+            }
+        }
+        applyChartDefaults();
+        if (window.MutationObserver) {
+            new MutationObserver(applyChartDefaults).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        }
         let levels = [];
 let levelProjects = [];
 let currentLevelId = null;
@@ -6707,12 +6898,12 @@ function showAlert(message, type = 'info') {
         toastContainer.id = 'toast-container';
         toastContainer.style.cssText = `
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 16px;
+            right: 16px;
             z-index: 9999;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             max-width: 400px;
             pointer-events: none;
         `;
@@ -6752,7 +6943,7 @@ function showAlert(message, type = 'info') {
         padding: 12px 16px;
         border-radius: 8px;
         border-left: 4px solid ${barColor};
-        box-shadow: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         display: flex;
         align-items: center;
         gap: 10px;
@@ -6787,69 +6978,73 @@ function showAlert(message, type = 'info') {
         </button>
     `;
     
-    // 添加到容器
-    toastContainer.appendChild(toast);
-    
-    // 关闭按钮事件
-    const closeBtn = toast.querySelector('.toast-close');
-    closeBtn.addEventListener('click', () => {
-        removeToast(toast);
-    });
-    
-    // 滑入动画
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 10);
-    
-    // 自动消失
-    const autoHideDelay = type === 'danger' ? 6000 : 4000;
-    const timer = setTimeout(() => {
-        removeToast(toast);
-    }, autoHideDelay);
-    
-    // 鼠标悬停时暂停自动消失
-    toast.addEventListener('mouseenter', () => {
-        clearTimeout(timer);
-    });
-    
-    toast.addEventListener('mouseleave', () => {
-        const newTimer = setTimeout(() => {
-            removeToast(toast);
-        }, 2000);
-        // 存储新的 timer
-        toast._timer = newTimer;
-    });
-    
-    // 存储 timer 以便清理
-    toast._timer = timer;
-    
-    // 限制最多显示 5 个 toast
-    const toasts = toastContainer.querySelectorAll('div');
-    if (toasts.length > 5) {
-        removeToast(toasts[0]);
+    // 最多同时显示 3 个，超过则排队（设计规范 5.12）
+    window.__toastQueue = window.__toastQueue || [];
+    const MAX_VISIBLE_TOASTS = 3;
+    const visibleCount = toastContainer.querySelectorAll('.toast-item-v2').length;
+    toast.classList.add('toast-item-v2');
+
+    if (visibleCount >= MAX_VISIBLE_TOASTS) {
+        window.__toastQueue.push(toast);
+        return;
+    }
+
+    mountToast(toast, toastContainer);
+
+    function mountToast(toastEl, container) {
+        container.appendChild(toastEl);
+
+        const closeBtn = toastEl.querySelector('.toast-close');
+        if (closeBtn) closeBtn.addEventListener('click', () => removeToast(toastEl));
+
+        // 滑入动画（右侧滑入，300ms ease-out）
+        requestAnimationFrame(() => {
+            toastEl.style.transform = 'translateX(0)';
+        });
+
+        const autoHideDelay = type === 'danger' ? 6000 : 4000;
+        const timer = setTimeout(() => removeToast(toastEl), autoHideDelay);
+
+        toastEl.addEventListener('mouseenter', () => clearTimeout(toastEl._timer));
+        toastEl.addEventListener('mouseleave', () => {
+            toastEl._timer = setTimeout(() => removeToast(toastEl), 2000);
+        });
+
+        toastEl._timer = timer;
     }
 }
 
-// 移除 toast 的动画
+// 移除 toast：消失前 500ms 淡出，随后从队列里补位下一个
 function removeToast(toast) {
     if (!toast || !toast.parentNode) return;
-    
-    // 清除定时器
-    if (toast._timer) {
-        clearTimeout(toast._timer);
-    }
-    
-    // 滑出动画
-    toast.style.transform = 'translateX(120%)';
+
+    if (toast._timer) clearTimeout(toast._timer);
+
+    // 500ms 淡出（设计规范 5.12）
+    toast.style.transition = 'opacity 500ms ease, transform 500ms ease';
     toast.style.opacity = '0';
-    toast.style.transition = 'all 0.3s ease-in';
-    
-    // 动画结束后移除
+    toast.style.transform = 'translateX(120%)';
+
     setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+
+        // 队列里还有等待中的 toast，补位显示
+        const queue = window.__toastQueue || [];
+        const container = document.getElementById('toast-container');
+        if (queue.length > 0 && container) {
+            const next = queue.shift();
+            container.appendChild(next);
+            const closeBtn = next.querySelector('.toast-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => removeToast(next));
+            requestAnimationFrame(() => { next.style.transform = 'translateX(0)'; });
+            const autoHideDelay = 4000;
+            next._timer = setTimeout(() => removeToast(next), autoHideDelay);
+            next.addEventListener('mouseenter', () => clearTimeout(next._timer));
+            next.addEventListener('mouseleave', () => {
+                next._timer = setTimeout(() => removeToast(next), 2000);
+            });
         }
-    }, 300);
+    }, 500);
 }
 
 // ========== Toast 通知系统结束 ==========
@@ -8941,13 +9136,9 @@ function updateScoreDistributionChart() {
     });
     
     const labels = ranges.map(range => range.label);
-    const backgroundColors = [
-        'rgba(231, 76, 60, 0.7)',
-        'rgba(241, 196, 15, 0.7)',
-        'rgba(52, 152, 219, 0.7)',
-        'rgba(46, 204, 113, 0.7)',
-        'rgba(155, 89, 182, 0.7)'
-    ];
+    const t = getChartTheme();
+    // 语义色：低分到高分，弱→强
+    const backgroundColors = [t.danger, t.warning, t.info, t.success, t.primary];
     
     try {
         scoreDistributionChart = new Chart(ctx, {
@@ -8957,15 +9148,16 @@ function updateScoreDistributionChart() {
                 datasets: [{
                     data: data,
                     backgroundColor: backgroundColors,
-                    borderWidth: 1
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '68%',
                 plugins: {
                     legend: {
-                        position: 'right',
+                        position: 'bottom',
                     },
                     tooltip: {
                         callbacks: {
@@ -9102,19 +9294,13 @@ function updateProjectComparisonChart() {
         projectStats.sort((a, b) => b.average - a.average);
         const topProjects = projectStats.slice(0, 8);
         
-        // 根据得分率设置不同的柱状图颜色
+        const t = getChartTheme();
+        // 根据得分率设置不同的柱状图颜色（语义色，不用透明度分层）
         const barColors = topProjects.map(p => {
-            if (p.average >= 80) return 'rgba(16, 185, 129, 0.7)';
-            if (p.average >= 70) return 'rgba(99, 102, 241, 0.7)';
-            if (p.average >= 60) return 'rgba(245, 158, 11, 0.7)';
-            return 'rgba(239, 68, 68, 0.7)';
-        });
-        
-        const borderColors = topProjects.map(p => {
-            if (p.average >= 80) return 'rgba(16, 185, 129, 1)';
-            if (p.average >= 70) return 'rgba(99, 102, 241, 1)';
-            if (p.average >= 60) return 'rgba(245, 158, 11, 1)';
-            return 'rgba(239, 68, 68, 1)';
+            if (p.average >= 80) return t.success;
+            if (p.average >= 70) return t.primary;
+            if (p.average >= 60) return t.warning;
+            return t.danger;
         });
         
         projectComparisonChart = new Chart(ctx, {
@@ -9125,23 +9311,18 @@ function updateProjectComparisonChart() {
                     label: '平均得分率 (%)',
                     data: topProjects.map(p => p.average),
                     backgroundColor: barColors,
-                    borderColor: borderColors,
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    barPercentage: 0.7,
+                    borderWidth: 0,
+                    borderRadius: 6,
+                    barPercentage: 0.65,
                     categoryPercentage: 0.8,
                 }]
             },
             options: {
+                indexAxis: 'y', // 横向条形图：项目多时标签不再拥挤
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleFont: { size: 13, weight: 'bold' },
-                        bodyFont: { size: 12 },
-                        padding: 12,
-                        cornerRadius: 12,
                         callbacks: {
                             label: function(context) {
                                 const index = context.dataIndex;
@@ -9150,13 +9331,6 @@ function updateProjectComparisonChart() {
                                     `平均得分率: ${context.raw.toFixed(1)}%`,
                                     `参与人数: ${project.count} 人`
                                 ];
-                            },
-                            footer: function(context) {
-                                const value = context[0].raw;
-                                if (value >= 80) return '🏆 表现优秀';
-                                if (value >= 70) return '👍 表现良好';
-                                if (value >= 60) return '📚 成绩及格';
-                                return '💪 有待提升';
                             }
                         }
                     },
@@ -9165,39 +9339,25 @@ function updateProjectComparisonChart() {
                     }
                 },
                 scales: {
-                    y: {
+                    x: {
                         beginAtZero: true,
                         max: 100,
-                        title: {
-                            display: true,
-                            text: '平均得分率 (%)',
-                            font: { size: 11, weight: 'bold' },
-                            color: '#64748b'
-                        },
                         ticks: {
                             callback: function(value) {
                                 return value + '%';
                             },
                             stepSize: 20,
-                            font: { size: 10 }
                         }
                     },
-                    x: {
-                        title: {
-                            display: true,
-                            text: '评分项目',
-                            font: { size: 11, weight: 'bold' },
-                            color: '#64748b'
-                        },
+                    y: {
+                        grid: { display: false },
                         ticks: {
                             font: { size: 11 },
-                            maxRotation: 45,
-                            minRotation: 0,
                         }
                     }
                 },
                 animation: {
-                    duration: 800,
+                    duration: 400,
                     easing: 'easeOutQuart',
                 }
             }
@@ -14883,30 +15043,26 @@ function updateScoreTrendChart() {
             return;
         }
         
-        // 渐变色方案
-        const gradientColors = labels.map((_, i) => {
-            const hue = (i * 40 + 240) % 360;
-            return `hsla(${hue}, 70%, 60%, 0.7)`;
-        });
+        const t = getChartTheme();
         
-        const borderColors = labels.map((_, i) => {
-            const hue = (i * 40 + 240) % 360;
-            return `hsla(${hue}, 70%, 50%, 1)`;
-        });
-        
-        // 创建图表
+        // 创建图表（趋势用折线图，不用竖向柱状图 —— 设计规范 5.8）
         scoreTrendChart = new Chart(newCtx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
                     label: '平均得分率 (%)',
                     data: data,
-                    backgroundColor: gradientColors,
-                    borderColor: borderColors,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    borderSkipped: false,
+                    borderColor: t.primary,
+                    backgroundColor: t.primary + '1A',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: t.primary,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 6,
                 }]
             },
             options: {
@@ -14918,12 +15074,6 @@ function updateScoreTrendChart() {
                 },
                 plugins: {
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleFont: { size: 13, weight: 'bold' },
-                        bodyFont: { size: 12 },
-                        padding: 12,
-                        cornerRadius: 12,
-                        displayColors: true,
                         callbacks: {
                             label: function(context) {
                                 const index = context.dataIndex;
@@ -14949,15 +15099,10 @@ function updateScoreTrendChart() {
                             callback: function(value) {
                                 return value + '%';
                             },
-                            font: { size: 11 }
                         },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.04)',
-                        }
                     },
                     x: {
                         ticks: {
-                            font: { size: 10 },
                             maxRotation: 45,
                             minRotation: 0,
                         },
@@ -14967,7 +15112,7 @@ function updateScoreTrendChart() {
                     }
                 },
                 animation: {
-                    duration: 800,
+                    duration: 400,
                     easing: 'easeOutQuart',
                 }
             }
@@ -15088,11 +15233,7 @@ function updateStudentTrendChart(studentId) {
     
     // 创建图表
     try {
-        // 渐变色
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-        gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.5)');
-        gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');
+        const t = getChartTheme();
         
         studentTrendChart = new Chart(ctx, {
             type: 'line',
@@ -15101,22 +15242,22 @@ function updateStudentTrendChart(studentId) {
                 datasets: [{
                     label: '得分率 (%)',
                     data: percentages,
-                    borderColor: '#6366f1',
-                    backgroundColor: gradient,
-                    borderWidth: 3,
+                    borderColor: t.primary,
+                    backgroundColor: t.primary + '1A',
+                    borderWidth: 2,
                     fill: true,
-                    tension: 0.4,
+                    tension: 0.35,
                     pointBackgroundColor: percentages.map((p, i) => {
-                        if (i === maxIndex) return '#10b981';
-                        if (i === minIndex) return '#ef4444';
-                        return '#6366f1';
+                        if (i === maxIndex) return t.success;
+                        if (i === minIndex) return t.danger;
+                        return t.primary;
                     }),
-                    pointBorderColor: 'white',
+                    pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     pointRadius: percentages.map((p, i) => 
-                        (i === maxIndex || i === minIndex) ? 8 : 5
+                        (i === maxIndex || i === minIndex) ? 7 : 4
                     ),
-                    pointHoverRadius: 10,
+                    pointHoverRadius: 9,
                 }]
             },
             options: {
@@ -15128,9 +15269,6 @@ function updateStudentTrendChart(studentId) {
                 },
                 plugins: {
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        padding: 12,
-                        cornerRadius: 12,
                         callbacks: {
                             title: function(context) {
                                 const index = context[0].dataIndex;
@@ -15156,23 +15294,16 @@ function updateStudentTrendChart(studentId) {
                         max: 100,
                         ticks: {
                             callback: function(value) { return value + '%'; },
-                            font: { size: 11 }
                         },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.04)',
-                        }
                     },
                     x: {
-                        ticks: {
-                            font: { size: 10 },
-                        },
                         grid: {
                             display: false,
                         }
                     }
                 },
                 animation: {
-                    duration: 1500,
+                    duration: 400,
                     easing: 'easeOutQuart',
                 }
             }
@@ -18197,6 +18328,19 @@ function initAdminSidebar() {
         backdrop.addEventListener('click', function () {
             sidebar.classList.remove('open');
             backdrop.classList.remove('show');
+        });
+    }
+
+    // 桌面端：折叠侧边栏至 64px（仅图标 + hover tooltip），状态记忆在本地
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const adminLayout = document.querySelector('.admin-layout');
+    if (collapseBtn && adminLayout) {
+        if (localStorage.getItem('sidebarCollapsed') === '1') {
+            adminLayout.classList.add('sidebar-collapsed');
+        }
+        collapseBtn.addEventListener('click', function () {
+            const collapsed = adminLayout.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
         });
     }
 
