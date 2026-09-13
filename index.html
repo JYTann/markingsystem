@@ -2954,12 +2954,12 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 
                 <!-- 分数录入 -->
                 <div class="tab-pane fade" id="scores-tab">
-                    <div class="card fade-in">
+                    <div class="card fade-in mb-3">
                         <div class="card-header">
-                            <i class="fas fa-edit me-2"></i>分数录入
+                            <i class="fas fa-edit me-2"></i>单个录入
                         </div>
                         <div class="card-body">
-                            <div class="row mb-3">
+                            <div class="row mb-2">
                                 <div class="col-md-4">
                                     <label for="score-student-select" class="form-label">选择学生</label>
                                     <select class="form-select" id="score-student-select">
@@ -2980,37 +2980,38 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12 d-flex justify-content-end">
-                                    <!-- 放在 <button id="save-score-btn" class="btn btn-primary"> 上方 -->
-<div class="row mb-3">
-    <div class="col-md-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6 class="card-title">
-                    <i class="fas fa-upload me-2"></i>批量导入成绩
-                </h6>
-                <div class="input-group">
-                    <input class="form-control" type="file" id="import-scores-excel" accept=".xlsx, .xls">
-                    <button class="btn btn-outline-primary" type="button" id="import-scores-btn">
-                        <i class="fas fa-file-import me-1"></i>导入
-                    </button>
-                    <button class="btn btn-outline-secondary" type="button" id="download-score-template-btn">
-                        <i class="fas fa-download me-1"></i>下载模板
-                    </button>
-                </div>
-                <small class="text-muted">支持Excel批量导入，请先下载模板填写</small>
-            </div>
-        </div>
-    </div>
-</div>
-                                    <button id="save-score-btn" class="btn btn-primary">
-                                        <i class="fas fa-save me-1"></i>保存分数
-                                    </button>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted"><i class="fas fa-lightbulb me-1"></i>提示：如该学生已有此项目分数，会提示覆盖</small>
+                                <button id="save-score-btn" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>保存分数
+                                </button>
                             </div>
-                            
+                        </div>
+                    </div>
+
+                    <div class="card fade-in mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-upload me-2"></i>批量导入
+                            </h6>
+                            <div class="input-group">
+                                <input class="form-control" type="file" id="import-scores-excel" accept=".xlsx, .xls">
+                                <button class="btn btn-outline-primary" type="button" id="import-scores-btn">
+                                    <i class="fas fa-file-import me-1"></i>导入
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" id="download-score-template-btn">
+                                    <i class="fas fa-download me-1"></i>下载模板
+                                </button>
+                            </div>
+                            <small class="text-muted">支持Excel批量导入，请先下载模板填写</small>
+                        </div>
+                    </div>
+
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <i class="fas fa-list me-2"></i>最近录入的记录
+                        </div>
+                        <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-striped table-hover">
                                     <thead>
@@ -3020,6 +3021,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                                             <th>分数</th>
                                             <th>满分</th>
                                             <th>占比</th>
+                                            <th>录入时间</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
@@ -5472,7 +5474,7 @@ function saveLevelProject() {
                     const project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
                     const fullMark = score.fullMark || project?.fullMark || 0;
                     const pct = fullMark > 0 ? ((score.score / fullMark) * 100).toFixed(1) + '%' : '-';
-                    const time = score.createdAt?.toDate ? formatDate(score.createdAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
+                    const time = score.recordedAt?.toDate ? formatDate(score.recordedAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
                     return `<tr>
                         <td>${escapeHtml(project?.name || '未知项目')}</td>
                         <td>${score.score}</td>
@@ -6046,7 +6048,7 @@ function updateLevelSelect() {
     // 显示加载状态
     tbody.innerHTML = `
         <tr>
-            <td colspan="6" class="text-center py-4">
+            <td colspan="7" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">加载中...</span>
                 </div>
@@ -6063,7 +6065,7 @@ function updateLevelSelect() {
             if (querySnapshot.empty) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
+                        <td colspan="7" class="text-center py-4 text-muted">
                             <i class="fas fa-info-circle me-2"></i>暂无分数记录
                         </td>
                     </tr>
@@ -6072,8 +6074,14 @@ function updateLevelSelect() {
                 querySnapshot.forEach(doc => {
                     const score = { id: doc.id, ...doc.data() };
                     scores.push(score);
-                    addScoreToTable(score);
                 });
+                // 最近录入的排在最前面
+                const sortedScores = [...scores].sort((a, b) => {
+                    const ta = a.recordedAt?.toDate ? a.recordedAt.toDate().getTime() : 0;
+                    const tb = b.recordedAt?.toDate ? b.recordedAt.toDate().getTime() : 0;
+                    return tb - ta;
+                });
+                sortedScores.forEach(score => addScoreToTable(score));
             }
             
             updateDashboard();
@@ -6085,7 +6093,7 @@ function updateLevelSelect() {
             console.error("加载分数数据失败: ", error);
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center py-4 text-danger">
+                    <td colspan="7" class="text-center py-4 text-danger">
                         <i class="fas fa-exclamation-circle me-2"></i>加载失败: ${error.message}
                     </td>
                 </tr>
@@ -6127,6 +6135,8 @@ function addScoreToTable(score) {
     
     // 如果 tbody 不存在（可能不在分数录入页面），跳过
     if (!tbody) return;
+
+    const enteredTime = score.recordedAt?.toDate ? formatDate(score.recordedAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
     
     const row = document.createElement('tr');
     row.className = 'fade-in';
@@ -6150,9 +6160,10 @@ function addScoreToTable(score) {
         </td>
         <td>${fullMark}</td>
         <td>${(weight * 100).toFixed(1)}%</td>
+        <td class="text-nowrap small text-muted">${enteredTime}</td>
         <td>
-            <button class="btn btn-sm btn-danger delete-score" data-id="${score.id}">
-                <i class="fas fa-trash"></i>
+            <button class="btn btn-sm btn-danger delete-score" data-id="${score.id}" title="撤销该条录入">
+                <i class="fas fa-undo"></i>
             </button>
         </td>
     `;
@@ -6366,11 +6377,8 @@ async function cleanStudentDuplicateScores(studentId) {
     }
 }
 
-// ==================== 修改保存分数函数，添加重复检测 ====================
-
-// 保存修改后的 saveScore 函数（替换原有的）
-const originalSaveScore = saveScore;
-window.saveScore = async function() {
+// ==================== 保存分数（含重复检测，唯一版本）====================
+async function saveScore() {
     const studentId = document.getElementById('score-student-select').value;
     const projectId = document.getElementById('score-project-select').value;
     const scoreValue = parseFloat(document.getElementById('score-input').value);
@@ -6474,7 +6482,7 @@ window.saveScore = async function() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>保存分数';
     }
-};
+}
 
 // ==================== 添加一键清理重复记录的管理按钮 ====================
 
@@ -6755,7 +6763,7 @@ function updateClassSelect() {
             if (welcomeSub) {
                 const todayStr = new Date().toDateString();
                 const todayScores = scores.filter(s => {
-                    const ts = s.createdAt?.toDate ? s.createdAt.toDate() : null;
+                    const ts = s.recordedAt?.toDate ? s.recordedAt.toDate() : null;
                     return ts && ts.toDateString() === todayStr;
                 }).length;
                 welcomeSub.textContent = `目前共有 ${students.length} 位学生、${projects.length} 个评分项目；今天新增了 ${todayScores} 条分数记录`;
