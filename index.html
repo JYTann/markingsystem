@@ -5014,42 +5014,6 @@ function showLevelDetail(levelId) {
     }
 }
 
-// 保存级别
-function saveLevel() {
-    const name = document.getElementById('level-name').value.trim();
-    const defaultYear = document.getElementById('level-default-year').value;
-    
-    if (!name) {
-        showAlert("请输入级别名称", "warning");
-        return;
-    }
-    
-    const btn = document.getElementById('save-level-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
-    
-    db.collection('levels').add({
-        name,
-        defaultYear: defaultYear || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showAlert("级别添加成功", "success");
-        document.getElementById('addLevelModal').querySelector('.btn-close').click();
-        document.getElementById('add-level-form').reset();
-        loadLevels();
-        addActivity(`添加级别: ${name}`, "success");
-    })
-    .catch(error => {
-        console.error("添加级别失败: ", error);
-        showAlert("添加级别失败", "danger");
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-    });
-}
-
 // 编辑级别
 function editLevel(levelId) {
     const level = levels.find(l => l.id === levelId);
@@ -6620,64 +6584,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 2000);
 });
 
-        // 保存分数
-        // 保存分数 - 修改版本
-function saveScore() {
-    const studentId = document.getElementById('score-student-select').value;
-    const projectId = document.getElementById('score-project-select').value;
-    const scoreValue = parseFloat(document.getElementById('score-input').value);
-    
-    if (!studentId || !projectId || isNaN(scoreValue)) {
-        showAlert("请选择学生、项目并输入分数", "warning");
-        return;
-    }
-    
-    // 从级别项目中获取满分信息
-    const selectedOption = document.getElementById('score-project-select').selectedOptions[0];
-    if (!selectedOption) {
-    showAlert("请选择项目", "warning");
-    return;
-}
-    const fullMark = parseFloat(selectedOption.dataset.fullMark);
-    const weight = parseFloat(selectedOption.dataset.weight);
-    
-    if (scoreValue > fullMark) {
-        showAlert(`分数不能超过项目满分 ${fullMark}`, "warning");
-        return;
-    }
-    
-    const btn = document.getElementById('save-score-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
-    
-    const student = students.find(s => s.id === studentId);
-    const projectName = selectedOption.textContent.split(' (满分:')[0];
-    
-    db.collection('scores').add({
-        studentId,
-        projectId,
-        projectName: projectName,  // 冗余存储项目名称
-        score: scoreValue,
-        fullMark: fullMark,
-        weight: weight,
-        recordedAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showAlert("分数保存成功", "success");
-        document.getElementById('score-input').value = '';
-        loadScores();
-        addActivity(`为 ${student.name} 录入 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
-    })
-    .catch(error => {
-        console.error("保存分数失败: ", error);
-        showAlert("保存分数失败", "danger");
-        addActivity("保存分数失败", "danger");
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-    });
-}
 
         // 更新班级选择下拉框
         // 在 updateClassSelect 函数中添加
@@ -7381,35 +7287,6 @@ function confirmDelete() {
 }
 
         // 安全关闭模态框
-// 安全关闭模态框 - 增强版
-function safeHideModal(modalId) {
-    const modalElement = document.getElementById(modalId);
-    if (!modalElement) return;
-    
-    try {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
-        } else {
-            // 如果没有 Bootstrap 实例，手动隐藏
-            modalElement.style.display = 'none';
-            modalElement.classList.remove('show');
-            modalElement.setAttribute('aria-hidden', 'true');
-        }
-    } catch (error) {
-        console.error(`关闭模态框 ${modalId} 失败:`, error);
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('show');
-    }
-    
-    // 强制清理遮罩层
-    setTimeout(() => {
-        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = '';
-    }, 150);
-}
-
 // 修改保存级别函数中的关闭操作
 function saveLevel() {
     const nameInput = document.getElementById('level-name');
@@ -7438,7 +7315,7 @@ function saveLevel() {
     })
     .then(() => {
         showAlert("级别添加成功", "success");
-        safeHideModal('addLevelModal');
+        safeHideModal(document.getElementById('addLevelModal')); // [FIXED-BUG5] safeHideModal 统一接收 DOM 元素而非字符串 id
         
         const form = document.getElementById('add-level-form');
         if (form) form.reset();
@@ -9180,16 +9057,6 @@ function createHorizontalReportHTML(data) {
 </html>`;
 }
 
-// HTML转义函数
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
 
 /**
  * 在新窗口中显示专业版报告（自动调整窗口大小）
@@ -10724,26 +10591,6 @@ document.addEventListener('hidden.bs.modal', function (event) {
     document.body.style.paddingRight = '';
 });
 
-// 清理所有模态框函数
-function cleanupAllModals() {
-    // 隐藏所有模态框
-    document.querySelectorAll('.modal.show').forEach(modal => {
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-    });
-    
-    // 移除所有遮罩层
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-        backdrop.remove();
-    });
-    
-    // 恢复 body
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-}
-
 // 在页面加载时清理可能残留的遮罩层
 document.addEventListener('DOMContentLoaded', function() {
         if (checkSharedReport()) {
@@ -10963,33 +10810,6 @@ function hideFullscreenLoader() {
     if (loader) {
         loader.classList.remove('show');
     }
-}
-
-// ========== 浮动操作菜单 ==========
-function initFabMenu() {
-    const toggle = document.getElementById('fab-toggle');
-    const menu = document.getElementById('fab-menu');
-    
-    if (!toggle || !menu) return;
-    
-    toggle.addEventListener('click', () => {
-        menu.classList.toggle('open');
-        const icon = toggle.querySelector('i');
-        if (menu.classList.contains('open')) {
-            icon.className = 'fas fa-times';
-        } else {
-            icon.className = 'fas fa-plus';
-        }
-    });
-    
-    // 点击其他地方关闭
-    document.addEventListener('click', (e) => {
-        if (!menu.contains(e.target)) {
-            menu.classList.remove('open');
-            const icon = toggle.querySelector('i');
-            if (icon) icon.className = 'fas fa-plus';
-        }
-    });
 }
 
 // ========== 刷新所有数据 ==========
@@ -11652,130 +11472,7 @@ function updateAttendanceStats(attendanceId) {
 }
 
 // 辅助函数：HTML转义
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
 
-// 修改渲染点名列表函数，添加选中高亮和统计联动
-function renderAttendanceList() {
-    const container = document.getElementById('attendance-list');
-    if (!container) return;
-    
-    if (attendances.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-4 text-muted">
-                <i class="fas fa-clipboard-list fa-3x mb-3"></i>
-                <p>暂无点名记录，点击"新建点名"开始</p>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = attendances.map(attendance => {
-        const now = new Date();
-        const startTime = attendance.startTime?.toDate();
-        const endTime = attendance.endTime?.toDate();
-        
-        let status = 'completed';
-        let statusClass = 'completed';
-        let statusText = '已结束';
-        
-        if (now < startTime) {
-            status = 'upcoming';
-            statusClass = 'upcoming';
-            statusText = '即将开始';
-        } else if (now >= startTime && now <= endTime) {
-            status = 'active';
-            statusClass = 'active';
-            statusText = '进行中';
-        }
-        
-        if (attendance.cancelled) {
-            status = 'cancelled';
-            statusClass = 'cancelled';
-            statusText = '已取消';
-        }
-        
-        const recordCount = attendanceRecords.filter(r => r.attendanceId === attendance.id).length;
-        
-        // 获取该点名指定的级别学生数量
-        let targetStudents = [];
-        if (attendance.levelId) {
-            targetStudents = students.filter(s => s.levelId === attendance.levelId);
-        } else {
-            targetStudents = students;
-        }
-        const totalStudents = targetStudents.length;
-        const percentage = totalStudents > 0 ? Math.round((recordCount / totalStudents) * 100) : 0;
-        
-        // 高亮选中的点名
-        const isSelected = selectedAttendanceId === attendance.id;
-        const selectedClass = isSelected ? 'border border-primary shadow-sm' : '';
-        
-        return `
-            <div class="attendance-card mb-3 p-3 ${selectedClass}" style="border-radius: 16px; cursor: pointer; transition: all 0.2s ease;" 
-                 onclick="selectAttendance('${attendance.id}')">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                        <h6 class="mb-1 fw-bold">${attendance.title}</h6>
-                        <small class="text-muted">
-                            <i class="fas fa-calendar me-1"></i>${attendance.date || ''}
-                            <i class="fas fa-clock ms-2 me-1"></i>${attendance.startTimeStr || ''} - ${attendance.endTimeStr || ''}
-                        </small>
-                    </div>
-                    <span class="attendance-status ${statusClass}">
-                        <span class="attendance-status-dot"></span>
-                        ${statusText}
-                    </span>
-                </div>
-                
-                ${attendance.code ? `
-                <div class="mb-2">
-                    <small class="text-muted">验证码：</small>
-                    <code style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 1rem; letter-spacing: 3px;">
-                        ${attendance.code}
-                    </code>
-                </div>
-                ` : ''}
-                
-                <div class="d-flex align-items-center gap-3 mb-2">
-                    <small class="text-muted">
-                        <i class="fas fa-user-check me-1"></i>已签到：${recordCount}/${totalStudents}
-                    </small>
-                    <div class="attendance-progress flex-grow-1">
-                        <div class="attendance-progress-bar" style="width: ${percentage}%"></div>
-                    </div>
-                    <small class="text-muted">${percentage}%</small>
-                </div>
-                
-                ${attendance.note ? `<small class="text-muted d-block mb-2"><i class="fas fa-sticky-note me-1"></i>${attendance.note}</small>` : ''}
-                
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); viewAttendanceDetail('${attendance.id}')">
-                        <i class="fas fa-eye me-1"></i>查看详情
-                    </button>
-                    ${status !== 'completed' ? `
-                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); editAttendance('${attendance.id}')">
-                        <i class="fas fa-edit me-1"></i>编辑
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); cancelAttendance('${attendance.id}')">
-                        <i class="fas fa-times me-1"></i>取消
-                    </button>
-                    ` : ''}
-                    <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteAttendance('${attendance.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
 
 // 选择点名并显示统计
 function selectAttendance(attendanceId) {
@@ -11968,281 +11665,7 @@ function updateCurrentSessionInfo() {
     }
 }
 
-// 新建点名
-function createNewAttendance() {
-    console.log('创建新的点名');
-    
-    // 先清理模态框残留
-    const modalElement = document.getElementById('attendanceModal');
-    if (modalElement) {
-        try {
-            const existingModal = bootstrap.Modal.getInstance(modalElement);
-            if (existingModal) {
-                existingModal.hide();
-            }
-        } catch(e) {}
-        
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('show');
-    }
-    
-    // 延迟后打开新建模态框
-    setTimeout(() => {
-        // 重置表单
-        const idInput = document.getElementById('attendance-id');
-        const titleInput = document.getElementById('attendance-title');
-        const dateInput = document.getElementById('attendance-date');
-        const startTimeInput = document.getElementById('attendance-start-time');
-        const endTimeInput = document.getElementById('attendance-end-time');
-        const codeInput = document.getElementById('attendance-code');
-        const noteInput = document.getElementById('attendance-note');
-        const levelSelect = document.getElementById('attendance-level');
-        const modalTitle = document.getElementById('attendance-modal-title');
-        const previewText = document.getElementById('time-preview-text');
-        
-        if (idInput) idInput.value = '';  // 清空 ID，表示新建
-        if (titleInput) titleInput.value = '';
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-        if (startTimeInput) startTimeInput.value = '';
-        if (endTimeInput) endTimeInput.value = '';
-        if (codeInput) codeInput.value = '';
-        if (noteInput) noteInput.value = '';
-        if (modalTitle) modalTitle.textContent = '新建点名';
-        if (previewText) previewText.innerHTML = '请设置点名时间';
-        
-        // 更新级别选择
-        if (levelSelect && typeof levels !== 'undefined') {
-            levelSelect.innerHTML = '<option value="">所有级别</option>';
-            levels.forEach(level => {
-                const option = document.createElement('option');
-                option.value = level.id;
-                option.textContent = level.name;
-                levelSelect.appendChild(option);
-            });
-        }
-        
-        // 显示模态框
-        modalElement.style.display = 'block';
-        modalElement.classList.add('show');
-        modalElement.removeAttribute('aria-hidden');
-        
-        // 添加遮罩层
-        let backdrop = document.querySelector('.modal-backdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop fade show';
-            document.body.appendChild(backdrop);
-        }
-        document.body.classList.add('modal-open');
-        
-        // 尝试使用 Bootstrap 实例
-        try {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } catch(e) {
-            // 手动显示已处理
-        }
-    }, 200);
-}
-// 编辑点名
-function editAttendance(attendanceId) {
-    console.log('编辑点名，ID:', attendanceId);
-    
-    if (!attendanceId) {
-        showAlert('点名ID无效', 'danger');
-        return;
-    }
-    
-    const attendance = attendances.find(a => a.id === attendanceId);
-    if (!attendance) {
-        showAlert('找不到点名记录，请刷新后重试', 'warning');
-        // 重新加载数据
-        loadAttendances();
-        return;
-    }
-    
-    console.log('找到点名:', attendance.title);
-    
-    // 先清理模态框残留
-    const modalElement = document.getElementById('attendanceModal');
-    if (modalElement) {
-        try {
-            const existingModal = bootstrap.Modal.getInstance(modalElement);
-            if (existingModal) {
-                existingModal.hide();
-            }
-        } catch(e) {}
-        
-        // 重置显示状态
-        modalElement.style.display = 'none';
-        modalElement.classList.remove('show');
-    }
-    
-    // 延迟后打开编辑模态框
-    setTimeout(() => {
-        // 设置表单值
-        const idInput = document.getElementById('attendance-id');
-        const titleInput = document.getElementById('attendance-title');
-        const dateInput = document.getElementById('attendance-date');
-        const startTimeInput = document.getElementById('attendance-start-time');
-        const endTimeInput = document.getElementById('attendance-end-time');
-        const codeInput = document.getElementById('attendance-code');
-        const noteInput = document.getElementById('attendance-note');
-        const levelSelect = document.getElementById('attendance-level');
-        const modalTitle = document.getElementById('attendance-modal-title');
-        const previewText = document.getElementById('time-preview-text');
-        
-        if (idInput) idInput.value = attendance.id;
-        if (titleInput) titleInput.value = attendance.title || '';
-        if (dateInput) dateInput.value = attendance.date || '';
-        if (startTimeInput) startTimeInput.value = attendance.startTimeStr || '';
-        if (endTimeInput) endTimeInput.value = attendance.endTimeStr || '';
-        if (codeInput) codeInput.value = attendance.code || '';
-        if (noteInput) noteInput.value = attendance.note || '';
-        if (modalTitle) modalTitle.textContent = '编辑点名';
-        if (previewText) previewText.innerHTML = '请设置点名时间';
-        
-        if (levelSelect && attendance.levelId) {
-            levelSelect.value = attendance.levelId;
-        }
-        
-        // 更新时间预览
-        if (typeof updateTimePreview === 'function') {
-            updateTimePreview();
-        }
-        
-        // 显示模态框
-        modalElement.style.display = 'block';
-        modalElement.classList.add('show');
-        modalElement.removeAttribute('aria-hidden');
-        
-        // 添加遮罩层
-        let backdrop = document.querySelector('.modal-backdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop fade show';
-            document.body.appendChild(backdrop);
-        }
-        document.body.classList.add('modal-open');
-        
-        // 尝试使用 Bootstrap 实例
-        try {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } catch(e) {
-            // 手动显示已处理
-        }
-    }, 200);
-}
 
-// 保存点名
-function saveAttendance() {
-    const id = document.getElementById('attendance-id').value;
-    const title = document.getElementById('attendance-title').value.trim();
-    const date = document.getElementById('attendance-date').value;
-    const startTimeStr = document.getElementById('attendance-start-time').value;
-    const endTimeStr = document.getElementById('attendance-end-time').value;
-    const code = document.getElementById('attendance-code').value.trim().toUpperCase();
-    const note = document.getElementById('attendance-note').value.trim();
-    const levelId = document.getElementById('attendance-level').value;
-    
-    console.log('保存点名 - ID:', id);
-    console.log('保存点名 - 标题:', title);
-    
-    // 验证
-    if (!title) { showAlert('请输入点名标题', 'warning'); return; }
-    if (!date) { showAlert('请选择日期', 'warning'); return; }
-    if (!startTimeStr) { showAlert('请设置开始时间', 'warning'); return; }
-    if (!endTimeStr) { showAlert('请设置结束时间', 'warning'); return; }
-    if (!code || code.length < 4 || code.length > 6) {
-        showAlert('验证码需要4-6位字符', 'warning'); 
-        return;
-    }
-    
-    if (startTimeStr >= endTimeStr) {
-        showAlert('结束时间必须晚于开始时间', 'warning'); 
-        return;
-    }
-    
-    const startTime = new Date(`${date}T${startTimeStr}:00`);
-    const endTime = new Date(`${date}T${endTimeStr}:00`);
-    
-    const btn = document.getElementById('save-attendance-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
-    }
-    
-    const attendanceData = {
-        title,
-        date,
-        startTime: firebase.firestore.Timestamp.fromDate(startTime),
-        endTime: firebase.firestore.Timestamp.fromDate(endTime),
-        startTimeStr,
-        endTimeStr,
-        code,
-        note: note || null,
-        levelId: levelId || null,
-        cancelled: false,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    
-    // 判断是新增还是更新
-    let savePromise;
-    if (id && id !== '') {
-        // 更新现有点名 - 使用 update
-        console.log('更新点名，文档ID:', id);
-        savePromise = db.collection('attendances').doc(id).update(attendanceData);
-    } else {
-        // 新建点名 - 使用 add
-        attendanceData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        console.log('新建点名');
-        savePromise = db.collection('attendances').add(attendanceData);
-    }
-    
-    savePromise
-        .then((result) => {
-            const isUpdate = id && id !== '';
-            let successMsg = isUpdate ? '点名更新成功' : '点名创建成功';
-            if (!isUpdate && result && result.id) {
-                console.log('新点名ID:', result.id);
-            }
-            showAlert(successMsg, 'success');
-            
-            // 安全关闭模态框
-            const modalElement = document.getElementById('attendanceModal');
-            if (modalElement) {
-                try {
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
-                    }
-                } catch(e) {
-                    modalElement.style.display = 'none';
-                    modalElement.classList.remove('show');
-                }
-                setTimeout(cleanupAllModals, 300);
-            }
-            
-            // 重新加载点名列表
-            loadAttendances();
-            addActivity(`${isUpdate ? '更新' : '创建'}点名: ${title}`, 'success');
-        })
-        .catch(error => {
-            console.error('保存点名失败:', error);
-            let errorMsg = '保存失败: ' + error.message;
-            if (error.code === 'not-found') {
-                errorMsg = '点名记录不存在，请刷新后重试';
-            }
-            showAlert(errorMsg, 'danger');
-        })
-        .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-            }
-        });
-}
 
 // 取消点名
 function cancelAttendance(attendanceId) {
@@ -12283,187 +11706,6 @@ function deleteAttendance(attendanceId) {
     });
 }
 
-// 查看点名详情
-// 查看点名详情 - 从会员管理读取信息
-async function viewAttendanceDetail(attendanceId) {
-    currentAttendanceId = attendanceId;
-    const attendance = attendances.find(a => a.id === attendanceId);
-    if (!attendance) return;
-    
-    // 获取该点名的签到记录
-    const records = attendanceRecords.filter(r => r.attendanceId === attendanceId);
-    
-    // 构建签到学生列表 - 优先使用会员信息
-    const checkedInStudents = records.map(record => {
-        // 如果记录中已存储完整的会员信息，直接使用
-        if (record.studentName && record.studentName !== '未知' && record.studentId && record.studentId !== '未知') {
-            return {
-                ...record,
-                memberInfo: {
-                    name: record.studentName,
-                    studentId: record.studentId,
-                    class: record.studentClass || '-',
-                    group: record.studentGroup || '-'
-                }
-            };
-        }
-        
-        // 否则从会员列表中查找
-        const member = members.find(m => m.id === record.memberId || m.studentId === record.studentId);
-        if (member) {
-            return {
-                ...record,
-                memberInfo: {
-                    name: member.name,
-                    studentId: member.studentId,
-                    class: member.class || '-',
-                    group: member.group || '-',
-                    email: member.email
-                }
-            };
-        }
-        
-        // 都没有，使用记录中的原始数据
-        return {
-            ...record,
-            memberInfo: {
-                name: record.studentName || '未知',
-                studentId: record.studentId || '未知',
-                class: record.studentClass || '-',
-                group: record.studentGroup || '-'
-            }
-        };
-    });
-    
-    // 获取未签到的会员（根据点名指定的级别筛选）
-    let targetMembers = [...members];
-    if (attendance.levelId) {
-        // 如果点名指定了级别，按组别筛选（组别作为级别使用）
-        const level = levels.find(l => l.id === attendance.levelId);
-        if (level) {
-            targetMembers = members.filter(m => m.group === level.name);
-        }
-    }
-    
-    const checkedInMemberIds = new Set(records.map(r => r.memberId).filter(id => id));
-    const absentMembers = targetMembers.filter(m => !checkedInMemberIds.has(m.id));
-    
-    const now = new Date();
-    const endTime = attendance.endTime?.toDate();
-    const isActive = attendance.startTime?.toDate() <= now && now <= endTime && !attendance.cancelled;
-    
-    const modalContent = document.getElementById('attendance-detail-content');
-    if (!modalContent) return;
-    
-    modalContent.innerHTML = `
-        <div class="mb-3">
-            <h5>${escapeHtml(attendance.title)}</h5>
-            <p class="text-muted mb-1">
-                <i class="fas fa-calendar me-2"></i>${attendance.date}
-                <i class="fas fa-clock ms-3 me-2"></i>${attendance.startTimeStr} - ${attendance.endTimeStr}
-                ${isActive ? '<span class="badge bg-success ms-2">进行中</span>' : ''}
-                ${attendance.cancelled ? '<span class="badge bg-danger ms-2">已取消</span>' : ''}
-            </p>
-            <p class="text-muted mb-0">
-                <i class="fas fa-key me-2"></i>验证码：<code>${attendance.code}</code>
-            </p>
-        </div>
-        
-        <div class="row mb-3">
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <i class="fas fa-user-check stat-icon-chip stat-icon-success"></i>
-                    <h5 class="card-title">${checkedInStudents.length}</h5>
-                    <p class="card-text">已签到</p>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <i class="fas fa-user-times stat-icon-chip stat-icon-danger"></i>
-                    <h5 class="card-title">${absentMembers.length}</h5>
-                    <p class="card-text">未签到</p>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <i class="fas fa-percentage stat-icon-chip stat-icon-warning"></i>
-                    <h5 class="card-title">${targetMembers.length > 0 ? Math.round((checkedInStudents.length/targetMembers.length)*100) : 0}%</h5>
-                    <p class="card-text">出勤率</p>
-                </div>
-            </div>
-        </div>
-        
-        <h6 class="mb-3"><i class="fas fa-list me-2"></i>签到记录</h6>
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>学号</th>
-                        <th>姓名</th>
-                        <th>班级</th>
-                        <th>组别</th>
-                        <th>签到时间</th>
-                        <th>状态</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${checkedInStudents.map((record, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${escapeHtml(record.memberInfo?.studentId || record.studentId || '未知')}</td>
-                            <td>${escapeHtml(record.memberInfo?.name || record.studentName || '未知')}</td>
-                            <td>${escapeHtml(record.memberInfo?.class || record.studentClass || '-')}</td>
-                            <td><span class="badge bg-info">${escapeHtml(record.memberInfo?.group || record.studentGroup || '-')}</span></td>
-                            <td>${record.checkinTime?.toDate().toLocaleString() || '-'}</td>
-                            <td>
-                                <span class="student-checkin-status checked-in">
-                                    <i class="fas fa-check-circle me-1"></i>已签到
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
-                    ${checkedInStudents.length === 0 ? `
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                暂无签到记录
-                            </td>
-                        </tr>
-                    ` : ''}
-                </tbody>
-            </table>
-        </div>
-        
-        <h6 class="mb-3 mt-4 text-danger"><i class="fas fa-user-times me-2"></i>未签到会员</h6>
-        <div class="checkin-grid">
-            ${absentMembers.map(m => `
-                <div class="checkin-student-card">
-                    <div class="avatar" style="width: 36px; height: 36px; background-color: #ef4444;">
-                        ${escapeHtml(m.name?.charAt(0) || '?')}
-                    </div>
-                    <div>
-                        <div style="font-weight: 500; font-size: 0.9rem;">${escapeHtml(m.name)}</div>
-                        <small class="text-muted">${escapeHtml(m.studentId)} | ${escapeHtml(m.class)}</small>
-                        ${m.group ? `<small class="text-muted d-block">组别：${escapeHtml(m.group)}</small>` : ''}
-                    </div>
-                </div>
-            `).join('')}
-            ${absentMembers.length === 0 ? '<p class="text-muted text-center">🎉 全员签到！</p>' : ''}
-        </div>
-    `;
-    
-    const modalElement = document.getElementById('attendanceDetailModal');
-    if (modalElement) {
-        try {
-            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-            modal.show();
-        } catch(e) {
-            modalElement.style.display = 'block';
-            modalElement.classList.add('show');
-        }
-    }
-}
-
 // 导出点名详情
 function exportAttendanceDetail() {
     if (!currentAttendanceId) return;
@@ -12496,39 +11738,6 @@ function exportAttendanceDetail() {
     showAlert('导出成功', 'success');
 }
 
-// ==================== 修复 previewText 未定义错误 ====================
-
-// 首先，确保 updateTimePreview 函数正确定义了 previewText 变量
-function updateTimePreview() {
-    const date = document.getElementById('attendance-date')?.value;
-    const startTime = document.getElementById('attendance-start-time')?.value;
-    const endTime = document.getElementById('attendance-end-time')?.value;
-    const previewText = document.getElementById('time-preview-text');
-    
-    // 如果找不到元素，静默返回
-    if (!previewText) {
-        console.warn('time-preview-text 元素不存在');
-        return;
-    }
-    
-    if (date && startTime && endTime) {
-        const start = new Date(`${date}T${startTime}:00`);
-        const end = new Date(`${date}T${endTime}:00`);
-        const durationMinutes = Math.round((end - start) / 60000);
-        
-        if (durationMinutes > 0) {
-            previewText.innerHTML = `
-                点名时段：<strong>${date} ${startTime} - ${endTime}</strong><br>
-                持续时长：<strong>${durationMinutes} 分钟</strong>
-                ${durationMinutes > 120 ? '<br><span class="text-warning">⚠️ 点名时间较长，建议控制在2小时内</span>' : ''}
-            `;
-        } else {
-            previewText.innerHTML = `<span class="text-danger">⚠️ 结束时间必须晚于开始时间</span>`;
-        }
-    } else {
-        previewText.innerHTML = '请设置点名时间';
-    }
-}
 
 // ==================== 修复 COOP 策略错误（Google登录弹窗）====================
 
@@ -12679,117 +11888,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 });
 
-// ==================== 修复 createNewAttendance 中的 previewText 错误 ====================
-
-// 修复 createNewAttendance 函数
-const originalCreateNewAttendanceFixed = window.createNewAttendance;
-window.createNewAttendance = function() {
-    const modalElement = document.getElementById('attendanceModal');
-    if (!modalElement) return;
-    
-    // 先清理
-    if (typeof safeHideModal === 'function') {
-        safeHideModal(modalElement);
-    }
-    
-    setTimeout(() => {
-        // 重置表单
-        const titleInput = document.getElementById('attendance-title');
-        const dateInput = document.getElementById('attendance-date');
-        const startTimeInput = document.getElementById('attendance-start-time');
-        const endTimeInput = document.getElementById('attendance-end-time');
-        const codeInput = document.getElementById('attendance-code');
-        const noteInput = document.getElementById('attendance-note');
-        const levelSelect = document.getElementById('attendance-level');
-        const modalTitle = document.getElementById('attendance-modal-title');
-        const previewText = document.getElementById('time-preview-text');
-        
-        if (titleInput) titleInput.value = '';
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-        if (startTimeInput) startTimeInput.value = '';
-        if (endTimeInput) endTimeInput.value = '';
-        if (codeInput) codeInput.value = '';
-        if (noteInput) noteInput.value = '';
-        if (modalTitle) modalTitle.textContent = '新建点名';
-        if (previewText) previewText.innerHTML = '请设置点名时间';
-        
-        // 更新级别选择
-        if (levelSelect && typeof levels !== 'undefined') {
-            levelSelect.innerHTML = '<option value="">所有级别</option>';
-            levels.forEach(level => {
-                const option = document.createElement('option');
-                option.value = level.id;
-                option.textContent = level.name;
-                levelSelect.appendChild(option);
-            });
-        }
-        
-        // 显示模态框
-        modalElement.style.display = 'block';
-        modalElement.classList.add('show');
-        modalElement.removeAttribute('aria-hidden');
-        
-        // 添加遮罩层
-        let backdrop = document.querySelector('.modal-backdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop fade show';
-            document.body.appendChild(backdrop);
-        }
-        document.body.classList.add('modal-open');
-        
-    }, 100);
-};
-
-// ==================== 修复 editAttendance 函数 ====================
-
-const originalEditAttendanceFixed = window.editAttendance;
-window.editAttendance = function(attendanceId) {
-    const attendance = typeof attendances !== 'undefined' ? attendances.find(a => a.id === attendanceId) : null;
-    if (!attendance) return;
-    
-    const modalElement = document.getElementById('attendanceModal');
-    if (!modalElement) return;
-    
-    if (typeof safeHideModal === 'function') {
-        safeHideModal(modalElement);
-    }
-    
-    setTimeout(() => {
-        const previewText = document.getElementById('time-preview-text');
-        
-        document.getElementById('attendance-id').value = attendance.id;
-        document.getElementById('attendance-modal-title').textContent = '编辑点名';
-        document.getElementById('attendance-title').value = attendance.title || '';
-        document.getElementById('attendance-date').value = attendance.date || '';
-        document.getElementById('attendance-start-time').value = attendance.startTimeStr || '';
-        document.getElementById('attendance-end-time').value = attendance.endTimeStr || '';
-        document.getElementById('attendance-code').value = attendance.code || '';
-        document.getElementById('attendance-note').value = attendance.note || '';
-        
-        const levelSelect = document.getElementById('attendance-level');
-        if (levelSelect) levelSelect.value = attendance.levelId || '';
-        
-        if (previewText) previewText.innerHTML = '请设置点名时间';
-        
-        if (typeof updateTimePreview === 'function') {
-            updateTimePreview();
-        }
-        
-        modalElement.style.display = 'block';
-        modalElement.classList.add('show');
-        modalElement.removeAttribute('aria-hidden');
-        
-        let backdrop = document.querySelector('.modal-backdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop fade show';
-            document.body.appendChild(backdrop);
-        }
-        document.body.classList.add('modal-open');
-    }, 100);
-};
-
 // ==================== 全局错误捕获（防止错误中断执行）====================
 
 window.addEventListener('error', function(e) {
@@ -12821,86 +11919,6 @@ function generateRandomCode() {
 
 // ==================== 学生签到功能 ====================
 
-// 修改后的 studentGoogleLogin 函数
-function studentGoogleLogin() {
-    const btn = document.getElementById('student-attendance-login-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 登录中...';
-    }
-    
-    auth.signInWithPopup(googleProvider)
-        .then(async (result) => {
-            const user = result.user;
-            console.log("Google登录成功，用户信息:", {
-                displayName: user.displayName,
-                email: user.email
-            });
-            
-            // ========== 核心：从 displayName 提取中文名 ==========
-            let chineseName = null;
-            let studentId = null;
-            
-            // 方法1：正则提取中文字符（2-4个连续中文）
-            const chineseRegex = /[\u4e00-\u9fa5]{2,4}/;
-            const chineseMatch = user.displayName ? user.displayName.match(chineseRegex) : null;
-            
-            if (chineseMatch) {
-                chineseName = chineseMatch[0];
-                console.log(`✅ 从 displayName 提取到中文名: ${chineseName}`);
-            }
-            
-            // 提取学号（如果有）
-            const idRegex = /([A-Z]?\d{4,7}[A-Z]?\d*)/i;
-            const idMatch = user.displayName ? user.displayName.match(idRegex) : null;
-            if (idMatch) {
-                studentId = idMatch[1].toUpperCase();
-                console.log(`✅ 提取到学号: ${studentId}`);
-            }
-            
-            // 如果提取到中文名，直接使用
-            if (chineseName) {
-                studentAttendanceUser = {
-                    displayName: chineseName,
-                    email: user.email,
-                    uid: user.uid,
-                    studentId: studentId,
-                    isStudentLogin: false,
-                    extractedFromGoogle: true
-                };
-                showAlert(`欢迎 ${chineseName}！`, 'success');
-                showStudentCheckinInterface();
-            } else {
-                // 降级：使用邮箱前缀
-                const fallbackName = user.email.split('@')[0];
-                studentAttendanceUser = {
-                    displayName: fallbackName,
-                    email: user.email,
-                    uid: user.uid,
-                    isStudentLogin: false,
-                    isGuest: true
-                };
-                showAlert(`欢迎 ${fallbackName}，如姓名不正确请使用学号登录`, 'warning');
-                showStudentCheckinInterface();
-            }
-        })
-        .catch((error) => {
-            console.error("Google登录失败:", error);
-            let errorMsg = "Google登录失败";
-            if (error.code === 'auth/popup-blocked') {
-                errorMsg = "弹窗被拦截，请允许弹出窗口";
-            } else if (error.message.includes('admin') || error.message.includes('policy')) {
-                errorMsg = "由于学校管理限制，请使用学号登录";
-            }
-            showAlert(errorMsg, 'warning');
-        })
-        .finally(() => {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号登录';
-            }
-        });
-}
 
         // 增强版中文名提取函数
 function extractChineseName(displayName) {
@@ -13041,43 +12059,6 @@ async function loadActiveSessions() {
 
         // 显示签到表单 - 修复版
 // 显示签到表单
-function showCheckinForm(sessionId) {
-    console.log('显示签到表单，点名ID:', sessionId);
-    
-    // 确保使用正确的 ID 查找
-    const session = attendances.find(a => a.id === sessionId);
-    
-    if (!session) {
-        console.error('找不到对应的点名会话:', sessionId);
-        console.log('当前 attendances:', attendances);
-        showAlert('签到信息加载失败，请刷新页面重试', 'warning');
-        return;
-    }
-    
-    console.log('找到点名会话:', session.title);
-    
-    // 设置全局当前签到会话
-    activeCheckinSession = session;
-    
-    // 更新UI
-    const titleElement = document.getElementById('checkin-session-title');
-    const timeElement = document.getElementById('checkin-session-time');
-    const codeInput = document.getElementById('checkin-code-input');
-    const resultDiv = document.getElementById('checkin-result');
-    const checkinCard = document.getElementById('checkin-card');
-    
-    if (titleElement) titleElement.textContent = session.title;
-    if (timeElement) timeElement.textContent = `${session.date} ${session.startTimeStr} - ${session.endTimeStr}`;
-    if (codeInput) codeInput.value = '';
-    if (resultDiv) resultDiv.innerHTML = '';
-    if (checkinCard) {
-        checkinCard.style.display = 'block';
-        checkinCard.scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    // 提示用户输入验证码
-    showAlert(`请输入点名 "${session.title}" 的验证码`, 'info');
-}
         
 // 提交签到 - 完整版（优先匹配会员管理中的成员）
 async function submitCheckIn() {
@@ -13430,62 +12411,6 @@ async function loadAttendanceDataForStudent() {
         // ==================== 会员管理（独立于点名系统） ====================
 
 // 加载会员数据
-function loadMembers() {
-    const tbody = document.getElementById('members-table-body');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
-    
-    db.collection('members').orderBy('studentId').get()
-        .then(querySnapshot => {
-            members = [];
-            tbody.innerHTML = '';
-            
-            if (querySnapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">暂无会员数据</td></tr>';
-                return;
-            }
-            
-            querySnapshot.forEach(doc => {
-                const member = { id: doc.id, ...doc.data() };
-                members.push(member);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${member.studentId}</td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="avatar me-2" style="width:32px;height:32px;background-color:${stringToColor(member.name)};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.8rem;">
-                                ${member.name.charAt(0)}
-                            </div>
-                            ${member.name}
-                        </div>
-                    </td>
-                    <td>${member.class || '-'}</td>
-                    <td>${member.group ? `<span class="badge bg-info">${member.group}</span>` : '-'}</td>
-                    <td>${member.email || '-'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary edit-member-btn" data-id="${member.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger delete-member-btn" data-id="${member.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-                
-                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(member.id));
-                row.querySelector('.delete-member-btn').addEventListener('click', () => 
-                    showDeleteConfirm('member', member.id, `确定要删除会员 ${member.name} 吗？`)
-                );
-            });
-        })
-        .catch(error => {
-            console.error("加载会员失败:", error);
-            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">加载失败</td></tr>';
-        });
-}
 
 // 保存会员
 function saveMember() {
@@ -14316,7 +13241,6 @@ function initAttendanceModal() {
 }
 
 // 重写 updateTimePreview 函数，添加安全检查
-const originalUpdateTimePreview = updateTimePreview;
 window.updateTimePreview = function() {
     const date = document.getElementById('attendance-date')?.value;
     const startTime = document.getElementById('attendance-start-time')?.value;
@@ -14345,7 +13269,6 @@ window.updateTimePreview = function() {
 };
 
 // 重写新建点名函数，使用安全的方式
-const originalCreateNewAttendance = createNewAttendance;
 window.createNewAttendance = function() {
     const modalElement = document.getElementById('attendanceModal');
     if (!modalElement) return;
@@ -14409,7 +13332,6 @@ window.createNewAttendance = function() {
 };
 
 // 重写 editAttendance 函数
-const originalEditAttendance = editAttendance;
 window.editAttendance = function(attendanceId) {
     const attendance = attendances.find(a => a.id === attendanceId);
     if (!attendance) return;
@@ -14475,7 +13397,6 @@ function cleanupAllModals() {
 }
 
 // 修复 saveAttendance 函数中的模态框关闭
-const originalSaveAttendance = saveAttendance;
 window.saveAttendance = function() {
     const id = document.getElementById('attendance-id')?.value;
     const title = document.getElementById('attendance-title')?.value.trim();
@@ -14716,8 +13637,6 @@ async function loadMembersSilent() {
 
 // ==================== 修改学生签到登录函数 ====================
 
-// 修改原有的 studentGoogleLogin 函数
-const originalStudentGoogleLogin = studentGoogleLogin;
 window.studentGoogleLogin = function() {
     const btn = document.getElementById('student-attendance-login-btn');
     if (btn) {
@@ -15049,71 +13968,6 @@ function showManualNameInput() {
 }
 
 // 修改 Google 登录按钮的点击事件
-function studentGoogleLogin() {
-    const btn = document.getElementById('student-attendance-login-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 获取账号信息...';
-    }
-    
-    // 方法1：尝试弹出 Google 账号选择器（不需要完整授权）
-    if (typeof google !== 'undefined' && google.accounts) {
-        try {
-            // 显示账号选择器，让用户选择账号
-            const accountPrompt = google.accounts.id.prompt;
-            
-            // 或者使用 callback
-            google.accounts.id.initialize({
-                client_id: "AIzaSyA5E68ARL8svmrcjy0djUIInArlnxFQnhw",
-                callback: (response) => {
-                    console.log("Google 响应:", response);
-                    if (response.credential) {
-                        // 解码 JWT token 获取用户信息
-                        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                        processGoogleUserInfo({
-                            email: payload.email,
-                            name: payload.name
-                        });
-                    }
-                }
-            });
-            google.accounts.id.prompt();
-        } catch(e) {
-            console.error("Google Identity 失败:", e);
-            showManualNameInput();
-        }
-    } else {
-        // 降级：使用 Firebase Auth（可能被限制）
-        auth.signInWithPopup(googleProvider)
-            .then((result) => {
-                const user = result.user;
-                const chineseName = extractChineseNameFromString(user.displayName);
-                if (chineseName) {
-                    studentAttendanceUser = {
-                        displayName: chineseName,
-                        email: user.email,
-                        uid: user.uid,
-                        studentId: extractStudentIdFromString(user.displayName),
-                        isStudentLogin: false
-                    };
-                    showAlert(`欢迎 ${chineseName}！`, 'success');
-                    showStudentCheckinInterface();
-                } else {
-                    showManualNameInput();
-                }
-            })
-            .catch((error) => {
-                console.error("Google登录失败:", error);
-                showManualNameInput();
-            })
-            .finally(() => {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fab fa-google me-2"></i>使用Google账号';
-                }
-            });
-    }
-}
 
 // 页面加载时初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -15233,21 +14087,6 @@ function generateShareLink(data) {
  * 检查 URL 中是否有分享的报告数据，如果有则自动显示
  * @returns {boolean} 是否显示了分享报告
  */
-function checkSharedReport() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const encodedReport = urlParams.get('r');
-    
-    if (!encodedReport) return false;
-    
-    const data = decodeReportData(encodedReport);
-    if (data && data.studentAverages && data.studentAverages.length > 0) {
-        window._sharedReportData = data;
-        showReportFromShare();
-        return true;
-    }
-    return false;
-}
-
 /**
  * 从分享链接显示报告
  */
@@ -15569,7 +14408,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // ==================== 修复浮动操作按钮（FAB菜单）====================
 
 // 重新初始化 FAB 菜单功能
-function initFabMenuFixed() {
+function initFabMenu() {
     const fabToggle = document.getElementById('fab-toggle');
     const fabMenu = document.getElementById('fab-menu');
     
@@ -15644,17 +14483,15 @@ function createFabMenuElements() {
     `;
     
     document.body.insertAdjacentHTML('beforeend', fabHTML);
-    initFabMenuFixed();
+    initFabMenu();
 }
 
-// 覆盖原有的 initFabMenu 函数
-window.initFabMenu = initFabMenuFixed;
 
 // 确保在 DOM 加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
-        if (typeof initFabMenuFixed === 'function') {
-            initFabMenuFixed();
+        if (typeof initFabMenu === 'function') {
+            initFabMenu();
         }
     }, 1000);
 });
@@ -15662,10 +14499,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // 如果页面已经加载完成，立即执行
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(initFabMenuFixed, 500);
+        setTimeout(initFabMenu, 500);
     });
 } else {
-    setTimeout(initFabMenuFixed, 500);
+    setTimeout(initFabMenu, 500);
 }
 
 // ==================== 优化版分享功能（支持更大数据量）====================
@@ -16048,7 +14885,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==================== 修复分享链接跳转问题 ====================
 
 // 重写检查分享报告函数
-function checkSharedReportFixed() {
+function checkSharedReport() {
     const urlParams = new URLSearchParams(window.location.search);
     const encodedReport = urlParams.get('r');
     const tempId = urlParams.get('temp');
@@ -16388,26 +15225,15 @@ function generateShareReportHTMLFixed(data) {
 }
 
 // HTML转义函数
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
 
-// 覆盖原有的检查函数
-window.checkSharedReport = checkSharedReportFixed;
 
 // 在页面加载时执行
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(checkSharedReportFixed, 100);
+        setTimeout(checkSharedReport, 100);
     });
 } else {
-    setTimeout(checkSharedReportFixed, 100);
+    setTimeout(checkSharedReport, 100);
 }
 
 // ==================== 三重验证系统（长格式个人安全码） ====================
@@ -16591,7 +15417,6 @@ function addMemberToTable(member) {
 }
 
 // loadMembers 函数保持不变
-const originalLoadMembersForCode = loadMembers;
 window.loadMembers = function() {
     const tbody = document.getElementById('members-table-body');
     if (!tbody) return;
@@ -16670,7 +15495,6 @@ window.saveMember = function() {
 
 // ==================== 第四步：修改学生签到界面，增加个人安全码输入框（无长度限制） ====================
 
-const originalShowCheckinForm = showCheckinForm;
 window.showCheckinForm = function(sessionId) {
     const session = attendances.find(a => a.id === sessionId);
     if (!session) {
@@ -17090,7 +15914,6 @@ function exportPersonalCodesList() {
 
 // ==================== 第七步：修改点名详情页面，显示验证方式 ====================
 
-const originalViewAttendanceDetail = viewAttendanceDetail;
 window.viewAttendanceDetail = async function(attendanceId) {
     currentAttendanceId = attendanceId;
     const attendance = attendances.find(a => a.id === attendanceId);
