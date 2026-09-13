@@ -610,6 +610,62 @@ textarea.form-control { height: auto; padding: 10px 12px; }
 .stat-card .card-text, .stat-card .stat-label { font-size: var(--fs-base); color: var(--gray-500); font-weight: var(--fw-medium); }
 .stat-card-3d, .stat-card-3d-inner, .stat-card-3d .stat-card-front { transform: none !important; transform-style: flat !important; }
 
+/* ---------- 仪表盘：欢迎横幅 / 统计卡增量 / 待处理事项 ---------- */
+.dashboard-welcome-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-5) var(--sp-6);
+    margin-bottom: var(--sp-6);
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100, var(--border));
+    border-radius: var(--r-lg);
+}
+.dashboard-welcome-banner h3 {
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-bold);
+    color: var(--gray-900);
+    margin: 0 0 2px;
+}
+.dashboard-stat-row { margin-bottom: 0; }
+.stat-card-delta {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    margin: var(--sp-2) 0 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-card-delta.up { color: var(--success); }
+.stat-card-delta.down { color: var(--danger); }
+.stat-card-delta.flat { color: var(--gray-400); }
+.stat-card-delta:empty::before { content: ''; }
+
+.pending-tasks-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.pending-task-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--gray-50);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease);
+    border: 1px solid transparent;
+}
+.pending-task-item:hover { background: var(--gray-100); border-color: var(--border); }
+.pending-task-item .pending-task-icon {
+    width: 28px; height: 28px; border-radius: var(--r-md);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 13px;
+}
+.pending-task-item.severity-warning .pending-task-icon { background: var(--warning-bg); color: var(--warning); }
+.pending-task-item.severity-danger .pending-task-icon { background: var(--danger-bg); color: var(--danger); }
+.pending-task-item.severity-info .pending-task-icon { background: var(--info-bg); color: var(--info); }
+.pending-task-item .pending-task-text { flex: 1; font-size: var(--fs-base); color: var(--gray-700); }
+.pending-task-item .pending-task-arrow { color: var(--gray-400); font-size: 12px; }
+.pending-task-empty { padding: var(--sp-4); text-align: center; }
+
 .mini-chart-card {
     background: #fff;
     border: 1px solid var(--border);
@@ -1986,7 +2042,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     min-width: 0;
 }
 #main-system .admin-content > .container.mt-4 {
-    max-width: 1400px;
+    max-width: 1200px;
     width: 100%;
     margin: 0 auto;
     padding-left: 0;
@@ -2536,30 +2592,48 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 </div>
                 <!-- 仪表盘 -->
                 <div class="tab-pane fade show active" id="dashboard-tab">
-                    <div class="row">
-                        <div class="col-md-4">
+                    <div class="dashboard-welcome-banner">
+                        <div>
+                            <h3 id="dashboard-welcome-title">欢迎回来</h3>
+                            <p id="dashboard-welcome-sub" class="text-muted mb-0">正在加载今日概况…</p>
+                        </div>
+                    </div>
+
+                    <div class="row dashboard-stat-row">
+                        <div class="col-md-3">
                             <div class="stat-card">
                                 <i class="fas fa-users stat-icon-chip stat-icon-primary"></i>
                                 <h5 class="card-title" id="student-count">0</h5>
-                                <p class="card-text">已注册学生总数</p>
+                                <p class="card-text">学生总数</p>
+                                <p class="stat-card-delta" id="student-count-delta"></p>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="stat-card">
                                 <i class="fas fa-tasks stat-icon-chip stat-icon-info"></i>
                                 <h5 class="card-title" id="project-count">0</h5>
-                                <p class="card-text">已创建评分项目</p>
+                                <p class="card-text">评分项目</p>
+                                <p class="stat-card-delta" id="project-count-delta"></p>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="stat-card">
                                 <i class="fas fa-chart-line stat-icon-chip stat-icon-success"></i>
                                 <h5 class="card-title" id="score-count">0</h5>
-                                <p class="card-text">已录入分数记录</p>
+                                <p class="card-text">分数记录</p>
+                                <p class="stat-card-delta" id="score-count-delta"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <i class="fas fa-percentage stat-icon-chip stat-icon-warning"></i>
+                                <h5 class="card-title" id="avg-score-count">--</h5>
+                                <p class="card-text">平均分</p>
+                                <p class="stat-card-delta" id="avg-score-delta"></p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row mt-4">
                         <div class="col-md-6">
                             <div class="card">
@@ -2665,6 +2739,22 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
         </div>
     </div>
 </div>
+<!-- 待处理事项 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-clipboard-check me-2"></i>待处理事项
+            </div>
+            <div class="card-body">
+                <ul class="pending-tasks-list" id="pending-tasks-list">
+                    <li class="pending-task-empty text-muted">暂无待处理事项 🎉</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+                </div><!-- /#dashboard-tab -->
                 <!-- 学生管理 -->
                 <div class="tab-pane fade" id="students-tab">
                     <div class="card fade-in">
@@ -6154,6 +6244,105 @@ function updateClassSelect() {
             document.getElementById('student-count').textContent = students.length;
             document.getElementById('project-count').textContent = projects.length;
             document.getElementById('score-count').textContent = scores.length;
+
+            // 平均分（按各分数的得分率平均）
+            let avgPct = null;
+            const pcts = [];
+            scores.forEach(score => {
+                let project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
+                const fullMark = score.fullMark || project?.fullMark;
+                if (fullMark > 0) pcts.push((score.score / fullMark) * 100);
+            });
+            if (pcts.length > 0) avgPct = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+            const avgEl = document.getElementById('avg-score-count');
+            if (avgEl) avgEl.textContent = avgPct !== null ? avgPct.toFixed(1) + '%' : '--';
+
+            // 欢迎横幅
+            const welcomeTitle = document.getElementById('dashboard-welcome-title');
+            const welcomeSub = document.getElementById('dashboard-welcome-sub');
+            if (welcomeTitle) {
+                const displayName = currentUser?.displayName || currentUser?.email || '管理员';
+                welcomeTitle.textContent = `欢迎回来，${displayName}`;
+            }
+            if (welcomeSub) {
+                const todayStr = new Date().toDateString();
+                const todayScores = scores.filter(s => {
+                    const ts = s.createdAt?.toDate ? s.createdAt.toDate() : null;
+                    return ts && ts.toDateString() === todayStr;
+                }).length;
+                welcomeSub.textContent = `目前共有 ${students.length} 位学生、${projects.length} 个评分项目；今天新增了 ${todayScores} 条分数记录`;
+            }
+
+            renderPendingTasks();
+
+            // 延迟更新趋势图，确保DOM已渲染（原 updateDashboard 覆盖补丁已合并至此）
+            setTimeout(() => {
+                if (typeof initTrendControls === 'function') initTrendControls();
+                if (typeof updateScoreTrendChart === 'function') updateScoreTrendChart();
+            }, 600);
+        }
+
+        // 计算待处理事项
+        function computePendingTasks() {
+            const tasks = [];
+
+            const studentsWithScores = new Set(scores.map(s => s.studentId));
+            const studentsWithoutScores = students.filter(s => !studentsWithScores.has(s.id));
+            if (studentsWithoutScores.length > 0) {
+                tasks.push({
+                    icon: 'fa-user-graduate',
+                    severity: 'warning',
+                    text: `${studentsWithoutScores.length} 位学生还未录入任何成绩`,
+                    tab: '#students-tab'
+                });
+            }
+
+            const now = new Date();
+            const overdueAttendances = attendances.filter(a => {
+                if (a.cancelled) return false;
+                const end = a.endTime?.toDate ? a.endTime.toDate() : null;
+                return end && end < now && !a.completed;
+            });
+            if (overdueAttendances.length > 0) {
+                tasks.push({
+                    icon: 'fa-clock',
+                    severity: 'danger',
+                    text: `${overdueAttendances.length} 次点名已超时未结束`,
+                    tab: '#attendance-tab'
+                });
+            }
+
+            const membersWithoutCode = members.filter(m => !m.personalCode);
+            if (membersWithoutCode.length > 0) {
+                tasks.push({
+                    icon: 'fa-key',
+                    severity: 'info',
+                    text: `${membersWithoutCode.length} 位会员还没有个人安全码`,
+                    tab: '#members-tab'
+                });
+            }
+
+            return tasks;
+        }
+
+        function renderPendingTasks() {
+            const list = document.getElementById('pending-tasks-list');
+            if (!list) return;
+            const tasks = computePendingTasks();
+            if (tasks.length === 0) {
+                list.innerHTML = '<li class="pending-task-empty text-muted">暂无待处理事项 🎉</li>';
+                return;
+            }
+            list.innerHTML = tasks.map(t => `
+                <li class="pending-task-item severity-${t.severity}" data-tab="${t.tab}">
+                    <span class="pending-task-icon"><i class="fas ${t.icon}"></i></span>
+                    <span class="pending-task-text">${escapeHtml(t.text)}</span>
+                    <span class="pending-task-arrow"><i class="fas fa-chevron-right"></i></span>
+                </li>
+            `).join('');
+            list.querySelectorAll('.pending-task-item').forEach(item => {
+                item.addEventListener('click', () => switchTab(item.getAttribute('data-tab')));
+            });
         }
 
         // 修改后的更新分数分布图表函数
@@ -13538,18 +13727,7 @@ queryStudentScores = async function(studentId) {
 };
 
 // ==================== 在 loadAllData 后初始化趋势图 ====================
-
-// 修改原有的 updateDashboard 函数，添加趋势图更新
-const originalUpdateDashboard = updateDashboard;
-updateDashboard = function() {
-    originalUpdateDashboard();
-    
-    // 延迟更新趋势图，确保DOM已渲染
-    setTimeout(() => {
-        initTrendControls();
-        updateScoreTrendChart();
-    }, 600);
-};
+// （趋势图更新已合并进 updateDashboard 主函数，见上方定义，此处不再覆盖）
 
         // ==================== 修复模态框相关错误 ====================
 
