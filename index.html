@@ -3110,15 +3110,526 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     .batch-shortcuts-hint { display: none !important; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   欢迎页 v3.0 — 散落式编辑部
+   全部规则挂在 #student-query-page.qa-redesign 下（ID + class），
+   靠选择器特异性覆盖旧的 .query-shell / .query-brand-panel 双栏卡片样式，
+   不删除、不修改任何旧规则本身，只是"盖过去"。
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* § 0. 设计变量（局部作用域，不污染全局 :root） */
+#student-query-page.qa-redesign {
+    --qa-bg: #FAFAF8;
+    --qa-text-1: #17171E;
+    --qa-text-2: #52525E;
+    --qa-text-3: #9C9CA6;
+    --qa-line: #EAEAEF;
+    --qa-primary: #4F46E5;
+    --qa-primary-hover: #4643CE;
+    --qa-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+}
+[data-theme="dark"] #student-query-page.qa-redesign {
+    --qa-bg: #0B0B0D;
+    --qa-text-1: #F1F1F4;
+    --qa-text-2: #B4B4C0;
+    --qa-text-3: #6F6F7B;
+    --qa-line: rgba(255,255,255,0.08);
+    --qa-primary: #8385FF;
+    --qa-primary-hover: #9A9CFF;
+}
+
+/* § 1. 页面背景与网格 */
+#student-query-page.qa-redesign {
+    display: block;
+    align-items: initial;
+    overflow: visible;
+    min-height: 100vh;
+    background-color: var(--qa-bg);
+    background-image:
+        linear-gradient(rgba(0,0,0,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.025) 1px, transparent 1px);
+    background-size: 24px 24px;
+    padding: 0; margin: 0; max-width: none; width: 100%;
+}
+[data-theme="dark"] #student-query-page.qa-redesign {
+    background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+}
+/* 旧的模糊光斑不再需要 */
+#student-query-page.qa-redesign::before,
+#student-query-page.qa-redesign::after { content: none; }
+
+#student-query-page.qa-redesign .query-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1320px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    overflow: visible;
+    animation: none;
+    position: relative;
+    z-index: 1;
+}
+
+/* § 2. 顶部横条（贯穿全宽） */
+#student-query-page.qa-redesign .qa-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--qa-line);
+}
+#student-query-page.qa-redesign .qa-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+#student-query-page.qa-redesign .qa-topbar-brand .login-logo { margin: 0; text-align: left; }
+#student-query-page.qa-redesign .qa-topbar-brand .login-logo img { height: 28px; margin: 0; filter: none; }
+#student-query-page.qa-redesign .qa-topbar-brand .student-query-title {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--qa-text-1);
+    text-align: left;
+    margin: 0;
+    opacity: 1;
+}
+#student-query-page.qa-redesign .qa-topbar-clock.query-brand-greeting {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    border-bottom: none;
+    padding: 0; margin: 0;
+}
+#student-query-page.qa-redesign .qa-topbar-clock .greeting-line { font-size: 14px; font-weight: 400; color: var(--qa-text-1); }
+#student-query-page.qa-redesign .qa-topbar-clock .clock-date { font-size: 13px; color: var(--qa-text-2); }
+#student-query-page.qa-redesign .qa-topbar-clock .clock-line {
+    font-family: var(--qa-font-mono);
+    font-size: 13px;
+    color: var(--qa-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+/* § 3. 左半区（品牌叙述） */
+#student-query-page.qa-redesign .qa-main {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    flex: 1 1 auto;
+    align-items: stretch;
+}
+#student-query-page.qa-redesign .query-brand-panel {
+    background: none;
+    color: var(--qa-text-1);
+    padding: 64px 48px 48px 48px;
+    border-right: 1px solid var(--qa-line);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+}
+#student-query-page.qa-redesign .query-brand-panel::before,
+#student-query-page.qa-redesign .query-brand-panel::after { content: none; }
+/* 极淡靛蓝光晕，托住大标语，静态不漂移 */
+#student-query-page.qa-redesign .query-brand-glow-2 {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,70,229,0.05), transparent 70%);
+    filter: none;
+    top: 20px; left: -100px;
+    animation: none;
+    z-index: 0;
+    pointer-events: none;
+}
+#student-query-page.qa-redesign .query-float-dots,
+#student-query-page.qa-redesign .query-float-dot { display: none; }
+
+#student-query-page.qa-redesign .qa-tagline {
+    position: relative; z-index: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+}
+#student-query-page.qa-redesign .qa-tagline-brush {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.15;
+    color: var(--qa-text-1);
+}
+#student-query-page.qa-redesign .qa-tagline-bold {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--qa-text-1);
+}
+#student-query-page.qa-redesign .qa-tagline-desc {
+    position: relative; z-index: 1;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--qa-text-2);
+    max-width: 400px;
+    margin: 0 0 40px;
+}
+
+/* 价值点：· 连接的一行文字，不再是图标卡片 */
+#student-query-page.qa-redesign .query-brand-features {
+    position: relative; z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 64px;
+    background: none;
+}
+#student-query-page.qa-redesign .query-brand-features li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    font-size: 14px;
+    color: var(--qa-text-2);
+    cursor: default;
+    transition: color 150ms var(--ease);
+}
+#student-query-page.qa-redesign .query-brand-features li:hover { background: none; color: var(--qa-primary); }
+#student-query-page.qa-redesign .query-brand-features li:hover .query-feature-icon,
+#student-query-page.qa-redesign .query-brand-features li:hover .query-feature-title { color: var(--qa-primary); }
+#student-query-page.qa-redesign .query-brand-features li:not(:last-child)::after {
+    content: '·';
+    margin: 0 14px;
+    color: var(--qa-text-3);
+}
+#student-query-page.qa-redesign .query-feature-icon {
+    width: auto; height: auto;
+    background: none;
+    border-radius: 0;
+    font-size: 12px;
+    color: var(--qa-text-3);
+    display: inline-flex;
+}
+#student-query-page.qa-redesign .query-feature-title { font-size: 14px; font-weight: 500; color: var(--qa-text-2); }
+#student-query-page.qa-redesign .query-feature-desc { display: none; } /* 保留于 DOM，紧凑行式排版下不展示 */
+
+#student-query-page.qa-redesign .query-brand-panel .query-brand-spacer { flex: 1 1 auto; min-height: 24px; }
+
+/* 大数字：系统实时数据 */
+#student-query-page.qa-redesign .query-brand-stats-card {
+    position: relative; z-index: 1;
+    display: block;
+    background: none;
+    padding: 0; margin: 0;
+}
+#student-query-page.qa-redesign .query-stats-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--qa-text-3);
+    margin-bottom: 16px;
+    gap: 6px;
+}
+#student-query-page.qa-redesign .query-brand-stats { gap: 48px; }
+#student-query-page.qa-redesign .query-stat-item { flex: 0 0 auto; padding: 0; border-right: none !important; }
+#student-query-page.qa-redesign .query-stat-value {
+    font-family: var(--qa-font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--qa-text-1);
+}
+#student-query-page.qa-redesign .query-stat-value.is-loading::before { background: var(--qa-line); background-image: none; }
+#student-query-page.qa-redesign .query-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--qa-text-3);
+    margin-top: 4px;
+}
+#student-query-page.qa-redesign .query-stats-today {
+    border-top: none;
+    margin-top: 16px;
+    padding-top: 0;
+    color: var(--qa-text-3);
+    font-size: 11px;
+}
+#student-query-page.qa-redesign .query-stats-today i { color: var(--qa-primary); }
+
+/* § 4. 右半区（操作区） */
+#student-query-page.qa-redesign .query-form-panel {
+    background: none;
+    padding: 64px 48px 48px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 1;
+}
+#student-query-page.qa-redesign .query-form-title { font-size: 22px; font-weight: 700; color: var(--qa-text-1); }
+#student-query-page.qa-redesign .query-form-subtitle { font-size: 14px; color: var(--qa-text-2); }
+
+/* § 5. Tab 分段导航——文字 + 2px 下划线，不用胶囊背景 */
+#student-query-page.qa-redesign .nav.nav-tabs {
+    display: flex;
+    gap: 32px;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--qa-line);
+    margin-bottom: 32px;
+}
+#student-query-page.qa-redesign .nav.nav-tabs .nav-item { flex: 0 0 auto; }
+#student-query-page.qa-redesign .nav.nav-tabs .nav-link {
+    width: auto;
+    text-align: left;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    margin-bottom: -1px;
+    padding: 0 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--qa-text-2);
+    background: none;
+    white-space: nowrap;
+    transition: color 150ms var(--ease), border-color 200ms var(--ease);
+}
+#student-query-page.qa-redesign .nav.nav-tabs .nav-link:hover { background: none; color: var(--qa-text-1); }
+#student-query-page.qa-redesign .nav.nav-tabs .nav-link.active {
+    background: none;
+    color: var(--qa-primary);
+    font-weight: 600;
+    border-bottom-color: var(--qa-primary);
+    box-shadow: none;
+}
+
+/* § 6. 表单与按钮 */
+#student-query-page.qa-redesign .query-input-group label { font-size: 13px; font-weight: 500; color: var(--qa-text-2); margin-bottom: 6px; }
+#student-query-page.qa-redesign .query-input-group input.form-control {
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--qa-line);
+    background: transparent;
+    color: var(--qa-text-1);
+    font-size: 14px;
+    padding: 0 16px;
+    box-shadow: none;
+}
+#student-query-page.qa-redesign .query-input-group input.form-control.has-icon { padding-left: 40px; }
+#student-query-page.qa-redesign .query-input-group input.form-control:focus {
+    border-color: var(--qa-primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
+#student-query-page.qa-redesign .query-input-group .query-input-icon { top: 37px; color: var(--qa-text-3); }
+#student-query-page.qa-redesign .query-input-group:focus-within .query-input-icon { color: var(--qa-primary); }
+#student-query-page.qa-redesign .query-input-group .query-password-toggle { top: 37px; color: var(--qa-text-3); }
+#student-query-page.qa-redesign .query-input-group .query-password-toggle:hover { color: var(--qa-text-2); }
+
+#student-query-page.qa-redesign .query-btn-primary {
+    height: 48px;
+    border-radius: 8px;
+    background: var(--qa-primary);
+    box-shadow: none;
+    transition: background 150ms var(--ease), transform 150ms var(--ease);
+}
+#student-query-page.qa-redesign .query-btn-primary:hover {
+    background: var(--qa-primary-hover);
+    transform: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    color: #fff;
+}
+#student-query-page.qa-redesign .query-btn-google {
+    height: 48px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--qa-line);
+    color: var(--qa-text-1);
+}
+#student-query-page.qa-redesign .query-btn-google:hover { background: #F8FAFC; border-color: var(--qa-line); transform: none; }
+#student-query-page.qa-redesign .query-btn-google.is-large { background: var(--qa-primary); border-color: var(--qa-primary); color: #fff; }
+#student-query-page.qa-redesign .query-btn-google.is-large:hover { background: var(--qa-primary-hover); }
+
+#student-query-page.qa-redesign .query-divider-or { color: var(--qa-text-3); }
+#student-query-page.qa-redesign .query-divider-or::before,
+#student-query-page.qa-redesign .query-divider-or::after { background: var(--qa-line); }
+#student-query-page.qa-redesign .query-form-row-between label { color: var(--qa-text-2); }
+#student-query-page.qa-redesign .query-form-row-between a { color: var(--qa-primary); }
+#student-query-page.qa-redesign .query-hint-line { color: var(--qa-text-3); }
+
+/* § 7. 信任徽章——放在主按钮下方，· 连接，不再是底部条款条 */
+#student-query-page.qa-redesign .query-trust-badges {
+    justify-content: flex-start;
+    gap: 0;
+    margin-top: 24px;
+    padding-top: 0;
+    border-top: none;
+}
+#student-query-page.qa-redesign .query-trust-badges span {
+    font-size: 12px;
+    color: var(--qa-text-3);
+    transition: color 150ms var(--ease);
+}
+#student-query-page.qa-redesign .query-trust-badges span:hover { color: var(--qa-text-2); }
+#student-query-page.qa-redesign .query-trust-badges span:not(:last-child)::after {
+    content: '·';
+    margin: 0 10px;
+    color: var(--qa-text-3);
+}
+
+/* § 8. 底部横条（贯穿全宽） */
+#student-query-page.qa-redesign .qa-bottombar {
+    border-top: 1px solid var(--qa-line);
+    padding: 16px 48px;
+}
+#student-query-page.qa-redesign .qa-bottombar .query-brand-footer {
+    display: block;
+    font-family: var(--qa-font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--qa-text-3);
+    line-height: 1.8;
+    margin: 0;
+}
+
+/* § 9. 深色模式 */
+[data-theme="dark"] #student-query-page.qa-redesign .query-brand-panel { background: none; color: var(--qa-text-1); }
+[data-theme="dark"] #student-query-page.qa-redesign .qa-topbar-brand .login-logo img { filter: none; opacity: 0.9; }
+[data-theme="dark"] #student-query-page.qa-redesign .query-btn-google { background: #17171A; color: var(--qa-text-1); border-color: var(--qa-line); }
+[data-theme="dark"] #student-query-page.qa-redesign .query-btn-google:hover { background: #1F1F24; }
+[data-theme="dark"] #student-query-page.qa-redesign .query-input-group input.form-control { color: var(--qa-text-1); }
+[data-theme="dark"] #student-query-page.qa-redesign .query-input-group input.form-control::placeholder { color: var(--qa-text-3); }
+
+/* § 10. 响应式（1024 / 768 / 480） */
+@media (max-width: 1024px) {
+    #student-query-page.qa-redesign .qa-main { grid-template-columns: 1fr 1fr; }
+    #student-query-page.qa-redesign .query-brand-panel,
+    #student-query-page.qa-redesign .query-form-panel { padding: 48px 32px; }
+    #student-query-page.qa-redesign .qa-topbar,
+    #student-query-page.qa-redesign .qa-bottombar { padding-left: 32px; padding-right: 32px; }
+    #student-query-page.qa-redesign .qa-tagline-brush,
+    #student-query-page.qa-redesign .qa-tagline-bold { font-size: clamp(24px, 4vw, 36px); }
+    #student-query-page.qa-redesign .query-brand-stats { gap: 32px; }
+}
+
+@media (max-width: 768px) {
+    #student-query-page.qa-redesign { display: block; }
+    #student-query-page.qa-redesign .qa-topbar { padding: 14px 20px; }
+    #student-query-page.qa-redesign .qa-topbar-clock { display: none; }
+    #student-query-page.qa-redesign .qa-topbar-brand .login-logo img { height: 24px; }
+    #student-query-page.qa-redesign .qa-topbar-brand .student-query-title { font-size: 13px; }
+
+    #student-query-page.qa-redesign .query-mobile-clock {
+        display: flex !important;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        background: none;
+        color: var(--qa-text-1);
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--qa-line);
+    }
+    #student-query-page.qa-redesign .query-mobile-clock .greeting-line { font-size: 13px; font-weight: 500; color: var(--qa-text-1); }
+    #student-query-page.qa-redesign .query-mobile-clock .clock-line { font-family: var(--qa-font-mono); font-size: 13px; color: var(--qa-primary); }
+
+    #student-query-page.qa-redesign .qa-main { grid-template-columns: 1fr; }
+    #student-query-page.qa-redesign .query-brand-panel {
+        flex-direction: column;
+        align-items: stretch;
+        min-height: 0;
+        gap: 0;
+        padding: 32px 20px;
+        border-right: none;
+        border-bottom: 1px solid var(--qa-line);
+    }
+    #student-query-page.qa-redesign .query-form-panel { padding: 32px 20px; }
+    #student-query-page.qa-redesign .qa-tagline-brush,
+    #student-query-page.qa-redesign .qa-tagline-bold { font-size: 26px; }
+    #student-query-page.qa-redesign .qa-tagline-desc { max-width: none; margin-bottom: 32px; }
+
+    #student-query-page.qa-redesign .query-brand-features { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 32px; }
+    #student-query-page.qa-redesign .query-brand-features li:not(:last-child)::after { content: none; }
+
+    #student-query-page.qa-redesign .query-brand-stats-card { display: block; margin-top: 8px; }
+    #student-query-page.qa-redesign .query-brand-stats { justify-content: space-between; gap: 12px; }
+    #student-query-page.qa-redesign .query-stat-item { flex: 1; }
+    #student-query-page.qa-redesign .query-stat-value { font-size: 20px; }
+
+    #student-query-page.qa-redesign .nav.nav-tabs { gap: 20px; overflow-x: auto; }
+    #student-query-page.qa-redesign .qa-bottombar { padding: 16px 20px; text-align: center; }
+}
+
+@media (max-width: 480px) {
+    #student-query-page.qa-redesign .qa-topbar,
+    #student-query-page.qa-redesign .qa-bottombar { padding-left: 16px; padding-right: 16px; }
+    #student-query-page.qa-redesign .query-brand-panel,
+    #student-query-page.qa-redesign .query-form-panel { padding: 24px 16px; }
+    #student-query-page.qa-redesign .qa-tagline-brush,
+    #student-query-page.qa-redesign .qa-tagline-bold { font-size: 22px; }
+    #student-query-page.qa-redesign .query-form-title { font-size: 18px; }
+    #student-query-page.qa-redesign .nav.nav-tabs { gap: 14px; }
+    #student-query-page.qa-redesign .nav.nav-tabs .nav-link { font-size: 13px; }
+    #student-query-page.qa-redesign .query-brand-stats { flex-wrap: wrap; }
+}
+
+/* § 11. 入场动画——瀑布式 fadeInUp，覆盖旧的 500ms，收紧到 350ms */
+#student-query-page.qa-redesign [data-qa-in] { opacity: 0; transform: translateY(8px); }
+#student-query-page.qa-redesign [data-qa-in].qa-in { animation: fadeInUp 350ms var(--ease-out) forwards; }
+@media (prefers-reduced-motion: reduce) {
+    #student-query-page.qa-redesign [data-qa-in] { opacity: 1; transform: none; animation: none; }
+}
+
 </style>
 </head>
     
 <body>
     <!-- 学生查询页面 -->
-    <div id="student-query-page" class="container">
+    <div id="student-query-page" class="container qa-redesign">
         <div class="query-shell">
-            <div class="query-brand-panel">
-                <!-- 浮动光点 + 第二团光斑，只在桌面端显示（移动端由 CSS 隐藏） -->
+
+            <!-- 顶部横条：logo + 品牌名 · 日期 · 时钟，贯穿全宽，1px 细线收尾 -->
+            <div class="qa-topbar">
+                <div class="qa-topbar-brand">
+                    <div class="login-logo" data-qa-in style="animation-delay:0ms;">
+                        <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 28px;">
+                    </div>
+                    <h2 class="student-query-title" data-qa-in style="animation-delay:40ms;">新山宽柔中学杂家——MAKER组<br>成绩查询及录入系统</h2>
+                </div>
+
+                <!-- 3.1 问候语 + 实时时钟 -->
+                <div class="query-brand-greeting qa-topbar-clock" data-qa-in style="animation-delay:80ms;">
+                    <span class="greeting-line" id="query-greeting-text">你好，欢迎回来</span>
+                    <span class="clock-date" id="query-date-text">--</span>
+                    <span class="clock-line" id="query-clock-text">--:--:--</span>
+                </div>
+            </div>
+
+            <!-- 移动端专属：紧凑品牌条 + 时钟（桌面端隐藏） -->
+            <div class="query-mobile-clock">
+                <span class="greeting-line" id="query-greeting-text-mobile">你好，欢迎回来</span>
+                <span class="clock-line" id="query-clock-text-mobile">--:--:--</span>
+            </div>
+
+            <!-- 主体：左品牌叙述 / 右操作区，靠一条 1px 竖线分隔，不用卡片 -->
+            <div class="qa-main">
+            <div class="query-brand-panel qa-left">
+                <!-- 浮动光点 + 光斑：光点隐藏，光斑改为托住大标语的静态极淡光晕 -->
                 <div class="query-brand-glow-2"></div>
                 <div class="query-float-dots">
                     <span class="query-float-dot"></span>
@@ -3126,40 +3637,15 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                     <span class="query-float-dot"></span>
                 </div>
 
-                <div class="login-logo" data-qa-in style="animation-delay:0ms;">
-                    <img src="https://i.postimg.cc/qqV3NyJB/logo-01.png" alt="电脑协会Logo" style="height: 44px;">
+                <!-- 大标语 -->
+                <div class="qa-tagline" data-qa-in style="animation-delay:120ms;">
+                    <span class="qa-tagline-brush">成绩，</span>
+                    <span class="qa-tagline-bold">即录即查。</span>
                 </div>
-                <h2 class="student-query-title" data-qa-in style="animation-delay:40ms;">新山宽柔中学杂家——MAKER组<br>成绩查询及录入系统</h2>
+                <p class="qa-tagline-desc" data-qa-in style="animation-delay:160ms;">一个为学生而做的成绩查询与联课签到系统。</p>
 
-                <!-- 3.1 问候语 + 实时时钟 -->
-                <div class="query-brand-greeting" data-qa-in style="animation-delay:80ms;">
-                    <span class="greeting-line" id="query-greeting-text">你好，欢迎回来</span>
-                    <span class="clock-date" id="query-date-text">--</span>
-                    <span class="clock-line" id="query-clock-text">--:--:--</span>
-                </div>
-
-                <!-- 3.2 系统实时数据 -->
-                <div class="query-brand-stats-card" data-qa-in style="animation-delay:160ms;">
-                    <div class="query-stats-title"><i class="fas fa-chart-bar"></i> 系统实时数据</div>
-                    <div class="query-brand-stats">
-                        <div class="query-stat-item">
-                            <span class="query-stat-value is-loading" id="query-stat-students">0</span>
-                            <span class="query-stat-label">位学生</span>
-                        </div>
-                        <div class="query-stat-item">
-                            <span class="query-stat-value is-loading" id="query-stat-projects">0</span>
-                            <span class="query-stat-label">个评分项目</span>
-                        </div>
-                        <div class="query-stat-item">
-                            <span class="query-stat-value is-loading" id="query-stat-scores">0</span>
-                            <span class="query-stat-label">条成绩</span>
-                        </div>
-                    </div>
-                    <div class="query-stats-today"><i class="fas fa-arrow-up"></i> <span id="query-stat-today">正在统计今日动态…</span></div>
-                </div>
-
-                <!-- 3.3 价值点：图标卡片 -->
-                <ul class="query-brand-features" data-qa-in style="animation-delay:240ms;">
+                <!-- 3.3 价值点：· 连接的一行文字 -->
+                <ul class="query-brand-features" data-qa-in style="animation-delay:200ms;">
                     <li>
                         <span class="query-feature-icon"><i class="fas fa-bolt"></i></span>
                         <span class="query-feature-title">实时查询</span>
@@ -3179,20 +3665,28 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 
                 <div class="query-brand-spacer"></div>
 
-                <!-- 3.4 版本 / 版权 -->
-                <div class="query-brand-footer" data-qa-in style="animation-delay:320ms;">
-                    v2.6.0 · 杂家——MAKER 出品<br>
-                    © 2026 新山宽柔中学电脑协会
+                <!-- 3.2 系统实时数据：大数字 -->
+                <div class="query-brand-stats-card" data-qa-in style="animation-delay:240ms;">
+                    <div class="query-stats-title"><i class="fas fa-chart-bar"></i> 系统实时数据</div>
+                    <div class="query-brand-stats">
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-students">0</span>
+                            <span class="query-stat-label">位学生</span>
+                        </div>
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-projects">0</span>
+                            <span class="query-stat-label">个评分项目</span>
+                        </div>
+                        <div class="query-stat-item">
+                            <span class="query-stat-value is-loading" id="query-stat-scores">0</span>
+                            <span class="query-stat-label">条成绩</span>
+                        </div>
+                    </div>
+                    <div class="query-stats-today"><i class="fas fa-arrow-up"></i> <span id="query-stat-today">正在统计今日动态…</span></div>
                 </div>
             </div>
 
-            <!-- 移动端专属：紧凑品牌条 + 时钟（桌面端隐藏） -->
-            <div class="query-mobile-clock">
-                <span class="greeting-line" id="query-greeting-text-mobile">你好，欢迎回来</span>
-                <span class="clock-line" id="query-clock-text-mobile">--:--:--</span>
-            </div>
-
-            <div class="query-form-panel">
+            <div class="query-form-panel qa-right">
                 <div class="query-form-header" data-qa-in style="animation-delay:400ms;">
                     <h3 class="query-form-title" id="query-form-title">成绩查询</h3>
                     <p class="query-form-subtitle" id="query-form-subtitle">输入学号即可查看你的成绩单</p>
@@ -3429,6 +3923,16 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                 <span><i class="fas fa-check-circle"></i> 官方</span>
             </div>
             </div>
+            </div>
+
+            <!-- 底部横条（贯穿全宽）：版本 + 版权 -->
+            <div class="qa-bottombar">
+                <div class="query-brand-footer" data-qa-in style="animation-delay:600ms;">
+                    v2.6.0 · 杂家——MAKER 出品<br>
+                    © 2026 新山宽柔中学电脑协会
+                </div>
+            </div>
+
         </div>
     </div>
 
