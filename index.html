@@ -666,6 +666,32 @@ textarea.form-control { height: auto; padding: 10px 12px; }
 .pending-task-item .pending-task-arrow { color: var(--gray-400); font-size: 12px; }
 .pending-task-empty { padding: var(--sp-4); text-align: center; }
 
+/* ---------- 批量操作工具栏 ---------- */
+.batch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-3);
+    background: var(--primary-50);
+    border: 1px solid var(--primary-100, var(--border));
+    border-radius: var(--r-md);
+    flex-wrap: wrap;
+}
+.batch-toolbar .count { color: var(--primary-600); }
+
+/* ---------- 级别管理卡片 ---------- */
+.level-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-4); }
+.level-summary-card {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: var(--sp-5); cursor: pointer; transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+}
+.level-summary-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-hover); }
+.level-summary-card.active-level-card { border-color: var(--primary-500); box-shadow: 0 0 0 2px var(--primary-100, var(--primary-50)); }
+.level-summary-card h5 { font-size: var(--fs-lg); font-weight: var(--fw-bold); margin: 0 0 var(--sp-3); color: var(--gray-900); }
+.level-summary-card .level-stat-row { display: flex; justify-content: space-between; font-size: var(--fs-sm); color: var(--gray-500); padding: 3px 0; }
+.level-summary-card .level-stat-row strong { color: var(--gray-800); }
+
 .mini-chart-card {
     background: #fff;
     border: 1px solid var(--border);
@@ -2667,7 +2693,6 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                             </div>
                         </div>
                     </div>
-                </div>
 
                 <div class="row mt-4">
     <div class="col-md-12">
@@ -2771,13 +2796,13 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                         </div>
                         <div class="card-body">
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        <input type="text" class="form-control" id="student-search" placeholder="搜索学生...">
+                                        <input type="text" class="form-control" id="student-search" placeholder="搜索姓名或学号...">
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-filter"></i></span>
                                         <select class="form-select" id="student-class-filter">
@@ -2785,8 +2810,24 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                                         </select>
                                     </div>
                                 </div>
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
+                                        <select class="form-select" id="student-level-filter">
+                                            <option value="">所有级别</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            
+
+                            <div class="batch-toolbar" id="student-batch-toolbar" style="display:none;">
+                                <span>已选中 <strong class="count">0</strong> 人：</span>
+                                <button class="btn btn-sm btn-outline-primary" id="batch-promote-btn"><i class="fas fa-arrow-up me-1"></i>批量升级</button>
+                                <button class="btn btn-sm btn-outline-warning" id="batch-demote-btn"><i class="fas fa-arrow-down me-1"></i>批量降级</button>
+                                <button class="btn btn-sm btn-outline-danger" id="batch-delete-btn"><i class="fas fa-trash me-1"></i>批量删除</button>
+                                <button class="btn btn-sm btn-ghost" id="batch-clear-btn">取消选择</button>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="import-excel" class="form-label">从Excel导入学生</label>
                                 <div class="input-group">
@@ -2802,6 +2843,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
+                                            <th style="width:36px;"><input type="checkbox" id="student-select-all"></th>
                                             <th>学号</th>
                                             <th>姓名</th>
                                             <th>班级</th>
@@ -2816,7 +2858,15 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                                     </tbody>
                                 </table>
                             </div>
-                            
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted" id="student-page-info"></small>
+                                <select class="form-select form-select-sm" id="student-page-size" style="width:auto;">
+                                    <option value="20">每页 20 条</option>
+                                    <option value="50">每页 50 条</option>
+                                    <option value="100">每页 100 条</option>
+                                </select>
+                            </div>
                             <nav aria-label="学生分页">
                                 <ul class="pagination justify-content-center mt-3" id="student-pagination">
                                     <!-- 分页将通过JavaScript动态加载 -->
@@ -2867,21 +2917,9 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
             </button>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>级别名称</th>
-                            <th>默认年数</th>
-                            <th>创建时间</th>
-                            <th>评分项目数</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="levels-table-body">
-                        <!-- 级别数据将通过JavaScript动态加载 -->
-                    </tbody>
-                </table>
+            <p class="text-muted mb-3" id="levels-summary-text">加载中…</p>
+            <div class="level-card-grid" id="levels-card-grid">
+                <!-- 级别卡片将通过JavaScript动态加载 -->
             </div>
         </div>
     </div>
@@ -3194,6 +3232,40 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                     <button type="button" class="btn btn-primary" id="update-student-btn">
                         <i class="fas fa-sync-alt me-1"></i>更新
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生历史记录模态框 -->
+    <div class="modal fade" id="studentHistoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title student-history-name">学生历史记录</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="mb-2"><i class="fas fa-chart-bar me-1"></i>历史成绩</h6>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>项目名称</th>
+                                    <th>分数</th>
+                                    <th>满分</th>
+                                    <th>得分率</th>
+                                    <th>录入时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-history-scores"></tbody>
+                        </table>
+                    </div>
+                    <h6 class="mb-2"><i class="fas fa-exchange-alt me-1"></i>级别变更历史</h6>
+                    <ul class="pending-tasks-list" id="student-history-levels"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
         </div>
@@ -3987,6 +4059,29 @@ if (generateBtn) {
             
             // 班级筛选
             document.getElementById('student-class-filter').addEventListener('change', filterStudents);
+            // 级别筛选
+            document.getElementById('student-level-filter').addEventListener('change', filterStudents);
+            // 每页条数
+            document.getElementById('student-page-size').addEventListener('change', function() {
+                studentPageSize = parseInt(this.value, 10) || 20;
+                studentCurrentPage = 1;
+                renderStudentsList();
+            });
+            // 全选/取消全选
+            document.getElementById('student-select-all').addEventListener('change', function() {
+                const pageIds = getStudentPageSlice().map(s => s.id);
+                if (this.checked) {
+                    pageIds.forEach(id => selectedStudentIds.add(id));
+                } else {
+                    pageIds.forEach(id => selectedStudentIds.delete(id));
+                }
+                renderStudentsList();
+            });
+            // 批量操作工具栏
+            document.getElementById('batch-promote-btn').addEventListener('click', batchPromoteStudents);
+            document.getElementById('batch-demote-btn').addEventListener('click', batchDemoteStudents);
+            document.getElementById('batch-delete-btn').addEventListener('click', batchDeleteStudents);
+            document.getElementById('batch-clear-btn').addEventListener('click', clearStudentSelection);
             document.getElementById('save-attendance-btn').addEventListener('click', saveAttendance);
         document.getElementById('attendance-start-time').addEventListener('change', updateTimePreview);
         document.getElementById('attendance-end-time').addEventListener('change', updateTimePreview);
@@ -4683,6 +4778,10 @@ async function loadAllData() {
     
     // 同步学生邮箱到会员名单（可选）
     await syncStudentEmailsToMembers();
+
+    // 各集合并行加载完成后，级别卡片的人数/平均分统计需要用到 students 和 scores，
+    // 重新渲染一次以确保数字准确（避免并行加载时的竞态）
+    renderLevelCards();
     
     // 初始化趋势图控制
     setTimeout(() => {
@@ -4715,32 +4814,25 @@ async function syncStudentEmailsToMembers() {
 
         // 加载级别数据
 function loadLevels() {
-        const tbody = document.getElementById('levels-table-body');
-    if (!tbody) {
-        console.warn("levels-table-body 元素不存在，可能标签页未激活");
+    const grid = document.getElementById('levels-card-grid');
+    if (!grid) {
+        console.warn("levels-card-grid 元素不存在，可能标签页未激活");
         return;
     }
-    
-    tbody.innerHTML = '';
-    showLoading('levels-table-body');
-    document.getElementById('levels-table-body').innerHTML = '';
-    showLoading('levels-table-body');
+    grid.innerHTML = '';
     
     db.collection('levels').orderBy('createdAt').get()
         .then(querySnapshot => {
             levels = [];
-            const tbody = document.getElementById('levels-table-body');
-            tbody.innerHTML = '';
-            
             querySnapshot.forEach(doc => {
                 const level = { id: doc.id, ...doc.data() };
                 levels.push(level);
-                addLevelToTable(level);
             });
             
             // 同时加载级别项目关联
             loadLevelProjects();
             updateLevelSelect();
+            renderLevelCards();
             
             addActivity("加载级别数据完成", "info");
         })
@@ -4750,54 +4842,69 @@ function loadLevels() {
         });
 }
 
-// 添加级别到表格
-function addLevelToTable(level) {
-    const tbody = document.getElementById('levels-table-body');
-    const row = document.createElement('tr');
-    row.className = 'fade-in level-row';
-    row.dataset.levelId = level.id;
-    row.style.cursor = 'pointer';
-    
-    const projectCount = levelProjects.filter(lp => lp.levelId === level.id).length;
-    
-    row.innerHTML = `
-        <td>
-            <div class="d-flex align-items-center">
-                <div class="avatar me-2" style="width: 32px; height: 32px; background-color: ${stringToColor(level.name)}; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                    ${level.name.charAt(0)}
-                </div>
-                <span class="fw-bold">${level.name}</span>
-            </div>
-        </td>
-        <td>${level.defaultYear || '-'}</td>
-        <td>${level.createdAt?.toDate().toLocaleString() || '未知'}</td>
-        <td><span class="badge bg-info">${projectCount}</span></td>
-        <td>
-            <button class="btn btn-sm btn-primary edit-level" data-id="${level.id}">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-sm btn-danger delete-level" data-id="${level.id}">
-                <i class="fas fa-trash"></i>
-            </button>
-        </td>
-    `;
-    tbody.appendChild(row);
-    
-    // 点击行显示详情
-    row.addEventListener('click', (e) => {
-        if (!e.target.closest('button')) {
-            showLevelDetail(level.id);
+// 渲染级别卡片网格（人数 / 平均分 / 项目数 一目了然）
+function renderLevelCards() {
+    const grid = document.getElementById('levels-card-grid');
+    const summary = document.getElementById('levels-summary-text');
+    if (!grid) return;
+
+    const totalStudents = students.length;
+    if (summary) summary.textContent = `${levels.length} 个级别，共 ${totalStudents} 位学生`;
+
+    if (levels.length === 0) {
+        grid.innerHTML = '<p class="text-muted">暂无级别，点击右上角"添加级别"创建第一个</p>';
+        return;
+    }
+
+    grid.innerHTML = levels.map(level => {
+        const levelStudents = students.filter(s => s.levelId === level.id);
+        const projectCount = levelProjects.filter(lp => lp.levelId === level.id).length;
+
+        const levelScores = scores.filter(sc => levelStudents.some(s => s.id === sc.studentId));
+        let avgText = '--';
+        if (levelScores.length > 0) {
+            const pcts = [];
+            levelScores.forEach(sc => {
+                const project = levelProjects.find(p => p.id === sc.projectId) || projects.find(p => p.id === sc.projectId);
+                const fullMark = sc.fullMark || project?.fullMark;
+                if (fullMark > 0) pcts.push((sc.score / fullMark) * 100);
+            });
+            if (pcts.length > 0) avgText = (pcts.reduce((a, b) => a + b, 0) / pcts.length).toFixed(1) + '%';
         }
+
+        return `
+            <div class="level-summary-card" data-level-id="${level.id}">
+                <h5>${escapeHtml(level.name)}</h5>
+                <div class="level-stat-row"><span>学生人数</span><strong>${levelStudents.length} 人</strong></div>
+                <div class="level-stat-row"><span>平均分</span><strong>${avgText}</strong></div>
+                <div class="level-stat-row"><span>评分项目</span><strong>${projectCount} 个</strong></div>
+                <div class="level-stat-row"><span>默认年数</span><strong>${level.defaultYear || '-'}</strong></div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-sm btn-outline-primary flex-fill view-level-detail" data-id="${level.id}">查看详情</button>
+                    <button class="btn btn-sm btn-outline-secondary edit-level" data-id="${level.id}" title="编辑"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger delete-level" data-id="${level.id}" title="删除"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.querySelectorAll('.view-level-detail').forEach(btn => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); showLevelDetail(btn.dataset.id); });
     });
-    
-    // 添加编辑和删除事件
-    row.querySelector('.edit-level').addEventListener('click', (e) => {
-        e.stopPropagation();
-        editLevel(level.id);
+    grid.querySelectorAll('.level-summary-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) showLevelDetail(card.dataset.levelId);
+        });
     });
-    row.querySelector('.delete-level').addEventListener('click', (e) => {
-        e.stopPropagation();
-        showDeleteConfirm('level', level.id, `确定要删除级别 ${level.name} 吗？`);
+    grid.querySelectorAll('.edit-level').forEach(btn => {
+        btn.addEventListener('click', (e) => { e.stopPropagation(); editLevel(btn.dataset.id); });
+    });
+    grid.querySelectorAll('.delete-level').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const level = levels.find(l => l.id === btn.dataset.id);
+            showDeleteConfirm('level', btn.dataset.id, `确定要删除级别「${level?.name || ''}」吗？该级别下的学生和评分项目关联需要另行处理。`);
+        });
     });
 }
 
@@ -4847,15 +4954,16 @@ function showLevelDetail(levelId) {
     
     levelNameSpan.textContent = level.name;
     detailCard.style.display = 'block';
+    detailCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
-    // 高亮选中的行
-    document.querySelectorAll('.level-row').forEach(row => {
-        row.classList.remove('table-active');
+    // 高亮选中的卡片
+    document.querySelectorAll('.level-summary-card').forEach(card => {
+        card.classList.remove('active-level-card');
     });
     
-    const selectedRow = document.querySelector(`.level-row[data-level-id="${levelId}"]`);
-    if (selectedRow) {
-        selectedRow.classList.add('table-active');
+    const selectedCard = document.querySelector(`.level-summary-card[data-level-id="${levelId}"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('active-level-card');
     }
     
     // 加载该级别的项目
@@ -5042,9 +5150,6 @@ function saveLevelProject() {
                         const student = { id: doc.id, ...doc.data() };
                         students.push(student);
                         
-                        // 添加到学生表格
-                        addStudentToTable(student);
-                        
                         // 添加到学生选择下拉框
                         const option = document.createElement('option');
                         option.value = doc.id;
@@ -5052,9 +5157,12 @@ function saveLevelProject() {
                         studentSelect.appendChild(option);
                     });
                     
-                    // 更新班级选择下拉框
+                    // 更新班级/级别选择下拉框
                     updateClassSelect();
+                    // 渲染表格（含搜索/筛选/分页）
+                    filterStudents();
                     updateDashboard();
+                    renderLevelCards();
                     
                     addActivity("加载学生数据完成", "info");
                 })
@@ -5063,6 +5171,341 @@ function saveLevelProject() {
                     showAlert("加载学生数据失败", "danger");
                     addActivity("加载学生数据失败", "danger");
                 });
+        }
+
+        // ==================== 学生表格：多选 / 分页 / 升级降级 状态 ====================
+        let selectedStudentIds = new Set();
+        let studentFilteredList = [];
+        let studentCurrentPage = 1;
+        let studentPageSize = 20;
+
+        function getSortedLevels() {
+            return [...levels].sort((a, b) => parseFloat(a.defaultYear || 0) - parseFloat(b.defaultYear || 0));
+        }
+
+        function getStudentPageSlice() {
+            const start = (studentCurrentPage - 1) * studentPageSize;
+            return studentFilteredList.slice(start, start + studentPageSize);
+        }
+
+        // 重新计算筛选结果并渲染（搜索/班级/级别筛选统一入口）
+        function filterStudents() {
+            const searchText = (document.getElementById('student-search').value || '').toLowerCase();
+            const classFilter = document.getElementById('student-class-filter').value;
+            const levelFilter = document.getElementById('student-level-filter')?.value || '';
+
+            studentFilteredList = students.filter(student => {
+                const matchesSearch =
+                    (student.studentId || '').toLowerCase().includes(searchText) ||
+                    (student.name || '').toLowerCase().includes(searchText) ||
+                    (student.studyGroup && student.studyGroup.toLowerCase().includes(searchText)) ||
+                    (student.workGroup && student.workGroup.toLowerCase().includes(searchText));
+
+                const matchesClass = classFilter === '' || student.class === classFilter;
+                const matchesLevel = levelFilter === '' || student.levelId === levelFilter;
+
+                return matchesSearch && matchesClass && matchesLevel;
+            });
+
+            studentCurrentPage = 1;
+            renderStudentsList();
+        }
+
+        // 渲染当前页的学生表格 + 分页控件 + 批量工具栏
+        function renderStudentsList() {
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = '';
+
+            if (studentFilteredList.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>没有找到匹配的学生</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                const totalPages = Math.max(1, Math.ceil(studentFilteredList.length / studentPageSize));
+                if (studentCurrentPage > totalPages) studentCurrentPage = totalPages;
+                getStudentPageSlice().forEach(student => addStudentToTable(student));
+            }
+
+            renderStudentPagination(studentFilteredList.length);
+            updateStudentPageInfo();
+            updateBatchToolbar();
+
+            // 表头全选框状态
+            const selectAllBox = document.getElementById('student-select-all');
+            if (selectAllBox) {
+                const pageIds = getStudentPageSlice().map(s => s.id);
+                selectAllBox.checked = pageIds.length > 0 && pageIds.every(id => selectedStudentIds.has(id));
+            }
+        }
+
+        function updateStudentPageInfo() {
+            const info = document.getElementById('student-page-info');
+            if (!info) return;
+            const total = studentFilteredList.length;
+            if (total === 0) { info.textContent = '共 0 位学生'; return; }
+            const start = (studentCurrentPage - 1) * studentPageSize + 1;
+            const end = Math.min(studentCurrentPage * studentPageSize, total);
+            info.textContent = `显示 ${start}-${end} 条，共 ${total} 位学生`;
+        }
+
+        function renderStudentPagination(total) {
+            const totalPages = Math.max(1, Math.ceil(total / studentPageSize));
+            const pagination = document.getElementById('student-pagination');
+            if (!pagination) return;
+            pagination.innerHTML = '';
+
+            const makeItem = (label, page, disabled, active) => {
+                const li = document.createElement('li');
+                li.className = `page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#">${label}</a>`;
+                if (!disabled && !active) {
+                    li.addEventListener('click', (e) => { e.preventDefault(); studentCurrentPage = page; renderStudentsList(); });
+                }
+                return li;
+            };
+
+            pagination.appendChild(makeItem('上一页', studentCurrentPage - 1, studentCurrentPage === 1, false));
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || Math.abs(i - studentCurrentPage) <= 2) {
+                    pagination.appendChild(makeItem(String(i), i, false, i === studentCurrentPage));
+                } else if (i === studentCurrentPage - 3 || i === studentCurrentPage + 3) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = `<span class="page-link">...</span>`;
+                    pagination.appendChild(li);
+                }
+            }
+
+            pagination.appendChild(makeItem('下一页', studentCurrentPage + 1, studentCurrentPage === totalPages, false));
+        }
+
+        // ---------- 多选 ----------
+        function toggleStudentSelection(studentId, checked) {
+            if (checked) selectedStudentIds.add(studentId);
+            else selectedStudentIds.delete(studentId);
+            updateBatchToolbar();
+        }
+
+        function updateBatchToolbar() {
+            const toolbar = document.getElementById('student-batch-toolbar');
+            if (!toolbar) return;
+            const count = selectedStudentIds.size;
+            if (count === 0) {
+                toolbar.style.display = 'none';
+            } else {
+                toolbar.style.display = 'flex';
+                toolbar.querySelector('.count').textContent = count;
+            }
+        }
+
+        function clearStudentSelection() {
+            selectedStudentIds.clear();
+            renderStudentsList();
+        }
+
+        // ---------- 升级 / 降级 ----------
+        async function promoteStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            const sorted = getSortedLevels();
+            const idx = sorted.findIndex(l => l.id === student.levelId);
+            if (idx === -1 || idx === sorted.length - 1) {
+                showAlert('该学生已在最高级别，无法升级', 'warning');
+                return;
+            }
+            const nextLevel = sorted[idx + 1];
+            showConfirmDialog(
+                '⬆️ 升级学生',
+                `确定将 ${student.name}（${student.studentId}）从「${student.levelName || '-'}」升级到「${nextLevel.name}」吗？历史成绩会保留。`,
+                '确认升级', '取消',
+                () => applyStudentLevelChange(student, nextLevel, 'promote')
+            );
+        }
+
+        async function demoteStudent(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+            const sorted = getSortedLevels();
+            const idx = sorted.findIndex(l => l.id === student.levelId);
+            if (idx <= 0) {
+                showAlert('该学生已在最低级别，无法降级', 'warning');
+                return;
+            }
+            const prevLevel = sorted[idx - 1];
+            showConfirmDialog(
+                '⬇️ 降级学生',
+                `确定将 ${student.name}（${student.studentId}）从「${student.levelName || '-'}」降级到「${prevLevel.name}」吗？历史成绩会保留。`,
+                '确认降级', '取消',
+                () => applyStudentLevelChange(student, prevLevel, 'demote')
+            );
+        }
+
+        async function applyStudentLevelChange(student, toLevel, type) {
+            const fromLevelId = student.levelId || null;
+            const fromLevelName = student.levelName || null;
+            try {
+                await db.collection('students').doc(student.id).update({
+                    levelId: toLevel.id,
+                    levelName: toLevel.name,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await db.collection('promotionLogs').add({
+                    studentId: student.id,
+                    studentName: student.name,
+                    fromLevelId,
+                    fromLevelName,
+                    toLevelId: toLevel.id,
+                    toLevelName: toLevel.name,
+                    type,
+                    operatorEmail: currentUser?.email || 'unknown',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showAlert(`✅ ${student.name} 已${type === 'promote' ? '升级' : '降级'}到 ${toLevel.name}`, 'success');
+                addActivity(`${student.name} ${type === 'promote' ? '升级' : '降级'}到 ${toLevel.name}`, 'info');
+                await loadStudents();
+            } catch (error) {
+                console.error(error);
+                showAlert('操作失败：' + error.message, 'danger');
+            }
+        }
+
+        function batchPromoteStudents() {
+            const ids = [...selectedStudentIds];
+            if (ids.length === 0) return;
+            showConfirmDialog(
+                '⬆️ 批量升级',
+                `确定将选中的 ${ids.length} 位学生分别升级到各自的下一级别吗？已在最高级别的学生会被跳过。`,
+                '确认批量升级', '取消',
+                async () => {
+                    let done = 0, skipped = 0;
+                    for (const id of ids) {
+                        const student = students.find(s => s.id === id);
+                        if (!student) continue;
+                        const sorted = getSortedLevels();
+                        const idx = sorted.findIndex(l => l.id === student.levelId);
+                        if (idx === -1 || idx === sorted.length - 1) { skipped++; continue; }
+                        await applyStudentLevelChange(student, sorted[idx + 1], 'promote');
+                        done++;
+                    }
+                    selectedStudentIds.clear();
+                    showAlert(`批量升级完成：成功 ${done} 位，跳过 ${skipped} 位（已在最高级别）`, 'success');
+                }
+            );
+        }
+
+        function batchDemoteStudents() {
+            const ids = [...selectedStudentIds];
+            if (ids.length === 0) return;
+            showConfirmDialog(
+                '⬇️ 批量降级',
+                `确定将选中的 ${ids.length} 位学生分别降级到各自的上一级别吗？已在最低级别的学生会被跳过。`,
+                '确认批量降级', '取消',
+                async () => {
+                    let done = 0, skipped = 0;
+                    for (const id of ids) {
+                        const student = students.find(s => s.id === id);
+                        if (!student) continue;
+                        const sorted = getSortedLevels();
+                        const idx = sorted.findIndex(l => l.id === student.levelId);
+                        if (idx <= 0) { skipped++; continue; }
+                        await applyStudentLevelChange(student, sorted[idx - 1], 'demote');
+                        done++;
+                    }
+                    selectedStudentIds.clear();
+                    showAlert(`批量降级完成：成功 ${done} 位，跳过 ${skipped} 位（已在最低级别）`, 'success');
+                }
+            );
+        }
+
+        function batchDeleteStudents() {
+            const ids = [...selectedStudentIds];
+            if (ids.length === 0) return;
+            showConfirmDialog(
+                '🗑 批量删除',
+                `确定删除选中的 ${ids.length} 位学生吗？此操作不可撤销，学生的历史分数记录不会被自动删除。`,
+                '确认删除', '取消',
+                async () => {
+                    try {
+                        const batch = db.batch();
+                        ids.forEach(id => batch.delete(db.collection('students').doc(id)));
+                        await batch.commit();
+                        selectedStudentIds.clear();
+                        showAlert(`已删除 ${ids.length} 位学生`, 'success');
+                        addActivity(`批量删除 ${ids.length} 位学生`, 'warning');
+                        await loadStudents();
+                    } catch (error) {
+                        console.error(error);
+                        showAlert('批量删除失败：' + error.message, 'danger');
+                    }
+                }
+            );
+        }
+
+        // ---------- 历史记录（级别变更 + 成绩） ----------
+        async function showStudentHistory(studentId) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return;
+
+            const modalEl = document.getElementById('studentHistoryModal');
+            if (!modalEl) return;
+            modalEl.querySelector('.student-history-name').textContent = `${student.name} - 历史记录`;
+            const scoreBody = modalEl.querySelector('#student-history-scores');
+            const levelBody = modalEl.querySelector('#student-history-levels');
+            scoreBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">加载中...</td></tr>';
+            levelBody.innerHTML = '<li class="text-muted">加载中...</li>';
+
+            const bsModal = new bootstrap.Modal(modalEl);
+            bsModal.show();
+
+            // 成绩历史
+            const studentScores = scores.filter(s => s.studentId === studentId);
+            if (studentScores.length === 0) {
+                scoreBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">暂无成绩记录</td></tr>';
+            } else {
+                scoreBody.innerHTML = studentScores.map(score => {
+                    const project = levelProjects.find(p => p.id === score.projectId) || projects.find(p => p.id === score.projectId);
+                    const fullMark = score.fullMark || project?.fullMark || 0;
+                    const pct = fullMark > 0 ? ((score.score / fullMark) * 100).toFixed(1) + '%' : '-';
+                    const time = score.createdAt?.toDate ? formatDate(score.createdAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
+                    return `<tr>
+                        <td>${escapeHtml(project?.name || '未知项目')}</td>
+                        <td>${score.score}</td>
+                        <td>${fullMark}</td>
+                        <td>${pct}</td>
+                        <td>${time}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // 级别变更历史
+            try {
+                const snap = await db.collection('promotionLogs')
+                    .where('studentId', '==', studentId)
+                    .orderBy('createdAt', 'desc')
+                    .get();
+                if (snap.empty) {
+                    levelBody.innerHTML = '<li class="text-muted">暂无级别变更记录</li>';
+                } else {
+                    levelBody.innerHTML = snap.docs.map(doc => {
+                        const log = doc.data();
+                        const time = log.createdAt?.toDate ? formatDate(log.createdAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
+                        const icon = log.type === 'promote' ? '⬆️' : '⬇️';
+                        return `<li>
+                            <div>${icon} ${time}　${escapeHtml(log.fromLevelName || '无')} → ${escapeHtml(log.toLevelName || '-')}</div>
+                            <div class="text-muted small">操作人：${escapeHtml(log.operatorEmail || '-')}</div>
+                        </li>`;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error(error);
+                levelBody.innerHTML = '<li class="text-danger">加载级别变更记录失败</li>';
+            }
         }
 
         // 添加学生到表格
@@ -5079,8 +5522,16 @@ function addStudentToTable(student) {
     // 获取级别名称
     const level = levels.find(l => l.id === student.levelId);
     const levelName = level ? level.name : '-';
+
+    // 计算是否已在最高/最低级别（用于禁用升级/降级按钮）
+    const sortedLevels = getSortedLevels();
+    const levelIdx = sortedLevels.findIndex(l => l.id === student.levelId);
+    const canPromote = levelIdx !== -1 && levelIdx < sortedLevels.length - 1;
+    const canDemote = levelIdx > 0;
+    const isChecked = selectedStudentIds.has(student.id);
     
     row.innerHTML = `
+        <td><input type="checkbox" class="student-row-check" data-id="${student.id}" ${isChecked ? 'checked' : ''}></td>
         <td>${student.studentId}</td>
         <td>
             <div class="d-flex align-items-center">
@@ -5094,11 +5545,20 @@ function addStudentToTable(student) {
         <td><span class="badge bg-success">${levelName}</span></td>
         <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
         <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
-        <td>
-            <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}">
+        <td class="text-nowrap">
+            <button class="btn btn-sm btn-outline-success promote-student" data-id="${student.id}" title="升级" ${canPromote ? '' : 'disabled'}>
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-warning demote-student" data-id="${student.id}" title="降级" ${canDemote ? '' : 'disabled'}>
+                <i class="fas fa-arrow-down"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary history-student" data-id="${student.id}" title="历史记录">
+                <i class="fas fa-history"></i>
+            </button>
+            <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}" title="编辑">
                 <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}">
+            <button class="btn btn-sm btn-danger delete-student" data-id="${student.id}" title="删除">
                 <i class="fas fa-trash"></i>
             </button>
             <button class="btn btn-sm btn-warning clean-student-duplicates ms-1" data-student-id="${student.id}" data-student-name="${student.name}" title="清理重复分数记录">
@@ -5108,6 +5568,19 @@ function addStudentToTable(student) {
     `;
     
     tbody.appendChild(row);
+
+    // 多选框
+    row.querySelector('.student-row-check').addEventListener('change', (e) => {
+        toggleStudentSelection(student.id, e.target.checked);
+    });
+
+    // 升级 / 降级 / 历史
+    const promoteBtn = row.querySelector('.promote-student');
+    if (promoteBtn) promoteBtn.addEventListener('click', () => promoteStudent(student.id));
+    const demoteBtn = row.querySelector('.demote-student');
+    if (demoteBtn) demoteBtn.addEventListener('click', () => demoteStudent(student.id));
+    const historyBtn = row.querySelector('.history-student');
+    if (historyBtn) historyBtn.addEventListener('click', () => showStudentHistory(student.id));
     
     // 添加编辑事件
     const editBtn = row.querySelector('.edit-student');
@@ -5606,6 +6079,7 @@ function updateLevelSelect() {
             updateDashboard();
             updateProjectComparisonChart();
             updateScoreDistributionChart();
+            renderLevelCards();
         })
         .catch(error => {
             console.error("加载分数数据失败: ", error);
@@ -6236,6 +6710,20 @@ function updateClassSelect() {
             option.textContent = level.name;
             levelSelect.appendChild(option);
         });
+    }
+
+    // 更新学生管理页的级别筛选下拉框
+    const studentLevelFilter = document.getElementById('student-level-filter');
+    if (studentLevelFilter) {
+        const prevValue = studentLevelFilter.value;
+        studentLevelFilter.innerHTML = '<option value="">所有级别</option>';
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level.id;
+            option.textContent = level.name;
+            studentLevelFilter.appendChild(option);
+        });
+        studentLevelFilter.value = prevValue;
     }
 }
 
@@ -7068,40 +7556,7 @@ function saveLevel() {
             }
         }
 
-        // 筛选学生
-        function filterStudents() {
-            const searchText = document.getElementById('student-search').value.toLowerCase();
-            const classFilter = document.getElementById('student-class-filter').value;
-            
-            const filteredStudents = students.filter(student => {
-                const matchesSearch = 
-                    student.studentId.toLowerCase().includes(searchText) ||
-                    student.name.toLowerCase().includes(searchText) ||
-                    (student.studyGroup && student.studyGroup.toLowerCase().includes(searchText)) ||
-                    (student.workGroup && student.workGroup.toLowerCase().includes(searchText));
-                
-                const matchesClass = classFilter === '' || student.class === classFilter;
-                
-                return matchesSearch && matchesClass;
-            });
-            
-            // 更新表格
-            const tbody = document.getElementById('students-table-body');
-            tbody.innerHTML = '';
-            
-            if (filteredStudents.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
-                            <i class="fas fa-search fa-2x mb-2"></i>
-                            <p>没有找到匹配的学生</p>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                filteredStudents.forEach(student => addStudentToTable(student));
-            }
-        }
+        // 筛选学生（唯一定义，见文件前部 loadStudents 附近；此处旧的重复实现已合并移除）
 // 报告模态框实例
 let reportModalInstance = null;
 
