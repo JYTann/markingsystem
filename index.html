@@ -2135,6 +2135,181 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     #main-system .topbar-user #user-email { display: none; }
 }
 
+/* ============================================================================
+   新增功能 1：移动端表格卡片化
+   适用范围：students-table-body / scores-table-body / members-table-body
+   说明：不改动任何 JS 渲染逻辑，仅通过 CSS + nth-of-type 定位实现卡片化，
+   字段名通过 ::before 伪元素按列位置静态注入（各表列顺序固定，见对应 <thead>）。
+   ============================================================================ */
+@media (max-width: 640px) {
+    #students-table-body tr,
+    #scores-table-body tr,
+    #members-table-body tr {
+        display: block;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--r-lg);
+        padding: var(--sp-3) var(--sp-4);
+        margin-bottom: var(--sp-3);
+        box-shadow: var(--shadow-card);
+    }
+
+    #students-table-body tr td,
+    #scores-table-body tr td,
+    #members-table-body tr td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-4);
+        padding: var(--sp-2) 0;
+        border-bottom: 1px solid var(--border-subtle);
+        text-align: right;
+        white-space: normal;
+    }
+    #students-table-body tr td:last-child,
+    #scores-table-body tr td:last-child,
+    #members-table-body tr td:last-child {
+        border-bottom: none;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    /* 加载中 / 空状态等整行 colspan 提示条，不做卡片字段拆分 */
+    #students-table-body tr td[colspan],
+    #scores-table-body tr td[colspan],
+    #members-table-body tr td[colspan] {
+        display: block !important;
+        text-align: center;
+        border-bottom: none;
+    }
+
+    #students-table-body tr td::before,
+    #scores-table-body tr td::before,
+    #members-table-body tr td::before {
+        font-weight: var(--fw-semibold);
+        color: var(--text-tertiary);
+        font-size: var(--fs-xs);
+        text-align: left;
+        flex-shrink: 0;
+    }
+    #students-table-body tr td[colspan]::before,
+    #scores-table-body tr td[colspan]::before,
+    #members-table-body tr td[colspan]::before {
+        content: none;
+    }
+
+    /* 学生管理表：checkbox, 学号, 姓名, 班级, 级别, 学习组, 工作组, 操作 */
+    #students-table-body tr td:nth-of-type(1)::before { content: none; }
+    #students-table-body tr td:nth-of-type(1) { justify-content: flex-start; }
+    #students-table-body tr td:nth-of-type(2)::before { content: "学号"; }
+    #students-table-body tr td:nth-of-type(3)::before { content: "姓名"; }
+    #students-table-body tr td:nth-of-type(4)::before { content: "班级"; }
+    #students-table-body tr td:nth-of-type(5)::before { content: "级别"; }
+    #students-table-body tr td:nth-of-type(6)::before { content: "学习组"; }
+    #students-table-body tr td:nth-of-type(7)::before { content: "工作组"; }
+    #students-table-body tr td:nth-of-type(8)::before { content: "操作"; }
+
+    /* 分数录入记录表：学生, 项目, 分数, 满分, 占比, 录入时间, 操作 */
+    #scores-table-body tr td:nth-of-type(1)::before { content: "学生"; }
+    #scores-table-body tr td:nth-of-type(2)::before { content: "项目"; }
+    #scores-table-body tr td:nth-of-type(3)::before { content: "分数"; }
+    #scores-table-body tr td:nth-of-type(4)::before { content: "满分"; }
+    #scores-table-body tr td:nth-of-type(5)::before { content: "占比"; }
+    #scores-table-body tr td:nth-of-type(6)::before { content: "录入时间"; }
+    #scores-table-body tr td:nth-of-type(7)::before { content: "操作"; }
+
+    /* 会员管理表：学号, 姓名, 班级, 组别, 安全码, 学校邮箱, 操作 */
+    #members-table-body tr td:nth-of-type(1)::before { content: "学号"; }
+    #members-table-body tr td:nth-of-type(2)::before { content: "姓名"; }
+    #members-table-body tr td:nth-of-type(3)::before { content: "班级"; }
+    #members-table-body tr td:nth-of-type(4)::before { content: "组别"; }
+    #members-table-body tr td:nth-of-type(5)::before { content: "安全码"; }
+    #members-table-body tr td:nth-of-type(6)::before { content: "学校邮箱"; }
+    #members-table-body tr td:nth-of-type(7)::before { content: "操作"; }
+}
+
+/* ============================================================================
+   新增功能 2：深色模式
+   说明：设计令牌系统里大量组件规则直接引用灰阶变量（--gray-50 ~ --gray-900），
+   而非语义变量（--text-primary / --bg-page 等）。为了在不重写全部组件规则的
+   前提下让深色模式真正生效，这里连同灰阶本身一起做深浅翻转；--primary-500
+   等品牌主色以及 .query-brand-panel 品牌渐变（硬编码色值，未使用灰阶变量）
+   保持不变。
+   ============================================================================ */
+[data-theme="dark"] {
+    /* 灰阶整体翻转（浅→深），驱动所有直接引用 --gray-XXX 的组件规则 */
+    --gray-50:  #0F172A;
+    --gray-100: #1E293B;
+    --gray-200: #334155;
+    --gray-300: #475569;
+    --gray-400: #64748B;
+    --gray-500: #94A3B8;
+    --gray-600: #CBD5E1;
+    --gray-700: #E2E8F0;
+    --gray-800: #F1F5F9;
+    --gray-900: #F8FAFC;
+
+    /* 语义变量按需求指定的深色配色单独覆盖 */
+    --bg-page: #0F172A;
+    --bg-card: #1E293B;
+    --bg-subtle: #334155;
+    --text-primary: #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-tertiary: #94A3B8;
+    --border: #334155;
+    --border-subtle: #334155;
+    --border-color: #334155;
+    --border-light: #334155;
+    --bg-hover: #263449;
+    --bg-muted: #334155;
+    --bg-light: #1E293B;
+
+    /* 阴影在深色背景下需要更明显，否则几乎不可见 */
+    --shadow-xs: 0 1px 2px 0 rgba(0,0,0,0.3);
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.35), 0 1px 3px 0 rgba(0,0,0,0.3);
+    --shadow: 0 1px 2px 0 rgba(0,0,0,0.35), 0 1px 3px 0 rgba(0,0,0,0.3);
+    --shadow-md: 0 2px 4px -1px rgba(0,0,0,0.4), 0 4px 8px -2px rgba(0,0,0,0.35);
+    --shadow-lg: 0 4px 8px -2px rgba(0,0,0,0.45), 0 12px 24px -4px rgba(0,0,0,0.4);
+    --shadow-xl: 0 8px 16px -4px rgba(0,0,0,0.5), 0 20px 40px -8px rgba(0,0,0,0.45);
+    --shadow-card: 0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px -1px rgba(0,0,0,0.25);
+    --shadow-card-hover: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -2px rgba(0,0,0,0.3);
+    --card-shadow: var(--shadow-card);
+    --card-shadow-hover: var(--shadow-card-hover);
+}
+
+/* 品牌渐变区（学生查询页左侧）不随深色模式变化，此处显式声明以免被误覆盖 */
+[data-theme="dark"] .query-brand-panel {
+    background:
+        radial-gradient(circle at 20% 0%, rgba(255,255,255,0.15), transparent 40%),
+        radial-gradient(circle at 80% 100%, rgba(236,72,153,0.25), transparent 45%),
+        linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #DB2777 100%);
+    color: #fff;
+}
+
+/* 主题切换按钮（顶栏） */
+.theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    flex-shrink: 0;
+}
+.theme-toggle-btn:hover {
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+}
+.theme-toggle-btn .fa-sun { display: none; color: #F59E0B; }
+.theme-toggle-btn .fa-moon { display: inline-block; }
+[data-theme="dark"] .theme-toggle-btn .fa-sun { display: inline-block; }
+[data-theme="dark"] .theme-toggle-btn .fa-moon { display: none; }
+
 </style>
 </head>
     
@@ -2531,8 +2706,12 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                     </button>
                     <div class="topbar-title" id="topbar-page-title">仪表盘</div>
                     <div class="topbar-actions">
-                        <button class="topbar-icon-btn" type="button" title="搜索">
+                        <button class="topbar-icon-btn" type="button" title="搜索 (Ctrl+K)" id="global-search-trigger-btn">
                             <i class="fas fa-search"></i>
+                        </button>
+                        <button class="theme-toggle-btn" type="button" title="切换深色/浅色模式" id="theme-toggle-btn">
+                            <i class="fas fa-moon"></i>
+                            <i class="fas fa-sun"></i>
                         </button>
                         <button class="topbar-icon-btn" type="button" title="通知">
                             <i class="fas fa-bell"></i>
@@ -2604,6 +2783,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
                             <th>姓名</th>
                             <th>班级</th>
                             <th>组别</th>
+                            <th>安全码</th>
                             <th>学校邮箱</th>
                             <th>操作</th>
                         </tr>
@@ -3798,6 +3978,11 @@ let studentAttendanceUser = null;
         let scoreTrendChart = null;
 let studentTrendChart = null;
 let trendPeriod = 'all';
+// BUG 2 修复：previewText / currentReportData 此前在部分函数中被引用但从未声明，
+// 会导致 ReferenceError（previewText 见 createNewAttendance；currentReportData 见 bindDownloadButtons）。
+// 在此统一声明为全局变量，避免未定义引用报错。
+let previewText = null;
+let currentReportData = null;
         // DOM加载完成后执行
        document.addEventListener('DOMContentLoaded', function() {
     // ========== 最优先：检查分享链接 ==========
@@ -5450,6 +5635,8 @@ function saveLevelProject() {
             }
 
             // 级别变更历史
+            // BUG 7 提醒：此查询组合 where('studentId') + orderBy('createdAt' desc)，
+            // 首次运行若报错提示需要索引，请在 Firestore 控制台按提示创建复合索引。
             try {
                 const snap = await db.collection('promotionLogs')
                     .where('studentId', '==', studentId)
@@ -5471,6 +5658,7 @@ function saveLevelProject() {
             } catch (error) {
                 console.error(error);
                 levelBody.innerHTML = '<li class="text-danger">加载级别变更记录失败</li>';
+                showAlert('加载失败: ' + error.message, 'danger');
             }
         }
 
@@ -5598,6 +5786,11 @@ function addStudentToTable(student) {
 
         // 保存学生
         // 保存学生 - 修改版本
+/**
+ * 保存新学生（表单驱动）。从添加学生表单读取学号、姓名、班级、级别等字段，
+ * 写入 Firestore 的 students 集合。
+ * @returns {void}
+ */
 function saveStudent() {
     const name = document.getElementById('student-name').value.trim();
     const studentClass = document.getElementById('student-class').value.trim();
@@ -6156,6 +6349,8 @@ function addScoreToTable(score) {
  * @returns {Promise<boolean>} 是否存在
  */
 async function checkDuplicateScore(studentId, projectId) {
+    // BUG 7 提醒：此查询组合 where('studentId') + where('projectId')，
+    // 若 Firestore 提示需要索引，请在控制台按提示创建复合索引。
     try {
         const existingScores = await db.collection('scores')
             .where('studentId', '==', studentId)
@@ -6164,6 +6359,7 @@ async function checkDuplicateScore(studentId, projectId) {
         return !existingScores.empty;
     } catch (error) {
         console.error('检查重复分数失败:', error);
+        showAlert('加载失败: ' + error.message, 'danger');
         return false;
     }
 }
@@ -6183,6 +6379,7 @@ async function getExistingScores(studentId, projectId) {
         return existingScores.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
         console.error('获取已有分数失败:', error);
+        showAlert('加载失败: ' + error.message, 'danger');
         return [];
     }
 }
@@ -6342,6 +6539,11 @@ async function cleanStudentDuplicateScores(studentId) {
 }
 
 // ==================== 保存分数（含重复检测，唯一版本）====================
+/**
+ * 保存学生分数（表单驱动），内置重复分数检测（checkDuplicateScore）。
+ * 从页面表单读取学生、项目、分数等字段，写入 Firestore 的 scores 集合。
+ * @returns {Promise<void>}
+ */
 async function saveScore() {
     const studentId = document.getElementById('score-student-select').value;
     const projectId = document.getElementById('score-project-select').value;
@@ -6643,9 +6845,16 @@ function updateClassSelect() {
 
         // 更新仪表盘
         function updateDashboard() {
-            document.getElementById('student-count').textContent = students.length;
-            document.getElementById('project-count').textContent = projects.length;
-            document.getElementById('score-count').textContent = scores.length;
+            // 新增功能 4：统计数字滚动动画（参考 initQueryLandingExtras 中的 _animateQueryStatValue 实现）
+            if (typeof animateStatNumber === 'function') {
+                animateStatNumber(document.getElementById('student-count'), students.length);
+                animateStatNumber(document.getElementById('project-count'), projects.length);
+                animateStatNumber(document.getElementById('score-count'), scores.length);
+            } else {
+                document.getElementById('student-count').textContent = students.length;
+                document.getElementById('project-count').textContent = projects.length;
+                document.getElementById('score-count').textContent = scores.length;
+            }
 
             // 平均分（按各分数的得分率平均）
             let avgPct = null;
@@ -6657,7 +6866,13 @@ function updateClassSelect() {
             });
             if (pcts.length > 0) avgPct = pcts.reduce((a, b) => a + b, 0) / pcts.length;
             const avgEl = document.getElementById('avg-score-count');
-            if (avgEl) avgEl.textContent = avgPct !== null ? avgPct.toFixed(1) + '%' : '--';
+            if (avgEl) {
+                if (avgPct !== null && typeof animateStatNumber === 'function') {
+                    animateStatNumber(avgEl, avgPct, { decimals: 1, suffix: '%' });
+                } else {
+                    avgEl.textContent = avgPct !== null ? avgPct.toFixed(1) + '%' : '--';
+                }
+            }
 
             // 欢迎横幅
             const welcomeTitle = document.getElementById('dashboard-welcome-title');
@@ -7599,6 +7814,11 @@ async function generateReport() {
         // ==================== 🎨 美观专业版成绩报告（横向布局） ====================
 
 // 生成美观报告
+/**
+ * 生成专业版成绩报告（横向布局）。汇总当前筛选条件下的学生成绩数据，
+ * 调用 createBeautifulReportHTML 渲染报告 HTML 并展示/绑定下载按钮。
+ * @returns {Promise<void>}
+ */
 async function generateBeautifulReport() {
     const selectedClass = document.getElementById('report-class-select')?.value || '';
     const selectedLevel = document.getElementById('report-level-select')?.value || '';
@@ -7719,6 +7939,11 @@ async function generateBeautifulReport() {
 }
 
 // 生成美观报告HTML
+/**
+ * 根据报告数据生成专业版成绩报告的 HTML 字符串（横向布局，可打印/导出）。
+ * @param {Object} data - 报告数据，包含 studentAverages、reportProjects、selectedClass、groupByLevel 等字段
+ * @returns {string} 报告的完整 HTML 字符串
+ */
 function createBeautifulReportHTML(data) {
     const { studentData, projectsList, selectedClass, selectedLevel, groupByLevel } = data;
     
@@ -10759,6 +10984,10 @@ function initKeyboardShortcuts() {
                     e.preventDefault();
                     switchTab('#reports-tab');
                     break;
+                case 'k':
+                    e.preventDefault();
+                    if (typeof openGlobalSearch === 'function') openGlobalSearch();
+                    break;
             }
         }
         
@@ -11520,6 +11749,7 @@ function loadAttendanceRecords() {
         })
         .catch(error => {
             console.error("加载点名记录失败:", error);
+            showAlert('加载失败: ' + error.message, 'danger');
         });
 }
 // 渲染点名列表
@@ -11758,7 +11988,11 @@ function studentGoogleLoginRedirect() {
 }
 
 // 处理重定向返回的结果
-auth.getRedirectResult().then(async (result) => {
+// BUG 4 修复：原代码在脚本顶层同步调用 auth.getRedirectResult()，
+// 此时 Firebase Auth 可能尚未完全初始化，改为在 DOMContentLoaded 后延迟 1000ms 执行。
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        auth.getRedirectResult().then(async (result) => {
     if (result.user) {
         const user = result.user;
         console.log("Google登录成功（重定向），用户信息:", {
@@ -11806,11 +12040,13 @@ auth.getRedirectResult().then(async (result) => {
         }
     }
 }).catch((error) => {
-    console.error("重定向登录失败:", error);
-    // 忽略用户主动关闭的错误
-    if (error.code !== 'auth/popup-closed-by-user') {
-        showAlert("登录失败: " + error.message, 'danger');
-    }
+            console.error("重定向登录失败:", error);
+            // 忽略用户主动关闭的错误
+            if (error.code !== 'auth/popup-closed-by-user') {
+                showAlert("登录失败: " + error.message, 'danger');
+            }
+        });
+    }, 1000);
 });
 
 // ==================== 修复 Bootstrap Tab 错误 ====================
@@ -11902,10 +12138,7 @@ window.addEventListener('error', function(e) {
     }
 });
 
-// 确保 previewText 在全局可用
-if (typeof previewText === 'undefined') {
-    var previewText = null;
-}
+// previewText 已在文件顶部全局变量区统一声明（BUG 2 修复），此处不再重复声明。
 
 // 随机生成验证码
 function generateRandomCode() {
@@ -11969,10 +12202,7 @@ function showStudentCheckinInterface() {
     window._attendanceRefreshInterval = setInterval(loadActiveSessions, 30000);
 }
 // 加载进行中的点名
-// 加载进行中的点名 - 修复版
-// 加载进行中的点名
 async function loadActiveSessions() {
-    console.log('加载进行中的点名...');
     
     // 确保 attendances 和 attendanceRecords 已加载
     if (attendances.length === 0) {
@@ -12151,13 +12381,9 @@ async function submitCheckIn() {
             chineseName = chineseMatch[0];
         }
         
-        console.log('开始匹配会员，信息:', { email, studentIdInput, chineseName, displayName });
-        console.log('当前会员总数:', members.length);
-        
         // 方法1：通过会员的 email 字段匹配
         if (email) {
             matchedMember = members.find(m => m.email === email || m.studentEmail === email);
-            if (matchedMember) console.log('✅ 通过邮箱匹配到会员:', matchedMember.name, matchedMember.studentId);
         }
         
         // 方法2：通过学号匹配（会员管理中的 studentId）
@@ -12405,52 +12631,15 @@ async function loadAttendanceDataForStudent() {
         });
     } catch (error) {
         console.error("加载点名数据失败:", error);
+        showAlert('加载失败: ' + error.message, 'danger');
     }
 }
 
         // ==================== 会员管理（独立于点名系统） ====================
 
 // 加载会员数据
-
-// 保存会员
-function saveMember() {
-    const name = document.getElementById('member-name').value.trim();
-    const studentId = document.getElementById('member-id').value.trim();
-    const className = document.getElementById('member-class').value.trim();
-    const group = document.getElementById('member-group').value;
-    const email = document.getElementById('member-email').value.trim();
-    
-    if (!name || !studentId || !className) {
-        showAlert("请填写必填字段", "warning");
-        return;
-    }
-    
-    const btn = document.getElementById('save-member-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中...';
-    
-    db.collection('members').add({
-        name,
-        studentId,
-        class: className,
-        group: group || null,
-        email: email || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showAlert("会员添加成功", "success");
-        document.getElementById('addMemberModal').querySelector('.btn-close').click();
-        document.getElementById('add-member-form').reset();
-        loadMembers();
-    })
-    .catch(error => {
-        showAlert("添加失败: " + error.message, "danger");
-    })
-    .finally(() => {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-    });
-}
+// 保存会员函数定义见文件后方 window.saveMember（含个人安全码生成逻辑），
+// 此处原有的重复定义已移除，避免覆盖导致安全码功能失效（BUG 1 修复）。
 
 // 编辑会员
 function editMember(memberId) {
@@ -12563,13 +12752,14 @@ function filterMembers() {
             <td>${m.name}</td>
             <td>${m.class || '-'}</td>
             <td>${m.group ? `<span class="badge bg-info">${m.group}</span>` : '-'}</td>
+            <td style="font-family: monospace; font-size: 0.8rem;">${m.personalCode ? escapeHtml(m.personalCode) : '未设置'}</td>
             <td>${m.email || '-'}</td>
             <td>
                 <button class="btn btn-sm btn-primary" onclick="editMember('${m.id}')"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="showDeleteConfirm('member','${m.id}','确定删除 ${m.name} 吗？')"><i class="fas fa-trash"></i></button>
             </td>
         </tr>
-    `).join('') || '<tr><td colspan="6" class="text-center py-4 text-muted">无匹配会员</td></tr>';
+    `).join('') || '<tr><td colspan="7" class="text-center py-4 text-muted">无匹配会员</td></tr>';
 }
 
 // ==================== 仪表盘趋势图 ====================
@@ -12616,6 +12806,10 @@ function initTrendControls() {
 // 更新仪表盘趋势图 - 修复递归调用问题
 let isUpdatingTrendChart = false; // 防止递归的标志
 
+/**
+ * 更新仪表盘的分数趋势图（按当前 trendPeriod 筛选周期渲染折线图）。
+ * @returns {void}
+ */
 function updateScoreTrendChart() {
     // 防止递归调用
     if (isUpdatingTrendChart) {
@@ -12931,6 +13125,11 @@ function updateTrendIndicators(data, counts, filteredScores, isMockData = false)
 // ==================== 学生个人趋势图 ====================
 
 // 更新学生趋势图
+/**
+ * 更新学生查询结果页中的个人成绩趋势图。
+ * @param {string} studentId - 学生的 Firestore 文档 ID（非学号）
+ * @returns {void}
+ */
 function updateStudentTrendChart(studentId) {
     const canvas = document.getElementById('studentTrendChart');
     if (!canvas) return;
@@ -13105,13 +13304,21 @@ function updateStudentTrendIndicators(studentScores, percentages, maxIndex, minI
 
 // 修改原有的 queryStudentScores 函数，在显示结果后添加趋势图更新
 const originalQueryStudentScores = queryStudentScores;
+// BUG 6 修复：增加 loading 标志，防止用户快速重复提交导致重复查询/请求堆积
+let _queryStudentScoresLoading = false;
 queryStudentScores = async function(studentId) {
-    await originalQueryStudentScores(studentId);
-    
-    // 更新个人趋势图
-    setTimeout(() => {
-        updateStudentTrendChart(students.find(s => s.studentId === studentId)?.id);
-    }, 500);
+    if (_queryStudentScoresLoading) return;
+    _queryStudentScoresLoading = true;
+    try {
+        await originalQueryStudentScores(studentId);
+
+        // 更新个人趋势图
+        setTimeout(() => {
+            updateStudentTrendChart(students.find(s => s.studentId === studentId)?.id);
+        }, 500);
+    } finally {
+        _queryStudentScoresLoading = false;
+    }
 };
 
 // ==================== 在 loadAllData 后初始化趋势图 ====================
@@ -13632,6 +13839,7 @@ async function loadMembersSilent() {
         console.log(`静默加载会员数据完成，共 ${members.length} 人`);
     } catch (error) {
         console.error("静默加载会员数据失败:", error);
+        showAlert('加载失败: ' + error.message, 'danger');
     }
 }
 
@@ -14630,6 +14838,11 @@ function decodeReportDataOptimized(encoded) {
 }
 
 // 生成分享链接（优化版）
+/**
+ * 生成报告分享链接（优化版，使用 encodeReportDataOptimized 压缩编码）。
+ * @param {Object} data - 报告数据（studentAverages、reportProjects 等）
+ * @returns {string|null} 分享链接；若编码失败或链接长度超限则返回 null
+ */
 function generateShareLinkOptimized(data) {
     const encoded = encodeReportDataOptimized(data);
     if (!encoded) return null;
@@ -14885,6 +15098,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==================== 修复分享链接跳转问题 ====================
 
 // 重写检查分享报告函数
+/**
+ * 检查当前 URL 是否携带分享的报告数据（参数 r），若存在则解码并缓存到
+ * window._sharedReportData，供 showReportFromShareFixed 显示。
+ * @returns {boolean} 是否检测到有效的分享报告数据
+ */
 function checkSharedReport() {
     const urlParams = new URLSearchParams(window.location.search);
     const encodedReport = urlParams.get('r');
@@ -15447,7 +15665,10 @@ window.loadMembers = function() {
 
 // ==================== 第三步：修改保存会员函数，自动生成个人安全码 ====================
 
-const originalSaveMemberForCode = saveMember;
+/**
+ * 保存新会员（表单驱动），并自动生成个人安全码（personalCode）供点名三重验证使用。
+ * @returns {void}
+ */
 window.saveMember = function() {
     const name = document.getElementById('member-name').value.trim();
     const studentId = document.getElementById('member-id').value.trim();
@@ -15585,6 +15806,11 @@ window.showCheckinForm = function(sessionId) {
 
 // ==================== 第五步：实现三重验证签到函数（支持长格式安全码） ====================
 
+/**
+ * 提交三重验证签到（学号 + 个人安全码 + 点名验证码）。
+ * 校验通过后向 attendanceRecords 集合写入一条签到记录。
+ * @returns {Promise<void>}
+ */
 async function submitCheckInTriple() {
     console.log('=== 开始三重验证签到流程 ===');
     
@@ -16306,6 +16532,257 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }, 300);
     });
+
+    // ============================================================================
+    // 新增功能 2：深色模式
+    // ============================================================================
+    (function () {
+        const THEME_KEY = 'fymcs-theme';
+
+        function getPreferredTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            if (saved === 'dark' || saved === 'light') return saved;
+            return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            if (typeof applyThemeToAllCharts === 'function') {
+                applyThemeToAllCharts();
+            }
+        }
+
+        function initTheme() {
+            applyTheme(getPreferredTheme());
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem(THEME_KEY, next);
+                    applyTheme(next);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initTheme);
+    })();
+
+    // ---- 深色模式下 Chart.js 图表配色联动 ----
+    function getChartThemeColors() {
+        const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            text: dark ? '#CBD5E1' : '#374151',
+            grid: dark ? 'rgba(203,213,225,0.12)' : 'rgba(17,24,39,0.06)'
+        };
+    }
+
+    function applyChartTheme(chart) {
+        if (!chart || !chart.options) return;
+        const { text, grid } = getChartThemeColors();
+        if (chart.options.plugins && chart.options.plugins.legend) {
+            chart.options.plugins.legend.labels = Object.assign({}, chart.options.plugins.legend.labels, { color: text });
+        }
+        if (chart.options.scales) {
+            Object.keys(chart.options.scales).forEach(function (key) {
+                const scale = chart.options.scales[key];
+                scale.ticks = Object.assign({}, scale.ticks, { color: text });
+                scale.grid = Object.assign({}, scale.grid, { color: grid });
+                if (scale.title) scale.title.color = text;
+            });
+        }
+        chart.update();
+    }
+
+    function applyThemeToAllCharts() {
+        [
+            (typeof scoreDistributionChart !== 'undefined') ? scoreDistributionChart : null,
+            (typeof projectComparisonChart !== 'undefined') ? projectComparisonChart : null,
+            (typeof scoreTrendChart !== 'undefined') ? scoreTrendChart : null,
+            (typeof studentTrendChart !== 'undefined') ? studentTrendChart : null
+        ].forEach(applyChartTheme);
+    }
+
+    // ============================================================================
+    // 新增功能 4：统计数字滚动动画（通用函数，供 updateDashboard 调用）
+    // ============================================================================
+    function animateStatNumber(el, target, opts) {
+        if (!el) return;
+        opts = opts || {};
+        const decimals = opts.decimals || 0;
+        const suffix = opts.suffix || '';
+        const duration = opts.duration || 800;
+        const startValue = parseFloat((el.textContent || '0').replace(/[^0-9.\-]/g, '')) || 0;
+        const startTime = performance.now();
+        const easeOutExpo = function (t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); };
+
+        function frame(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = easeOutExpo(progress);
+            const value = startValue + (target - startValue) * eased;
+            el.textContent = value.toFixed(decimals) + suffix;
+            if (progress < 1) {
+                requestAnimationFrame(frame);
+            } else {
+                el.textContent = target.toFixed(decimals) + suffix;
+            }
+        }
+        requestAnimationFrame(frame);
+    }
+
+    // ============================================================================
+    // 新增功能 3：全局搜索（Ctrl+K）
+    // ============================================================================
+    (function () {
+        let modalEl = null;
+        let inputEl = null;
+        let resultsEl = null;
+
+        function ensureModal() {
+            if (modalEl) return;
+            modalEl = document.createElement('div');
+            modalEl.id = 'global-search-modal';
+            modalEl.style.cssText = 'position:fixed; inset:0; background:rgba(15,23,42,0.5); z-index:100000; display:none; align-items:flex-start; justify-content:center; padding-top:12vh;';
+            modalEl.innerHTML = `
+                <div style="width: 90%; max-width: 560px; background: var(--bg-card); border-radius: var(--r-xl); box-shadow: var(--shadow-xl); overflow: hidden; border: 1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border);">
+                        <i class="fas fa-search" style="color: var(--text-tertiary);"></i>
+                        <input type="text" id="global-search-input" placeholder="搜索学生 / 项目 / 级别…" style="flex:1; border:none; outline:none; background:transparent; font-size: 15px; color: var(--text-primary);">
+                        <kbd style="font-size:11px; color: var(--text-tertiary); border:1px solid var(--border); padding:2px 6px; border-radius:4px;">Esc</kbd>
+                    </div>
+                    <div id="global-search-results" style="max-height: 50vh; overflow-y:auto; padding: 8px;"></div>
+                </div>
+            `;
+            document.body.appendChild(modalEl);
+            inputEl = modalEl.querySelector('#global-search-input');
+            resultsEl = modalEl.querySelector('#global-search-results');
+
+            modalEl.addEventListener('click', function (e) {
+                if (e.target === modalEl) window.closeGlobalSearch();
+            });
+            inputEl.addEventListener('input', function () {
+                runGlobalSearch(inputEl.value.trim());
+            });
+            inputEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    window.closeGlobalSearch();
+                } else if (e.key === 'Enter') {
+                    const first = resultsEl.querySelector('.gs-result-item');
+                    if (first) first.click();
+                }
+            });
+        }
+
+        function renderGroup(title, items, icon) {
+            if (items.length === 0) return '';
+            const rows = items.slice(0, 8).map(function (item) {
+                return `<div class="gs-result-item" data-type="${item.type}" data-id="${item.id}"
+                            style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius: var(--r-md); cursor:pointer;">
+                            <i class="fas ${icon}" style="width:16px; color: var(--primary-500);"></i>
+                            <span style="color: var(--text-primary); font-size: 14px;">${escapeHtml(item.label)}</span>
+                        </div>`;
+            }).join('');
+            return `<div style="margin-bottom:6px;">
+                        <div style="font-size:11px; font-weight:600; color: var(--text-tertiary); padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.05em;">${title}</div>
+                        ${rows}
+                    </div>`;
+        }
+
+        function runGlobalSearch(query) {
+            if (!resultsEl) return;
+            if (!query || query.length < 2) {
+                resultsEl.innerHTML = '<div style="padding: 20px; text-align:center; color: var(--text-tertiary); font-size: 13px;">输入至少 2 个字符开始搜索</div>';
+                return;
+            }
+            const q = query.toLowerCase();
+            const studentResults = (typeof students !== 'undefined' ? students : []).filter(function (s) {
+                return (s.name && s.name.toLowerCase().includes(q)) || (s.studentId && s.studentId.toLowerCase().includes(q));
+            }).map(function (s) { return { type: 'student', id: s.id, label: s.name + '（' + s.studentId + '）' }; });
+
+            const projectResults = (typeof projects !== 'undefined' ? projects : []).filter(function (p) {
+                return p.name && p.name.toLowerCase().includes(q);
+            }).map(function (p) { return { type: 'project', id: p.id, label: p.name }; });
+
+            const levelResults = (typeof levels !== 'undefined' ? levels : []).filter(function (l) {
+                return l.name && l.name.toLowerCase().includes(q);
+            }).map(function (l) { return { type: 'level', id: l.id, label: l.name }; });
+
+            const html =
+                renderGroup('学生', studentResults, 'fa-user-graduate') +
+                renderGroup('项目', projectResults, 'fa-tasks') +
+                renderGroup('级别', levelResults, 'fa-layer-group');
+
+            resultsEl.innerHTML = html || '<div style="padding: 20px; text-align:center; color: var(--text-tertiary); font-size: 13px;">没有找到匹配结果</div>';
+
+            resultsEl.querySelectorAll('.gs-result-item').forEach(function (el) {
+                el.addEventListener('mouseenter', function () { el.style.background = 'var(--bg-subtle)'; });
+                el.addEventListener('mouseleave', function () { el.style.background = ''; });
+                el.addEventListener('click', function () {
+                    const type = el.getAttribute('data-type');
+                    const id = el.getAttribute('data-id');
+                    navigateToSearchResult(type, id);
+                    window.closeGlobalSearch();
+                });
+            });
+        }
+
+        function navigateToSearchResult(type, id) {
+            let tabSelector = '';
+            let rowSelector = '';
+            if (type === 'student') {
+                tabSelector = '#students-tab';
+                rowSelector = '[data-student-id="' + id + '"]';
+            } else if (type === 'project') {
+                tabSelector = '#projects-tab';
+                rowSelector = '.edit-project[data-id="' + id + '"]';
+            } else if (type === 'level') {
+                tabSelector = '#levels-tab';
+                rowSelector = '[data-level-id="' + id + '"]';
+            }
+            if (typeof switchTab === 'function') switchTab(tabSelector);
+
+            setTimeout(function () {
+                let target = document.querySelector(rowSelector);
+                if (target) {
+                    target = target.closest('tr') || target;
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const originalTransition = target.style.transition;
+                    const originalBg = target.style.backgroundColor;
+                    target.style.transition = 'background-color 0.3s ease';
+                    target.style.backgroundColor = 'var(--primary-100)';
+                    setTimeout(function () {
+                        target.style.backgroundColor = originalBg;
+                        setTimeout(function () { target.style.transition = originalTransition; }, 350);
+                    }, 1200);
+                }
+            }, 400);
+        }
+
+        window.openGlobalSearch = function () {
+            ensureModal();
+            modalEl.style.display = 'flex';
+            inputEl.value = '';
+            resultsEl.innerHTML = '<div style="padding: 20px; text-align:center; color: var(--text-tertiary); font-size: 13px;">输入至少 2 个字符开始搜索</div>';
+            setTimeout(function () { inputEl.focus(); }, 50);
+        };
+
+        window.closeGlobalSearch = function () {
+            if (modalEl) modalEl.style.display = 'none';
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const trigger = document.getElementById('global-search-trigger-btn');
+            if (trigger) trigger.addEventListener('click', function () { window.openGlobalSearch(); });
+        });
+
+        // 全局 Esc 关闭（搜索框未捕获焦点时的兜底）
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modalEl && modalEl.style.display === 'flex') {
+                window.closeGlobalSearch();
+            }
+        });
+    })();
     </script>
 
     <footer class="text-center text-muted py-3">
