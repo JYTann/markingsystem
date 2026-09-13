@@ -17708,7 +17708,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // ---------- 安全取全局变量（页面已在其它脚本用同样写法） ----------
         function getStudents() { return typeof students !== 'undefined' ? students : []; }
-        function getProjects() { return typeof projects !== 'undefined' ? projects : []; }
         function getLevels() { return typeof levels !== 'undefined' ? levels : []; }
         function getLevelProjects() { return typeof levelProjects !== 'undefined' ? levelProjects : []; }
         function getScores() { return typeof scores !== 'undefined' ? scores : []; }
@@ -17804,31 +17803,42 @@ document.addEventListener('DOMContentLoaded', function () {
             renderTable();
         }
 
-        // ---------- 项目下拉框（与既有 loadProjectsByLevel 的口径保持一致：
-        //            选了级别 → 用 levelProjects；未选级别 → 用 projects） ----------
+        // ---------- 项目下拉框（评分项目统一来自"级别管理"下各级别的项目 levelProjects，
+        //            不再使用全局 projects 集合；未选级别时列出所有级别的项目并标注所属级别） ----------
         function populateProjectSelect() {
             const levelId = batchState.selectedLevelId;
-            let list;
+            const allLevelProjects = getLevelProjects();
+            const levelsById = {};
+            getLevels().forEach(function (l) { levelsById[l.id] = l.name; });
 
-            if (levelId) {
-                list = getLevelProjects().filter(function (lp) { return lp.levelId === levelId; });
-                if (list.length === 0) {
-                    els.projectSelect.innerHTML = '<option value="">该级别暂无评分项目</option>';
-                    return;
-                }
-            } else {
-                list = getProjects();
-                if (list.length === 0) {
-                    els.projectSelect.innerHTML = '<option value="">暂无评分项目</option>';
-                    return;
-                }
+            let list = levelId
+                ? allLevelProjects.filter(function (lp) { return lp.levelId === levelId; })
+                : allLevelProjects.slice();
+
+            if (list.length === 0) {
+                els.projectSelect.innerHTML = '<option value="">'
+                    + (levelId ? '该级别暂无评分项目' : '暂无评分项目，请先在"级别管理"中添加') + '</option>';
+                return;
+            }
+
+            if (!levelId) {
+                // 未按级别筛选时，按级别分组排序，避免不同级别的同名项目混在一起难以区分
+                list = list.slice().sort(function (a, b) {
+                    const la = levelsById[a.levelId] || '';
+                    const lb = levelsById[b.levelId] || '';
+                    return la === lb ? (a.name || '').localeCompare(b.name || '') : la.localeCompare(lb);
+                });
             }
 
             els.projectSelect.innerHTML = '<option value="">-- 选择项目 --</option>'
                 + list.map(function (p) {
+                    const levelName = levelsById[p.levelId] || '';
+                    const label = (!levelId && levelName)
+                        ? escapeHtml(levelName) + ' - ' + escapeHtml(p.name) + ' (满分: ' + p.fullMark + ')'
+                        : escapeHtml(p.name) + ' (满分: ' + p.fullMark + ')';
                     return '<option value="' + p.id + '" data-full-mark="' + p.fullMark
-                        + '" data-weight="' + (p.weight || 0) + '">'
-                        + escapeHtml(p.name) + ' (满分: ' + p.fullMark + ')</option>';
+                        + '" data-weight="' + (p.weight || 0) + '" data-level-id="' + p.levelId
+                        + '" data-name="' + escapeHtml(p.name) + '">' + label + '</option>';
                 }).join('');
         }
 
@@ -17844,24 +17854,21 @@ document.addEventListener('DOMContentLoaded', function () {
             batchState.projectInfo = {
                 fullMark: parseFloat(option.dataset.fullMark),
                 weight: parseFloat(option.dataset.weight) || 0,
-                name: option.textContent.split(' (满分:')[0]
+                name: option.dataset.name,
+                levelId: option.dataset.levelId
             };
             batchState.hasUnsavedChanges = false;
             renderTable();
         }
 
-        // ---------- 筛选学生（level 过滤 + 排序，口径与既有页面一致） ----------
+        // ---------- 筛选学生（评分项目本身即绑定某个级别，始终按该项目所属级别筛选学生） ----------
         function getFilteredStudents() {
             const all = getStudents();
-            if (batchState.selectedLevelId) {
-                return all
-                    .filter(function (s) { return s.levelId === batchState.selectedLevelId; })
-                    .sort(function (a, b) { return (a.studentId || '').localeCompare(b.studentId || ''); });
-            }
-            return all.slice().sort(function (a, b) {
-                const c = (a.class || '').localeCompare(b.class || '');
-                return c !== 0 ? c : (a.studentId || '').localeCompare(b.studentId || '');
-            });
+            const levelId = batchState.projectInfo && batchState.projectInfo.levelId;
+            if (!levelId) return [];
+            return all
+                .filter(function (s) { return s.levelId === levelId; })
+                .sort(function (a, b) { return (a.studentId || '').localeCompare(b.studentId || ''); });
         }
 
         // ---------- 渲染表格 ----------
@@ -17877,7 +17884,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const filteredStudents = getFilteredStudents();
             if (filteredStudents.length === 0) {
                 toggleSections(false);
-                const msg = batchState.selectedLevelId ? '该级别下暂无学生' : '暂无学生数据';
+                const lvls = getLevels();
+                const lvl = lvls.find(function (l) { return l.id === batchState.projectInfo.levelId; });
+                const msg = lvl ? ('"' + lvl.name + '" 级别下暂无学生') : '暂无学生数据';
                 showEmptyState('fa-user-slash', msg);
                 return;
             }
