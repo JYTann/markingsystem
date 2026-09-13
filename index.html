@@ -468,29 +468,11 @@ a.card:hover,
 }
 .btn-warning:hover { background: #D97706; box-shadow: var(--shadow-sm); }
 
-.btn-outline-primary {
-    border: 1px solid var(--primary-500);
-    color: var(--primary-500);
-    background: transparent;
-}
-.btn-outline-primary:hover { background: var(--primary-50); color: var(--primary-600); }
-
-.btn-outline-light {
-    border: 1px solid var(--border-strong);
-    color: var(--gray-700);
-    background: #fff;
-    backdrop-filter: none;
-}
-.btn-outline-light:hover { background: var(--gray-50); border-color: var(--gray-400); }
-
-/* Ghost / Danger Ghost / Link — 补充新增语义类，供后续页面使用 */
+/* Ghost — 4 种按钮变体之一（Primary / Secondary / Ghost / Danger） */
 .btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid transparent; }
 .btn-ghost:hover { background: var(--gray-100); color: var(--gray-800); transform: none; }
-.btn-danger-ghost { background: transparent; color: var(--danger); border: 1px solid transparent; }
-.btn-danger-ghost:hover { background: var(--danger-bg); transform: none; }
-.btn-link { background: transparent; border: none; color: var(--primary-500); padding: 0; height: auto; box-shadow: none; }
-.btn-link:hover { color: var(--primary-600); text-decoration: underline; transform: none; }
-.btn-icon { width: 36px; height: 36px; padding: 0; border-radius: var(--r-md); }
+/* 以下旧变体（btn-outline-primary / btn-outline-light / btn-link / btn-icon）已在 2026-09 清理，
+   全站改用 4 种按钮变体，标记保留仅为避免历史引用报错，不再新增用法 */
 
 .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: var(--r-md); height: 32px; }
 .btn-lg { padding: 12px 20px; font-size: 15px; height: 48px; }
@@ -2706,23 +2688,19 @@ a.card:hover,
 .btn-primary:hover { background: var(--primary-600); color: #fff; }
 .btn-primary:active { background: var(--primary-700); }
 
-.btn-secondary, .btn-outline-secondary {
+.btn-secondary {
     background: var(--bg-card);
     color: var(--gray-700);
     border-color: var(--border);
 }
-.btn-secondary:hover, .btn-outline-secondary:hover { background: var(--bg-hover); border-color: var(--gray-300); color: var(--gray-800); }
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--gray-300); color: var(--gray-800); }
 
 .btn-danger { background: var(--danger); color: #fff; border-color: var(--danger-strong); }
 .btn-danger:hover { background: var(--danger-strong); }
 .btn-success { background: var(--success); color: #fff; border-color: var(--success-strong); }
 .btn-success:hover { background: var(--success-strong); }
 .btn-warning { background: var(--warning); color: #3D2A05; border-color: var(--warning-strong); }
-
-.btn-outline-primary { color: var(--primary-600); border-color: var(--primary-200); background: transparent; }
-.btn-outline-primary:hover { background: var(--primary-50); }
-.btn-outline-danger { color: var(--danger-strong); border-color: #F3CBC7; background: transparent; }
-.btn-outline-danger:hover { background: var(--danger-bg); }
+/* btn-outline-primary / btn-outline-danger 已下线（2026-09），改用 btn-secondary / btn-danger */
 
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -4414,10 +4392,10 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                                 </div>
                                 <!-- 放在 <div id="score-details"> 的 </div> 后面 -->
 <div class="text-end mt-3">
-    <button id="export-student-report-btn" class="btn btn-sm btn-outline-success">
+    <button id="export-student-report-btn" class="btn btn-sm btn-secondary">
         <i class="fas fa-download me-1"></i>导出成绩单
     </button>
-    <button id="print-student-report-btn" class="btn btn-sm btn-outline-primary ms-2">
+    <button id="print-student-report-btn" class="btn btn-sm btn-secondary ms-2">
         <i class="fas fa-print me-1"></i>打印
     </button>
 </div>
@@ -4453,7 +4431,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     </div>
 </div>
                         <div class="text-center mt-3">
-                            <button id="new-query-btn" class="btn btn-outline-primary">
+                            <button id="new-query-btn" class="btn btn-secondary">
                                 <i class="fas fa-redo me-1"></i>新的查询
                             </button>
                         </div>
@@ -4737,7 +4715,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-upload"></i></span>
                         <input class="form-control" type="file" id="import-members-excel" accept=".xlsx, .xls">
-                        <button class="btn btn-outline-secondary" type="button" id="import-members-btn">
+                        <button class="btn btn-secondary" type="button" id="import-members-btn">
                             <i class="fas fa-upload me-1"></i>批量导入
                         </button>
                     </div>
@@ -4970,9 +4948,9 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 
                             <div class="batch-toolbar" id="student-batch-toolbar" style="display:none;">
                                 <span>已选中 <strong class="count">0</strong> 人：</span>
-                                <button class="btn btn-sm btn-outline-primary" id="batch-promote-btn"><i class="fas fa-arrow-up me-1"></i>批量升级</button>
-                                <button class="btn btn-sm btn-outline-warning" id="batch-demote-btn"><i class="fas fa-arrow-down me-1"></i>批量降级</button>
-                                <button class="btn btn-sm btn-outline-danger" id="batch-delete-btn"><i class="fas fa-trash me-1"></i>批量删除</button>
+                                <button class="btn btn-sm btn-secondary" id="batch-promote-btn"><i class="fas fa-arrow-up me-1"></i>批量升级</button>
+                                <button class="btn btn-sm btn-secondary" id="batch-demote-btn"><i class="fas fa-arrow-down me-1"></i>批量降级</button>
+                                <button class="btn btn-sm btn-danger" id="batch-delete-btn"><i class="fas fa-trash me-1"></i>批量删除</button>
                                 <button class="btn btn-sm btn-ghost" id="batch-clear-btn">取消选择</button>
                             </div>
 
@@ -4980,7 +4958,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                                 <label for="import-excel" class="form-label">从Excel导入学生</label>
                                 <div class="input-group">
                                     <input class="form-control" type="file" id="import-excel" accept=".xlsx, .xls">
-                                    <button class="btn btn-outline-secondary" type="button" id="import-excel-btn">
+                                    <button class="btn btn-secondary" type="button" id="import-excel-btn">
                                         <i class="fas fa-upload me-1"></i>上传
                                     </button>
                                 </div>
@@ -5224,10 +5202,10 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                             </h6>
                             <div class="input-group">
                                 <input class="form-control" type="file" id="import-scores-excel" accept=".xlsx, .xls">
-                                <button class="btn btn-outline-primary" type="button" id="import-scores-btn">
+                                <button class="btn btn-secondary" type="button" id="import-scores-btn">
                                     <i class="fas fa-file-import me-1"></i>导入
                                 </button>
-                                <button class="btn btn-outline-secondary" type="button" id="download-score-template-btn">
+                                <button class="btn btn-secondary" type="button" id="download-score-template-btn">
                                     <i class="fas fa-download me-1"></i>下载模板
                                 </button>
                             </div>
@@ -5864,7 +5842,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                             <div class="input-group">
                                 <input type="text" class="form-control" id="attendance-code" 
                                        placeholder="4-6位验证码" maxlength="6" minlength="4" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="generateRandomCode()">
+                                <button class="btn btn-secondary" type="button" onclick="generateRandomCode()">
                                     <i class="fas fa-random"></i> 随机生成
                                 </button>
                             </div>
@@ -7166,9 +7144,9 @@ function renderLevelCards() {
                 <div class="level-stat-row"><span>评分项目</span><strong>${projectCount} 个</strong></div>
                 <div class="level-stat-row"><span>默认年数</span><strong>${level.defaultYear || '-'}</strong></div>
                 <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-sm btn-outline-primary flex-fill view-level-detail" data-id="${level.id}">查看详情</button>
-                    <button class="btn btn-sm btn-outline-secondary edit-level" data-id="${level.id}" title="编辑"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger delete-level" data-id="${level.id}" title="删除"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-secondary flex-fill view-level-detail" data-id="${level.id}">查看详情</button>
+                    <button class="btn btn-sm btn-ghost edit-level" data-id="${level.id}" title="编辑"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-level" data-id="${level.id}" title="删除"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `;
@@ -7799,13 +7777,13 @@ function addStudentToTable(student) {
         <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
         <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
         <td class="text-nowrap">
-            <button class="btn btn-sm btn-outline-success promote-student" data-id="${student.id}" title="升级" ${canPromote ? '' : 'disabled'}>
+            <button class="btn btn-sm btn-ghost promote-student" data-id="${student.id}" title="升级" ${canPromote ? '' : 'disabled'}>
                 <i class="fas fa-arrow-up"></i>
             </button>
-            <button class="btn btn-sm btn-outline-warning demote-student" data-id="${student.id}" title="降级" ${canDemote ? '' : 'disabled'}>
+            <button class="btn btn-sm btn-ghost demote-student" data-id="${student.id}" title="降级" ${canDemote ? '' : 'disabled'}>
                 <i class="fas fa-arrow-down"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary history-student" data-id="${student.id}" title="历史记录">
+            <button class="btn btn-sm btn-ghost history-student" data-id="${student.id}" title="历史记录">
                 <i class="fas fa-history"></i>
             </button>
             <button class="btn btn-sm btn-primary edit-student" data-id="${student.id}" title="编辑">
@@ -13911,7 +13889,7 @@ function renderAttendanceList() {
                         <i class="fas fa-times me-1"></i>取消
                     </button>
                     ` : ''}
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAttendance('${attendance.id}')">
+                    <button class="btn btn-sm btn-danger" onclick="deleteAttendance('${attendance.id}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -15992,7 +15970,7 @@ function addManualNameOption() {
                    placeholder="输入您的姓名（中文）" style="border-radius: 50px 0 0 50px;">
             <input type="text" class="form-control" id="manual-student-id" 
                    placeholder="学号（选填）" style="width: 120px; border-radius: 0;">
-            <button class="btn btn-outline-primary" id="manual-checkin-btn" 
+            <button class="btn btn-secondary" id="manual-checkin-btn" 
                     style="border-radius: 0 50px 50px 0;">
                 <i class="fas fa-sign-in-alt"></i> 签到
             </button>
