@@ -1855,7 +1855,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 #main-system .admin-sidebar {
     width: 240px;
     flex-shrink: 0;
-    background: #FFFFFF;
+    background: var(--bg-card);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -1978,7 +1978,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
 #main-system .admin-topbar {
     height: 64px;
     flex-shrink: 0;
-    background: #FFFFFF;
+    background: var(--bg-card);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -2043,7 +2043,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     height: 6px;
     border-radius: 50%;
     background: var(--danger);
-    border: 2px solid #FFFFFF;
+    border: 2px solid var(--bg-card);
 }
 #main-system .topbar-user.navbar-user-chip { cursor: default; }
 #main-system .admin-topbar #logout-btn { flex-shrink: 0; }
@@ -2085,7 +2085,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     align-items: center;
     gap: var(--sp-4);
     padding: var(--sp-6) var(--sp-8);
-    background: #FFFFFF;
+    background: var(--bg-card);
     border-bottom: 1px solid var(--border);
     flex-wrap: wrap;
 }
@@ -5723,8 +5723,8 @@ function showAlert(message, type = 'info') {
     // 创建 toast 元素
     const toast = document.createElement('div');
     toast.style.cssText = `
-        background: #FFFFFF;
-        color: #1E293B;
+        background: var(--bg-card);
+        color: var(--text-primary);
         padding: 12px 16px;
         border-radius: 8px;
         border-left: 4px solid ${barColor};
