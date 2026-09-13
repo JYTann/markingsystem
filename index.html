@@ -784,6 +784,30 @@ textarea.form-control { height: auto; padding: 10px 12px; }
 .attendance-status.cancelled { background: var(--danger-bg); color: var(--danger-fg); }
 
 .checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-3); }
+
+/* 改分记录时间线（学生历史 modal） */
+.score-log-timeline { list-style: none; padding: 0; margin: 0; }
+.score-log-timeline li {
+    position: relative;
+    padding: var(--sp-2) 0 var(--sp-2) var(--sp-4);
+    border-left: 2px solid var(--border);
+    font-size: var(--text-base);
+}
+.score-log-timeline li:last-child { border-left-color: transparent; }
+.score-log-timeline li::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary-500);
+}
+.score-log-timeline .score-log-diff { font-variant-numeric: tabular-nums; font-weight: var(--fw-medium); }
+.score-log-timeline .score-log-diff .old-val { color: var(--gray-400); text-decoration: line-through; }
+.score-log-timeline .score-log-diff .new-val { color: var(--text-primary); }
+.score-log-timeline .score-log-meta { color: var(--gray-500); font-size: var(--text-xs); margin-top: 2px; }
 .checkin-student-card {
     display: flex; align-items: center; gap: var(--sp-3);
     padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md);
@@ -5470,7 +5494,9 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                         </table>
                     </div>
                     <h6 class="mb-2"><i class="fas fa-exchange-alt me-1"></i>级别变更历史</h6>
-                    <ul class="pending-tasks-list" id="student-history-levels"></ul>
+                    <ul class="pending-tasks-list mb-4" id="student-history-levels"></ul>
+                    <h6 class="mb-2"><i class="fas fa-history me-1"></i>改分记录</h6>
+                    <ul class="score-log-timeline" id="student-history-score-logs"></ul>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
@@ -7737,6 +7763,39 @@ function saveLevelProject() {
                 levelBody.innerHTML = '<li class="text-danger">加载级别变更记录失败</li>';
                 showAlert('加载失败: ' + error.message, 'danger');
             }
+
+            // 改分记录
+            const logBody = modalEl.querySelector('#student-history-score-logs');
+            if (logBody) {
+                logBody.innerHTML = '<li class="text-muted">加载中...</li>';
+                try {
+                    const logSnap = await db.collection('scoreLogs')
+                        .where('studentId', '==', studentId)
+                        .orderBy('createdAt', 'desc')
+                        .limit(50)
+                        .get();
+                    if (logSnap.empty) {
+                        logBody.innerHTML = '<li class="text-muted" style="border-left:none;padding-left:0;">暂无改分记录</li>';
+                    } else {
+                        logBody.innerHTML = logSnap.docs.map(doc => {
+                            const log = doc.data();
+                            const time = log.createdAt?.toDate ? formatDate(log.createdAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
+                            const oldVal = (log.oldValue === null || log.oldValue === undefined) ? '—' : log.oldValue;
+                            const actionLabel = log.action === 'add' ? '新增' : '修改';
+                            return `<li>
+                                <div class="score-log-diff">${escapeHtml(log.projectName || '未知项目')}：
+                                    <span class="old-val">${oldVal}</span> → <span class="new-val">${log.newValue}</span>
+                                    <span class="text-muted small">（${actionLabel}）</span>
+                                </div>
+                                <div class="score-log-meta">${time} · ${escapeHtml(log.operatorName || log.operatorEmail || '-')}${log.reason ? ' · ' + escapeHtml(log.reason) : ''}</div>
+                            </li>`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    logBody.innerHTML = '<li class="text-danger" style="border-left:none;padding-left:0;">加载改分记录失败（若提示需要索引，请在 Firestore 控制台按提示创建）</li>';
+                }
+            }
         }
 
         // 添加学生到表格
@@ -8623,6 +8682,25 @@ async function cleanStudentDuplicateScores(studentId) {
  * 从页面表单读取学生、项目、分数等字段，写入 Firestore 的 scores 集合。
  * @returns {Promise<void>}
  */
+// 改分记录：每次分数新增/覆盖都写一条日志，保留旧值/新值/操作人/时间
+async function logScoreChange({ studentId, studentName, projectId, projectName, oldValue, newValue, action, reason }) {
+    try {
+        await db.collection('scoreLogs').add({
+            studentId, studentName: studentName || '', projectId, projectName: projectName || '',
+            oldValue: (oldValue === undefined ? null : oldValue),
+            newValue,
+            action: action || 'update', // 'add' | 'update'
+            reason: reason || '',
+            operatorEmail: currentUser?.email || 'unknown',
+            operatorName: currentUser?.displayName || currentUser?.email || '管理员',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        // 日志失败不应阻断主流程，仅记录到控制台
+        console.error('写入改分记录失败:', error);
+    }
+}
+
 async function saveScore() {
     const studentId = document.getElementById('score-student-select').value;
     const projectId = document.getElementById('score-project-select').value;
@@ -8684,6 +8762,10 @@ async function saveScore() {
                 weight: weight,
                 recordedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
+            await logScoreChange({
+                studentId, studentName: student?.name, projectId, projectName,
+                oldValue: latestScore.score, newValue: scoreValue, action: 'update'
+            });
             
             showAlert(`已更新 ${student?.name} 的「${projectName}」分数为 ${scoreValue}/${fullMark}`, "success");
             document.getElementById('score-input').value = '';
@@ -8713,6 +8795,10 @@ async function saveScore() {
             fullMark: fullMark,
             weight: weight,
             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await logScoreChange({
+            studentId, studentName: student?.name, projectId, projectName,
+            oldValue: null, newValue: scoreValue, action: 'add'
         });
         
         showAlert(`分数保存成功: ${student?.name} - ${projectName} = ${scoreValue}/${fullMark}`, "success");
@@ -19252,6 +19338,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     els.saveAllBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>保存 '
                         + (savedCount + 1) + '/' + validRows.length + '...';
 
+                    const logRef = database.collection('scoreLogs').doc();
                     if (row.existingScore) {
                         const ref = database.collection('scores').doc(row.existingScore.id);
                         batch.update(ref, {
@@ -19259,6 +19346,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             fullMark: fullMark,
                             weight: weight,
                             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        batch.set(logRef, {
+                            studentId: row.student.id, studentName: row.student.name || '',
+                            projectId: projectId, projectName: projectName,
+                            oldValue: (typeof row.existingScore.score === 'number') ? row.existingScore.score : null,
+                            newValue: scoreValue, action: 'update', reason: '批量导入',
+                            operatorEmail: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
+                            operatorName: (typeof currentUser !== 'undefined' && (currentUser?.displayName || currentUser?.email)) || '管理员',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         updateCount++;
                     } else {
@@ -19271,6 +19367,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             fullMark: fullMark,
                             weight: weight,
                             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        batch.set(logRef, {
+                            studentId: row.student.id, studentName: row.student.name || '',
+                            projectId: projectId, projectName: projectName,
+                            oldValue: null, newValue: scoreValue, action: 'add', reason: '批量导入',
+                            operatorEmail: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
+                            operatorName: (typeof currentUser !== 'undefined' && (currentUser?.displayName || currentUser?.email)) || '管理员',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         addCount++;
                     }
