@@ -4396,7 +4396,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     <!-- ============================================================
          学生工作台整体容器（学号+密码登录，独立于下方原有的
          "学生查询页"临时查询流程）。默认隐藏，只有当
-         Firebase Auth 当前登录邮箱形如 学号@student.local 时，
+         Firebase Auth 当前登录邮箱形如 学号@foonyew.edu.my（学生真实学校邮箱）时，
          由 auth.onAuthStateChanged 里新增的分支负责显示这一整块，
          并隐藏 #student-query-page 和管理员后台。
          ============================================================ -->
@@ -5898,9 +5898,14 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
             <div class="card fade-in">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-clipboard-check me-2"></i>点名管理</span>
-                    <button class="btn btn-sm btn-success" onclick="createNewAttendance()">
-                        <i class="fas fa-plus me-1"></i>新建点名
-                    </button>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="openAttendanceBigScreen()">
+                            <i class="fas fa-tv me-1"></i>实时大屏
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="createNewAttendance()">
+                            <i class="fas fa-plus me-1"></i>新建点名
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <!-- 点名列表 -->
@@ -6687,9 +6692,11 @@ let currentReportData = null;
             showMainSystem();
             loadAllData();
             addActivity("用户登录系统", "success");
-        } else if (user && (user.email || '').endsWith('@student.local')) {
-            // 学号+密码登录的学生账号：邮箱约定为 `${studentId}@student.local`
-            // （与会员管理里已经在用的兜底邮箱写法保持一致，见 saveMember 相关逻辑），
+        } else if (user && (user.email || '').endsWith('@foonyew.edu.my') && !(user.email === "jb220225@foonyew.edu.my")) {
+            // 学号+密码登录的学生账号：邮箱 = 学生的真实学校邮箱（学号 + @foonyew.edu.my）。
+            // 排除 jb220225@foonyew.edu.my：那是协会负责人自己的账号，同时也在上面的管理员
+            // 白名单里——管理员判断在这个 else if 之前已经跑过一次，理论上不会漏到这里，
+            // 这里再显式排除一次是双保险，防止以后调整判断顺序时把这个账号错路由到学生工作台。
             // 交给学生工作台自己的初始化流程处理，不走管理员后台/访客查询页。
             document.getElementById('student-query-page').style.display = 'none';
             document.getElementById('main-system').style.display = 'none';
@@ -7505,12 +7512,13 @@ async function loadAllDataForQuery() {
         // 复用文件顶部已经初始化好的 firebase / auth / db，不重复初始化。
         // 所有函数、DOM id、CSS class 一律加 sw- 前缀，避免和原有代码撞名。
         // ------------------------------------------------------------
-        // 账号约定：登录邮箱 = `${studentId}@student.local`
-        // （与会员管理 saveMember 里已经在用的兜底邮箱写法一致），
+        // 账号约定：登录邮箱 = `${studentId}@foonyew.edu.my`（学生的真实学校邮箱，
+        // 学号本身就是邮箱 @ 前面那一段，例如学号 jb220225 对应 jb220225@foonyew.edu.my，
+        // 和管理端"学生管理"里 studentEmail 字段、Google 登录邮箱前缀匹配用的是同一套约定）。
         // Firestore students/{id} 需要有 authUid 字段指回 Firebase Auth 的 uid。
         // 首次登录密码 = 学号后 6 位，forcePasswordChange !== false 时强制改密。
         // ============================================================
-        function swStudentEmail(studentId){ return `${studentId}@student.local`; }
+        function swStudentEmail(studentId){ return `${studentId}@foonyew.edu.my`; }
 
         let swCurrentStudent = null;
         let swCurrentMember = null;
@@ -16445,7 +16453,7 @@ async function handleStudentIdLogin(event) {
         
         studentAttendanceUser = {
             displayName: matchedMember.name,
-            email: matchedMember.email || `${matchedMember.studentId}@student.local`,
+            email: matchedMember.email || `${matchedMember.studentId}@foonyew.edu.my`,
             uid: `member_${matchedMember.id}`,
             studentId: matchedMember.studentId,
             isStudentLogin: true,
@@ -21291,5 +21299,156 @@ document.addEventListener('DOMContentLoaded', function () {
     <footer class="text-center text-muted py-3">
     本系统由 <strong>陈俊源</strong> 开发
 </footer>
+
+    <!-- ============================================================
+         点名实时大屏（B6）：管理员打开后铺满整个视窗的暗色大屏展示，
+         已签到人数用 Firestore onSnapshot 真正实时监听 attendanceRecords，
+         不再是原来 updateCurrentSessionInfo() 那种"每 30 秒重画一次本地缓存"
+         的假实时——那个 setInterval 从来没有重新去 Firestore 取数据，签到
+         数字实际上要等管理员手动触发别的操作才会变。
+         ============================================================ -->
+    <style>
+        #attendance-bigscreen-overlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: linear-gradient(160deg, var(--gray-950, #0B0E1A) 0%, #131A33 100%);
+            color: #fff; display: flex; flex-direction: column; padding: var(--sp-5, 24px);
+        }
+        #attendance-bigscreen-overlay.d-none { display: none; }
+        .bs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-4, 20px); }
+        .bs-title { font-size: clamp(22px, 3vw, 34px); font-weight: 700; }
+        .bs-actions button { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); color: #fff; border-radius: var(--r-md, 8px); padding: 8px 16px; margin-left: 8px; }
+        .bs-actions button:hover { background: rgba(255,255,255,.16); }
+        .bs-body { flex: 1; display: grid; grid-template-columns: 1fr 1.1fr; gap: var(--sp-5, 24px); min-height: 0; }
+        @media (max-width: 900px) { .bs-body { grid-template-columns: 1fr; } }
+        .bs-count-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(255,255,255,.04); border-radius: 20px; border: 1px solid rgba(255,255,255,.08); }
+        .bs-count-number { font-size: clamp(64px, 12vw, 160px); font-weight: 800; line-height: 1; background: linear-gradient(90deg, #818CF8, #4F46E5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .bs-count-label { font-size: clamp(16px, 2vw, 22px); color: rgba(255,255,255,.75); margin-top: 8px; }
+        .bs-code-line, .bs-time-line { margin-top: 18px; font-size: clamp(16px, 1.6vw, 20px); color: rgba(255,255,255,.85); }
+        .bs-code-line span, .bs-time-line span { font-weight: 700; color: #A5B4FC; }
+        .bs-feed-panel { background: rgba(255,255,255,.04); border-radius: 20px; border: 1px solid rgba(255,255,255,.08); padding: var(--sp-4, 20px); display: flex; flex-direction: column; min-height: 0; }
+        .bs-feed-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: rgba(255,255,255,.75); }
+        .bs-feed-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .bs-feed-item { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.06); border-radius: 12px; padding: 10px 14px; animation: bsFeedIn .35s ease; }
+        .bs-feed-name { font-weight: 700; font-size: 18px; }
+        .bs-feed-class { color: rgba(255,255,255,.6); font-size: 14px; }
+        .bs-feed-time { margin-left: auto; color: rgba(255,255,255,.5); font-size: 13px; font-variant-numeric: tabular-nums; }
+        @keyframes bsFeedIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <div id="attendance-bigscreen-overlay" class="d-none">
+        <div class="bs-header">
+            <div class="bs-title" id="bs-session-title">—</div>
+            <div class="bs-actions">
+                <button type="button" id="bs-fullscreen-btn"><i class="fas fa-expand me-1"></i>全屏</button>
+                <button type="button" id="bs-close-btn"><i class="fas fa-times me-1"></i>退出大屏</button>
+            </div>
+        </div>
+        <div class="bs-body">
+            <div class="bs-count-panel">
+                <div class="bs-count-number" id="bs-checked-count">0</div>
+                <div class="bs-count-label">已签到 / <span id="bs-total-count">0</span> 人</div>
+                <div class="bs-code-line">验证码 <span id="bs-session-code">—</span></div>
+                <div class="bs-time-line" id="bs-remaining-time">—</div>
+            </div>
+            <div class="bs-feed-panel">
+                <div class="bs-feed-title"><i class="fas fa-bolt me-1"></i>最新签到</div>
+                <div class="bs-feed-list" id="bs-feed-list"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let bsUnsub = null;
+        let bsCountdownTimer = null;
+        let bsSeenRecordIds = new Set();
+
+        // 找当前"进行中"的点名：复用和 updateCurrentSessionInfo() 一样的判定逻辑
+        // （未取消 + 当前时间落在 startTime~endTime 之间），保证两处对"进行中"的定义一致。
+        function findActiveAttendanceForBigScreen() {
+            const now = new Date();
+            return attendances.find(a => {
+                if (a.cancelled) return false;
+                const start = a.startTime?.toDate();
+                const end = a.endTime?.toDate();
+                return start && end && now >= start && now <= end;
+            });
+        }
+
+        function openAttendanceBigScreen() {
+            const active = findActiveAttendanceForBigScreen();
+            if (!active) {
+                showAlert('当前没有进行中的点名，无法打开实时大屏', 'warning');
+                return;
+            }
+            bsSeenRecordIds.clear();
+            document.getElementById('bs-session-title').textContent = active.title;
+            document.getElementById('bs-session-code').textContent = active.code || '—';
+            // 应到人数用协会会员总数做分母（点名系统本来就是给全体会员用的，见会员管理页说明）
+            document.getElementById('bs-total-count').textContent = members.length;
+            document.getElementById('bs-feed-list').innerHTML = '';
+            document.getElementById('bs-checked-count').textContent = '0';
+            document.getElementById('attendance-bigscreen-overlay').classList.remove('d-none');
+
+            function tickCountdown() {
+                const el = document.getElementById('bs-remaining-time');
+                const end = active.endTime?.toDate();
+                if (!end || !el) return;
+                const remainMs = end - new Date();
+                if (remainMs <= 0) { el.innerHTML = '已结束'; return; }
+                const m = Math.floor(remainMs / 60000);
+                const s = Math.floor((remainMs % 60000) / 1000);
+                el.innerHTML = `剩余 <span>${m} 分 ${String(s).padStart(2, '0')} 秒</span>`;
+            }
+            tickCountdown();
+            bsCountdownTimer = setInterval(tickCountdown, 1000);
+
+            // 真正的实时监听：不用 orderBy，避免必须新建 Firestore 复合索引；
+            // 新记录到达的顺序本来就和签到时间几乎一致，大屏场景不需要绝对精确排序。
+            if (bsUnsub) bsUnsub();
+            bsUnsub = db.collection('attendanceRecords')
+                .where('attendanceId', '==', active.id)
+                .onSnapshot(snap => {
+                    document.getElementById('bs-checked-count').textContent = snap.size;
+                    snap.docChanges().forEach(change => {
+                        if (change.type === 'added' && !bsSeenRecordIds.has(change.doc.id)) {
+                            bsSeenRecordIds.add(change.doc.id);
+                            prependBigScreenFeedItem(change.doc.data());
+                        }
+                    });
+                }, error => {
+                    console.error('实时大屏监听失败:', error);
+                    showAlert('实时大屏连接失败: ' + error.message, 'danger');
+                });
+        }
+
+        function prependBigScreenFeedItem(record) {
+            const list = document.getElementById('bs-feed-list');
+            if (!list) return;
+            const item = document.createElement('div');
+            item.className = 'bs-feed-item';
+            const time = record.checkinTime && typeof record.checkinTime.toDate === 'function' ? record.checkinTime.toDate() : new Date();
+            item.innerHTML = `
+                <span class="bs-feed-name">${escapeHtml(record.studentName || '未知')}</span>
+                <span class="bs-feed-class">${escapeHtml(record.studentClass || '')}</span>
+                <span class="bs-feed-time">${time.toLocaleTimeString()}</span>
+            `;
+            list.insertBefore(item, list.firstChild);
+            // 大屏可能挂一整晚，只保留最新 30 条，避免 DOM 无限增长
+            while (list.children.length > 30) list.removeChild(list.lastChild);
+        }
+
+        function closeAttendanceBigScreen() {
+            document.getElementById('attendance-bigscreen-overlay').classList.add('d-none');
+            if (bsUnsub) { bsUnsub(); bsUnsub = null; }
+            if (bsCountdownTimer) { clearInterval(bsCountdownTimer); bsCountdownTimer = null; }
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('bs-close-btn')?.addEventListener('click', closeAttendanceBigScreen);
+            document.getElementById('bs-fullscreen-btn')?.addEventListener('click', () => {
+                const el = document.getElementById('attendance-bigscreen-overlay');
+                if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
+            });
+        });
+    </script>
 </body>
 </html>
