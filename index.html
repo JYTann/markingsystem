@@ -4497,6 +4497,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                   <select class="form-select form-select-sm" style="width:auto;" id="sw-level-history-select" onchange="swOnLevelHistoryChange()"></select>
                 </div>
                 <div class="row g-2 mb-2" id="sw-score-stat-cards"></div>
+                <div class="text-muted small mb-2" id="sw-score-pending-notice" style="display:none;"></div>
               </div>
               <div class="sw-card">
                 <div class="sw-panel-title"><i class="fas fa-list-check text-primary"></i> 项目明细</div>
@@ -5613,9 +5614,58 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                         </div>
                     </div>
 
+                    <!-- ==================== 待审核成绩 ====================
+                         为什么单独做一张卡片、不在"最近录入的记录"里加一列筛选：
+                         审核是一个需要管理员主动处理、处理完就该消失的队列，
+                         混在"最近记录"这种只读历史列表里容易被忽略、也容易误操作。 -->
+                    <div class="card fade-in mb-3" id="scores-pending-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-hourglass-half me-2"></i>待审核成绩 <span class="badge bg-warning text-dark" id="scores-pending-count-badge">0</span></span>
+                            <button class="btn btn-sm btn-success" id="scores-pending-approve-all-btn">
+                                <i class="fas fa-check-double me-1"></i>全部通过
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:36px;">
+                                                <input type="checkbox" id="scores-pending-select-all" class="form-check-input" title="全选/取消全选">
+                                            </th>
+                                            <th>学生</th>
+                                            <th>项目</th>
+                                            <th>分数</th>
+                                            <th>提交人</th>
+                                            <th>提交时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scores-pending-table-body">
+                                        <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>暂无待审核成绩</td></tr>
+                                    </tbody>
+                                </table>
+                                <div id="scores-pending-batch-bar" class="scores-batch-bar d-none">
+                                    <span id="scores-pending-count-text">已选择 0 条</span>
+                                    <div class="scores-batch-bar-actions">
+                                        <button class="btn btn-sm btn-outline-secondary" id="scores-pending-clear-btn" type="button">
+                                            <i class="fas fa-times me-1"></i>取消选择
+                                        </button>
+                                        <button class="btn btn-sm btn-success" id="scores-pending-approve-selected-btn" type="button">
+                                            <i class="fas fa-check me-1"></i>通过所选
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" id="scores-pending-reject-selected-btn" type="button">
+                                            <i class="fas fa-times-circle me-1"></i>驳回所选
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card fade-in">
                         <div class="card-header">
-                            <i class="fas fa-list me-2"></i>最近录入的记录
+                            <i class="fas fa-list me-2"></i>已发布的记录
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -6978,6 +7028,8 @@ document.getElementById('import-scores-btn').addEventListener('click', function(
                     score: scoreValue,
                     fullMark: project.fullMark,
                     weight: project.weight,
+                    status: SCORE_STATUS_PENDING, // Excel 批量导入同样要走审核，不能绕过
+                    submittedBy: currentUser?.email || 'unknown',
                     recordedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 successCount++;
@@ -6985,7 +7037,7 @@ document.getElementById('import-scores-btn').addEventListener('click', function(
             
             if (successCount > 0) {
                 batch.commit().then(() => {
-                    showAlert(`成功导入 ${successCount} 条记录${errorCount > 0 ? `，${errorCount} 条失败` : ''}`, "success");
+                    showAlert(`成功导入 ${successCount} 条记录（待审核后发布）${errorCount > 0 ? `，${errorCount} 条失败` : ''}`, "success");
                     fileInput.value = '';
                     loadScores();
                     addActivity(`批量导入成绩: ${successCount} 条成功`, "success");
@@ -7369,6 +7421,7 @@ async function loadAllDataForQuery() {
         let swCurrentMember = null;
         let swCurrentAuthUser = null;
         let swMyScores = [];
+        let swPendingScoreCount = 0; // 有多少条自己的成绩还在待审核，用于成绩页给一个提示，不计入任何统计
         let swMyLevelsHistory = [];
         let swSelectedLevelId = null;
         let swAllProjects = [];
@@ -7533,7 +7586,13 @@ async function loadAllDataForQuery() {
                 db.collection('levels').get(),
                 db.collection('members').where('studentId', '==', swCurrentStudent.studentId).limit(1).get()
             ]);
-            swMyScores = scoresSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swMyScores = scoresSnap.docs.map(d=>({id:d.id, ...d.data()}))
+                // 待审核的分数还没"发布"，学生工作台一律看不到——包括成绩明细、
+                // 雷达图/趋势图、总得分率、排名计算，全部只统计已通过审核的记录。
+                // isScoreApproved 对没有 status 字段的旧数据按"已通过"处理，
+                // 不会影响审核流程上线前就存在的历史成绩。
+                .filter(s => typeof isScoreApproved !== 'function' || isScoreApproved(s));
+            swPendingScoreCount = scoresSnap.docs.length - swMyScores.length;
             swAllProjects = projectsSnap.docs.map(d=>({id:d.id, ...d.data()}));
             swAllLevelProjects = lpSnap.docs.map(d=>({id:d.id, ...d.data()}));
             swAllLevels = levelsSnap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -7616,6 +7675,15 @@ async function loadAllDataForQuery() {
                 <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${totalMax? Math.round((totalScore/totalMax)*100):0}%</div><div class="sw-lbl">总得分率</div></div></div>
                 <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${rows.filter(r=>r.hasScore).length}/${rows.length}</div><div class="sw-lbl">已录入</div></div></div>
             `;
+            const pendingNotice = document.getElementById('sw-score-pending-notice');
+            if (pendingNotice) {
+                if (swPendingScoreCount > 0) {
+                    pendingNotice.style.display = 'block';
+                    pendingNotice.innerHTML = `<i class="fas fa-hourglass-half me-1"></i>还有 ${swPendingScoreCount} 项成绩正在审核中，通过后才会显示在这里`;
+                } else {
+                    pendingNotice.style.display = 'none';
+                }
+            }
 
             const list = document.getElementById('sw-score-detail-list');
             if(rows.length === 0){
@@ -7644,7 +7712,7 @@ async function loadAllDataForQuery() {
                     db.collection('scores').where('levelId','==', swSelectedLevelId).get()
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
-                const levelScores = scoresSnap.docs.map(d=>d.data());
+                const levelScores = scoresSnap.docs.map(d=>d.data()).filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)); // 待审核成绩不计入排名/排行榜
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
 
                 const totals = levelStudents.map(stu=>{
@@ -7871,7 +7939,7 @@ async function loadAllDataForQuery() {
                     db.collection('scores').where('levelId','==', swCurrentStudent.levelId).get()
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
-                const levelScores = scoresSnap.docs.map(d=>d.data());
+                const levelScores = scoresSnap.docs.map(d=>d.data()).filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)); // 待审核成绩不计入排名/排行榜
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swCurrentStudent.levelId);
 
                 const ranked = levelStudents.map(stu=>{
@@ -9428,25 +9496,36 @@ function updateLevelSelect() {
             tbody.innerHTML = '';
             
             if (querySnapshot.empty) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">
-                            <i class="fas fa-info-circle me-2"></i>暂无分数记录
-                        </td>
-                    </tr>
-                `;
+                scores = [];
             } else {
                 querySnapshot.forEach(doc => {
                     const score = { id: doc.id, ...doc.data() };
                     scores.push(score);
                 });
+            }
+
+            // 已发布（通过审核 / 历史遗留数据）的记录才进"已发布的记录"表，
+            // 待审核的记录单独交给 renderPendingScoreQueue 处理，不在这张表里出现
+            const approvedScores = scores.filter(isScoreApproved);
+            if (approvedScores.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>暂无已发布的分数记录
+                        </td>
+                    </tr>
+                `;
+            } else {
                 // 最近录入的排在最前面
-                const sortedScores = [...scores].sort((a, b) => {
+                const sortedScores = [...approvedScores].sort((a, b) => {
                     const ta = a.recordedAt?.toDate ? a.recordedAt.toDate().getTime() : 0;
                     const tb = b.recordedAt?.toDate ? b.recordedAt.toDate().getTime() : 0;
                     return tb - ta;
                 });
                 sortedScores.forEach(score => addScoreToTable(score));
+            }
+            if (typeof renderPendingScoreQueue === 'function') {
+                renderPendingScoreQueue(scores.filter(s => !isScoreApproved(s)));
             }
             
             updateDashboard();
@@ -9976,6 +10055,224 @@ async function cleanStudentDuplicateScores(studentId) {
     }
 }
 
+// ==================== 成绩审核流程 ====================
+// status 字段只有两个真正参与判断的取值：'pending'（待审核，不计入任何统计/学生可见范围）
+// 和其它任何值（含缺失该字段，兼容审核功能上线前录入的历史数据——一律按"已通过"处理，
+// 否则功能一上线所有旧数据会瞬间从学生成绩、排行榜、报告里消失）。
+const SCORE_STATUS_PENDING = 'pending';
+function isScoreApproved(score) {
+    return score && score.status !== SCORE_STATUS_PENDING;
+}
+
+// 给一条成绩对应的学生发一条通知（写入 notifications 集合）。
+// 这个集合此前只有学生工作台在读（swListenNotifications），没有任何地方在写，
+// 通知中心一直是空的——顺手在审核通过这一步把它接上。
+async function pushScoreNotification({ recipientId, title, body }) {
+    try {
+        await db.collection('notifications').add({
+            recipientId, type: 'score', title, body,
+            read: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    } catch (error) {
+        // 通知发送失败不应阻断审核主流程
+        console.error('发送通知失败:', error);
+    }
+}
+
+// 待审核队列勾选状态，命名和写法有意跟前面"批量改分"的 scoresSelectedIds 保持一致，
+// 两套选择状态互相独立（一个是"已发布记录"表的勾选，一个是"待审核"表的勾选），
+// 用不同变量名避免混用导致误操作已发布的分数。
+const scoresPendingSelectedIds = new Set();
+
+function renderPendingScoreQueue(pendingList) {
+    const tbody = document.getElementById('scores-pending-table-body');
+    const badge = document.getElementById('scores-pending-count-badge');
+    if (!tbody) return;
+    if (badge) badge.textContent = pendingList.length;
+
+    // 队列内容变了，之前的勾选大概率对不上了，直接清空更安全
+    scoresPendingSelectedIds.clear();
+    scoresPendingUpdateBar();
+    const selectAllBox = document.getElementById('scores-pending-select-all');
+    if (selectAllBox) { selectAllBox.checked = false; selectAllBox.indeterminate = false; }
+
+    if (pendingList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>暂无待审核成绩</td></tr>';
+        return;
+    }
+
+    const sorted = [...pendingList].sort((a, b) => {
+        const ta = a.recordedAt?.toDate ? a.recordedAt.toDate().getTime() : 0;
+        const tb = b.recordedAt?.toDate ? b.recordedAt.toDate().getTime() : 0;
+        return tb - ta; // 最新提交的排最前面，方便老师优先处理今天刚交的
+    });
+
+    tbody.innerHTML = sorted.map(score => {
+        const student = students.find(s => s.id === score.studentId);
+        const studentName = student ? student.name : '未知学生';
+        const studentNo = student ? student.studentId : '未知';
+        const submittedTime = score.recordedAt?.toDate ? formatDate(score.recordedAt.toDate(), 'YYYY-MM-DD HH:mm') : '-';
+        return `
+        <tr data-score-id="${score.id}">
+            <td><input type="checkbox" class="form-check-input scores-pending-row-checkbox" data-id="${score.id}"></td>
+            <td>${studentName}（${studentNo}）</td>
+            <td>${score.projectName || '未知项目'}</td>
+            <td>${score.score} / ${score.fullMark || '-'}</td>
+            <td class="small text-muted">${score.submittedBy || '-'}</td>
+            <td class="text-nowrap small text-muted">${submittedTime}</td>
+            <td>
+                <button class="btn btn-sm btn-success me-1 scores-pending-approve-btn" data-id="${score.id}" title="通过并发布">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger scores-pending-reject-btn" data-id="${score.id}" title="驳回（删除该条待审核记录）">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('.scores-pending-row-checkbox').forEach(cb => cb.addEventListener('change', scoresPendingOnCheckboxChange));
+    tbody.querySelectorAll('.scores-pending-approve-btn').forEach(btn => btn.addEventListener('click', () => approveScores([btn.dataset.id])));
+    tbody.querySelectorAll('.scores-pending-reject-btn').forEach(btn => btn.addEventListener('click', () => rejectScores([btn.dataset.id])));
+}
+
+function scoresPendingOnCheckboxChange() {
+    const tbody = document.getElementById('scores-pending-table-body');
+    if (!tbody) return;
+    scoresPendingSelectedIds.clear();
+    tbody.querySelectorAll('.scores-pending-row-checkbox:checked').forEach(cb => scoresPendingSelectedIds.add(cb.dataset.id));
+    const allBoxes = tbody.querySelectorAll('.scores-pending-row-checkbox');
+    const selectAllBox = document.getElementById('scores-pending-select-all');
+    if (selectAllBox) {
+        selectAllBox.checked = allBoxes.length > 0 && scoresPendingSelectedIds.size === allBoxes.length;
+        selectAllBox.indeterminate = scoresPendingSelectedIds.size > 0 && scoresPendingSelectedIds.size < allBoxes.length;
+    }
+    scoresPendingUpdateBar();
+}
+
+function scoresPendingUpdateBar() {
+    const bar = document.getElementById('scores-pending-batch-bar');
+    const countText = document.getElementById('scores-pending-count-text');
+    if (!bar || !countText) return;
+    countText.textContent = `已选择 ${scoresPendingSelectedIds.size} 条`;
+    bar.classList.toggle('d-none', scoresPendingSelectedIds.size === 0);
+}
+
+// 审核通过：写回 status:'approved'，记一条 scoreLogs，并给对应学生发一条通知。
+// 传数组是为了让"单条通过"和"批量通过"复用同一份逻辑，不用维护两套几乎一样的代码。
+async function approveScores(scoreIds) {
+    if (!scoreIds || scoreIds.length === 0) return;
+    try {
+        const CHUNK = 400; // Firestore 单个 batch 最多 500 写操作，留余量
+        for (let i = 0; i < scoreIds.length; i += CHUNK) {
+            const chunk = scoreIds.slice(i, i + CHUNK);
+            const batch = db.batch();
+            chunk.forEach(id => {
+                batch.update(db.collection('scores').doc(id), {
+                    status: 'approved',
+                    approvedBy: currentUser?.email || 'unknown',
+                    approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            });
+            await batch.commit();
+
+            // 逐条写日志 + 发通知：用当前已加载在内存里的 scores 数组取原始数据，
+            // 避免通过一条就重新拉一次数据库
+            for (const id of chunk) {
+                const s = scores.find(sc => sc.id === id);
+                if (!s) continue;
+                await logScoreChange({
+                    studentId: s.studentId, studentName: s.studentName,
+                    projectId: s.projectId, projectName: s.projectName,
+                    oldValue: null, newValue: s.score, action: 'approve', reason: '审核通过'
+                });
+                await pushScoreNotification({
+                    recipientId: s.studentId,
+                    title: '新成绩已发布',
+                    body: `${s.projectName || '一项成绩'} 已发布，得分 ${s.score}/${s.fullMark || ''}`
+                });
+            }
+        }
+        showAlert(`已通过 ${scoreIds.length} 条成绩，学生端可见`, 'success');
+        scoresPendingSelectedIds.clear();
+        await loadScores();
+    } catch (error) {
+        console.error('审核通过失败:', error);
+        showAlert('审核通过失败：' + error.message, 'danger');
+    }
+}
+
+// 驳回：直接删除该条待审核记录（打回重录，而不是留一个"已驳回"状态占着数据），
+// 删之前先写一条 scoreLogs，保留审计痕迹，跟其它删除操作的取舍一致。
+async function rejectScores(scoreIds) {
+    if (!scoreIds || scoreIds.length === 0) return;
+    showConfirmDialog(
+        '驳回待审核成绩',
+        `将驳回并删除 ${scoreIds.length} 条待审核记录，提交人需要重新录入。是否继续？`,
+        '驳回', '取消',
+        async () => {
+            try {
+                for (const id of scoreIds) {
+                    const s = scores.find(sc => sc.id === id);
+                    if (s) {
+                        await logScoreChange({
+                            studentId: s.studentId, studentName: s.studentName,
+                            projectId: s.projectId, projectName: s.projectName,
+                            oldValue: s.score, newValue: null, action: 'reject', reason: '审核驳回'
+                        });
+                    }
+                    await db.collection('scores').doc(id).delete();
+                }
+                showAlert(`已驳回 ${scoreIds.length} 条记录`, 'info');
+                scoresPendingSelectedIds.clear();
+                await loadScores();
+            } catch (error) {
+                console.error('驳回失败:', error);
+                showAlert('驳回失败：' + error.message, 'danger');
+            }
+        }
+    );
+}
+
+// ---------------- 待审核队列 事件绑定 ----------------
+(function initScoresPendingQueue() {
+    const selectAllBox = document.getElementById('scores-pending-select-all');
+    if (selectAllBox) {
+        selectAllBox.addEventListener('change', () => {
+            const tbody = document.getElementById('scores-pending-table-body');
+            if (!tbody) return;
+            tbody.querySelectorAll('.scores-pending-row-checkbox').forEach(cb => cb.checked = selectAllBox.checked);
+            scoresPendingOnCheckboxChange();
+        });
+    }
+    const clearBtn = document.getElementById('scores-pending-clear-btn');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        scoresPendingSelectedIds.clear();
+        document.querySelectorAll('.scores-pending-row-checkbox').forEach(cb => cb.checked = false);
+        if (selectAllBox) { selectAllBox.checked = false; selectAllBox.indeterminate = false; }
+        scoresPendingUpdateBar();
+    });
+    const approveSelectedBtn = document.getElementById('scores-pending-approve-selected-btn');
+    if (approveSelectedBtn) approveSelectedBtn.addEventListener('click', () => approveScores([...scoresPendingSelectedIds]));
+    const rejectSelectedBtn = document.getElementById('scores-pending-reject-selected-btn');
+    if (rejectSelectedBtn) rejectSelectedBtn.addEventListener('click', () => rejectScores([...scoresPendingSelectedIds]));
+
+    const approveAllBtn = document.getElementById('scores-pending-approve-all-btn');
+    if (approveAllBtn) {
+        approveAllBtn.addEventListener('click', () => {
+            const allIds = scores.filter(s => !isScoreApproved(s)).map(s => s.id);
+            if (allIds.length === 0) { showAlert('当前没有待审核的成绩', 'info'); return; }
+            showConfirmDialog(
+                '全部通过',
+                `将通过全部 ${allIds.length} 条待审核成绩，是否继续？`,
+                '全部通过', '取消',
+                () => approveScores(allIds)
+            );
+        });
+    }
+})();
+
 // ==================== 保存分数（含重复检测，唯一版本）====================
 /**
  * 保存学生分数（表单驱动），内置重复分数检测（checkDuplicateScore）。
@@ -10060,6 +10357,8 @@ async function saveScore() {
                 score: scoreValue,
                 fullMark: fullMark,
                 weight: weight,
+                status: SCORE_STATUS_PENDING, // 覆盖分数也要重新走一遍审核，不能沿用旧值的"已通过"状态
+                submittedBy: currentUser?.email || 'unknown',
                 recordedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             await logScoreChange({
@@ -10067,10 +10366,10 @@ async function saveScore() {
                 oldValue: latestScore.score, newValue: scoreValue, action: 'update'
             });
             
-            showAlert(`已更新 ${student?.name} 的「${projectName}」分数为 ${scoreValue}/${fullMark}`, "success");
+            showAlert(`已提交 ${student?.name} 的「${projectName}」新分数 ${scoreValue}/${fullMark}，等待审核后发布`, "success");
             document.getElementById('score-input').value = '';
             await loadScores();
-            addActivity(`更新 ${student?.name} 的 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
+            addActivity(`更新 ${student?.name} 的 ${projectName} 分数（待审核）: ${scoreValue}/${fullMark}`, "info");
         } catch (error) {
             console.error("更新分数失败: ", error);
             showAlert("更新分数失败", "danger");
@@ -10094,6 +10393,8 @@ async function saveScore() {
             score: scoreValue,
             fullMark: fullMark,
             weight: weight,
+            status: SCORE_STATUS_PENDING,
+            submittedBy: currentUser?.email || 'unknown',
             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         await logScoreChange({
@@ -10101,10 +10402,10 @@ async function saveScore() {
             oldValue: null, newValue: scoreValue, action: 'add'
         });
         
-        showAlert(`分数保存成功: ${student?.name} - ${projectName} = ${scoreValue}/${fullMark}`, "success");
+        showAlert(`分数已提交: ${student?.name} - ${projectName} = ${scoreValue}/${fullMark}，等待审核后发布`, "success");
         document.getElementById('score-input').value = '';
         await loadScores();
-        addActivity(`为 ${student?.name} 录入 ${projectName} 分数: ${scoreValue}/${fullMark}`, "info");
+        addActivity(`为 ${student?.name} 录入 ${projectName} 分数（待审核）: ${scoreValue}/${fullMark}`, "info");
     } catch (error) {
         console.error("保存分数失败: ", error);
         showAlert("保存分数失败", "danger");
@@ -20629,13 +20930,15 @@ document.addEventListener('DOMContentLoaded', function () {
                             score: scoreValue,
                             fullMark: fullMark,
                             weight: weight,
+                            status: (typeof SCORE_STATUS_PENDING !== 'undefined') ? SCORE_STATUS_PENDING : 'pending',
+                            submittedBy: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
                             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         batch.set(logRef, {
                             studentId: row.student.id, studentName: row.student.name || '',
                             projectId: projectId, projectName: projectName,
                             oldValue: (typeof row.existingScore.score === 'number') ? row.existingScore.score : null,
-                            newValue: scoreValue, action: 'update', reason: '批量导入',
+                            newValue: scoreValue, action: 'update', reason: '批量导入（待审核）',
                             operatorEmail: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
                             operatorName: (typeof currentUser !== 'undefined' && (currentUser?.displayName || currentUser?.email)) || '管理员',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -20650,12 +20953,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             score: scoreValue,
                             fullMark: fullMark,
                             weight: weight,
+                            status: (typeof SCORE_STATUS_PENDING !== 'undefined') ? SCORE_STATUS_PENDING : 'pending',
+                            submittedBy: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
                             recordedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         batch.set(logRef, {
                             studentId: row.student.id, studentName: row.student.name || '',
                             projectId: projectId, projectName: projectName,
-                            oldValue: null, newValue: scoreValue, action: 'add', reason: '批量导入',
+                            oldValue: null, newValue: scoreValue, action: 'add', reason: '批量导入（待审核）',
                             operatorEmail: (typeof currentUser !== 'undefined' && currentUser?.email) || 'unknown',
                             operatorName: (typeof currentUser !== 'undefined' && (currentUser?.displayName || currentUser?.email)) || '管理员',
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -20675,7 +20980,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (batchCount > 0) await batch.commit();
 
-                showAlert('成功保存 ' + savedCount + ' 条分数（新增 ' + addCount + '，更新 ' + updateCount + '）', 'success');
+                showAlert('成功提交 ' + savedCount + ' 条分数，等待审核后发布（新增 ' + addCount + '，更新 ' + updateCount + '）', 'success');
 
                 if (typeof addActivity === 'function') {
                     addActivity('批量录入「' + projectName + '」: ' + savedCount + ' 条', 'success');
