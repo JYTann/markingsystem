@@ -6720,6 +6720,16 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
             return auth.sendPasswordResetEmail(swStudentEmail(studentId));
         }
 
+        // 管理员/协会负责人自己登录管理后台用的几个邮箱（与文件里两处 allowedEmails
+        // 白名单保持一致）。这几个邮箱本来就已经在 Firebase Auth 里有账号（且密码/登录
+        // 方式由负责人自己掌握），绝对不能被当成"学号"重新建号或批量开通——
+        // 一旦学号 = 这几个邮箱前缀，createUserWithEmailAndPassword 一定会撞
+        // auth/email-already-in-use，而且就算撞上了也不该假装它是一个新学生账号。
+        const SW_ADMIN_RESERVED_EMAILS = ["tanjunyuanfoonyew@gmail.com", "jb220225@foonyew.edu.my", "maker.fymcsjb@gmail.com", "xiaothong1003@gmail.com"];
+        function swIsReservedAdminStudentId(studentId) {
+            return SW_ADMIN_RESERVED_EMAILS.includes(swStudentEmail(studentId).toLowerCase());
+        }
+
         // 全局变量
         let currentUser = null;
         let students = [];
@@ -7708,11 +7718,16 @@ async function loadAllDataForQuery() {
             const map = {
                 'auth/user-not-found': '学号不存在，请确认后重试，或联系管理员开通账号',
                 'auth/wrong-password': '密码错误，请重新输入',
+                'auth/invalid-credential': '学号或密码错误，请确认后重试（若确定密码无误，可能是账号还未开通，请联系管理员）',
+                'auth/invalid-login-credentials': '学号或密码错误，请确认后重试（若确定密码无误，可能是账号还未开通，请联系管理员）',
                 'auth/too-many-requests': '尝试次数过多，请稍后再试',
                 'auth/invalid-email': '学号格式不正确',
                 'auth/user-disabled': '该账号已被停用，请联系管理员'
             };
-            return map[err.code] || ('登录失败：' + err.message);
+            // 未识别的错误码：把原始 code 一起显示出来，方便管理员在浏览器控制台之外
+            // 也能直接看到具体是什么错误（例如 Firebase 新版接口返回的其它错误码），
+            // 而不是只看到一句笼统的"登录失败"。
+            return map[err.code] || `登录失败（${err.code || '未知错误'}）：${err.message}`;
         }
         function swShowLoginError(msg){
             document.getElementById('sw-login-error-text').textContent = msg;
@@ -9424,10 +9439,19 @@ async function saveStudent() {
         // 这一步走的是客户端 Firebase Auth（见文件顶部 swCreateStudentAuthAccount 的
         // 说明），不涉及 Cloud Function；即使这一步失败，学生资料本身已经保存成功，
         // 管理员之后可以在学生列表里对这一行单独点"开通登录账号"重试。
+        if (swIsReservedAdminStudentId(studentId)) {
+            // 这个学号刚好对应负责人/管理员自己登录后台用的邮箱，不能拿来当学生账号建号，
+            // 否则会撞见 auth/email-already-in-use，而且就算能建也会覆盖管理员自己的账号。
+            showAlert(`学生添加成功；但学号「${studentId}」对应的邮箱是管理员登录账号，系统不会为它开通学生登录账号，请换一个学号`, "warning");
+        } else {
         try {
             const result = await swCreateStudentAuthAccount(studentId);
             if (result.alreadyExisted) {
-                showAlert(`学生添加成功；登录账号 ${swStudentEmail(studentId)} 此前已存在，如该生忘记密码请用列表里的"重置密码"`, "info");
+                // 邮箱已经在 Firebase Auth 里存在（多半是之前重复操作留下的账号），
+                // 拿不到旧密码也拿不到 uid，主动发一封官方密码重置邮件，
+                // 好歹给学生一条能真正登进去的路，而不是留一个死账号。
+                await auth.sendPasswordResetEmail(swStudentEmail(studentId)).catch(()=>{});
+                showAlert(`学生添加成功；登录账号 ${swStudentEmail(studentId)} 此前已存在，已尝试发送密码重置邮件到该邮箱，请让学生查收邮箱设置新密码后登录`, "info");
             } else {
                 await db.collection('students').doc(docRef.id).update({ authUid: result.uid });
                 showAlert(`学生添加成功，登录账号已开通（初始密码为学号后 6 位：${result.password}）`, "success");
@@ -9435,6 +9459,7 @@ async function saveStudent() {
         } catch (authErr) {
             console.error("开通登录账号失败: ", authErr);
             showAlert(`学生资料已保存，但登录账号开通失败：${authErr.message}。可稍后在学生列表该行点击"开通登录账号"重试`, "warning");
+        }
         }
     } catch (error) {
         console.error("添加学生失败: ", error);
@@ -9451,12 +9476,17 @@ async function saveStudent() {
  * 或者上面 saveStudent() / importExcel() 建号那一步失败之后的重试入口）。
  */
 async function provisionStudentAccount(docId, studentId) {
+    if (swIsReservedAdminStudentId(studentId)) {
+        showAlert(`学号「${studentId}」对应的邮箱是管理员登录账号，不能为它开通学生登录账号`, "warning");
+        return;
+    }
     if (!confirm(`确定要为学号「${studentId}」开通登录账号吗？\n\n登录邮箱：${swStudentEmail(studentId)}\n初始密码：学号后 6 位（首次登录会强制要求修改密码）`)) return;
     try {
         showFullscreenLoader('正在开通登录账号...');
         const result = await swCreateStudentAuthAccount(studentId);
         if (result.alreadyExisted) {
-            showAlert(`登录账号 ${swStudentEmail(studentId)} 已经存在（可能之前已开通过），如该生忘记密码请用"重置密码"`, "info");
+            await auth.sendPasswordResetEmail(swStudentEmail(studentId)).catch(()=>{});
+            showAlert(`登录账号 ${swStudentEmail(studentId)} 已经存在（可能之前已开通过），已尝试发送密码重置邮件，请让学生查收邮箱设置新密码`, "info");
         } else {
             await db.collection('students').doc(docId).update({ authUid: result.uid, forcePasswordChange: true });
             showAlert(`登录账号开通成功，初始密码为学号后 6 位（${result.password}）`, "success");
@@ -9497,11 +9527,15 @@ async function batchProvisionAllStudentAccounts() {
     }
     if (!confirm(`共有 ${targets.length} 名学生尚未开通登录账号，确定现在批量开通吗？\n\n每人的初始密码统一为「各自学号后 6 位」，操作过程中请不要关闭或刷新页面。`)) return;
 
-    let okCount = 0, skipCount = 0, failCount = 0;
+    let okCount = 0, skipCount = 0, failCount = 0, reservedCount = 0;
     showFullscreenLoader(`正在开通登录账号 0 / ${targets.length}...`);
     for (let i = 0; i < targets.length; i++) {
         const s = targets[i];
         showFullscreenLoader(`正在开通登录账号 ${i + 1} / ${targets.length}（学号 ${s.studentId}）...`);
+        if (swIsReservedAdminStudentId(s.studentId)) {
+            reservedCount++;
+            continue;
+        }
         try {
             const result = await swCreateStudentAuthAccount(s.studentId);
             if (result.alreadyExisted) {
@@ -9516,8 +9550,8 @@ async function batchProvisionAllStudentAccounts() {
         }
     }
     hideFullscreenLoader();
-    showAlert(`批量开通完成：成功 ${okCount} 个，已存在跳过 ${skipCount} 个，失败 ${failCount} 个${failCount > 0 ? '（失败的可在对应学生这一行单独点"开通账号"重试）' : ''}`, failCount > 0 ? "warning" : "success");
-    addActivity(`批量开通学生登录账号：成功 ${okCount}，跳过 ${skipCount}，失败 ${failCount}`, "info");
+    showAlert(`批量开通完成：成功 ${okCount} 个，已存在跳过 ${skipCount} 个，管理员保留邮箱跳过 ${reservedCount} 个，失败 ${failCount} 个${failCount > 0 ? '（失败的可在对应学生这一行单独点"开通账号"重试）' : ''}`, failCount > 0 ? "warning" : "success");
+    addActivity(`批量开通学生登录账号：成功 ${okCount}，跳过 ${skipCount}，管理员保留跳过 ${reservedCount}，失败 ${failCount}`, "info");
     loadStudents();
 }
 
