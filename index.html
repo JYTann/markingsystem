@@ -2261,7 +2261,7 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
         content: none;
     }
 
-    /* 学生管理表：checkbox, 学号, 姓名, 班级, 级别, 学习组, 工作组, 操作 */
+    /* 学生管理表：checkbox, 学号, 姓名, 班级, 级别, 学习组, 工作组, 登录账号, 操作 */
     #students-table-body tr td:nth-of-type(1)::before { content: none; }
     #students-table-body tr td:nth-of-type(1) { justify-content: flex-start; }
     #students-table-body tr td:nth-of-type(2)::before { content: "学号"; }
@@ -2270,7 +2270,9 @@ td.text-num, .table td.text-end { text-align: right; font-variant-numeric: tabul
     #students-table-body tr td:nth-of-type(5)::before { content: "级别"; }
     #students-table-body tr td:nth-of-type(6)::before { content: "学习组"; }
     #students-table-body tr td:nth-of-type(7)::before { content: "工作组"; }
-    #students-table-body tr td:nth-of-type(8)::before { content: "操作"; }
+    #students-table-body tr td:nth-of-type(8)::before { content: "登录账号"; }
+    #students-table-body tr td:nth-of-type(9)::before { content: "操作"; }
+    .sw-account-cell { justify-content: flex-start !important; }
 
     /* 分数录入记录表：checkbox, 学生, 项目, 分数, 满分, 占比, 录入时间, 操作
        为支持批量改分新增了勾选列，列序整体后移一位（与上面 students-table-body
@@ -3794,21 +3796,93 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
    ============================================================ */
 #student-workspace-app{ display:none; }
 #student-workspace-app *{ box-sizing:border-box; }
-#sw-login-screen, #sw-force-pwd-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
-.sw-login-card{ width:100%; max-width:380px; background:var(--card-bg,#fff); border:1px solid var(--gray-200); border-radius:var(--r-2xl); padding:36px 30px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+#sw-login-screen, #sw-force-pwd-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+    position:relative; overflow:hidden;
+    background:
+        radial-gradient(680px circle at 12% 8%, rgba(79,70,229,0.10), transparent 55%),
+        radial-gradient(560px circle at 92% 88%, rgba(79,70,229,0.08), transparent 55%),
+        var(--gray-50);
+}
+[data-theme="dark"] #sw-login-screen, [data-theme="dark"] #sw-force-pwd-screen{
+    background:
+        radial-gradient(680px circle at 12% 8%, rgba(129,140,248,0.14), transparent 55%),
+        radial-gradient(560px circle at 92% 88%, rgba(129,140,248,0.10), transparent 55%),
+        #0B0E14;
+}
+/* 极细的点阵纹理，克制到几乎不可见，只是打破大片纯色背景的单调感 */
+#sw-login-screen::before, #sw-force-pwd-screen::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image: radial-gradient(rgba(79,70,229,0.09) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 68%);
+    -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 68%);
+}
+[data-theme="dark"] #sw-login-screen::before, [data-theme="dark"] #sw-force-pwd-screen::before{
+    background-image: radial-gradient(rgba(129,140,248,0.14) 1px, transparent 1px);
+}
+.sw-login-card{
+    position:relative; z-index:1; width:100%; max-width:392px;
+    background:var(--card-bg,#fff); border:1px solid var(--gray-200);
+    border-radius:var(--r-2xl); padding:40px 32px 32px;
+    box-shadow:0 1px 2px rgba(17,24,39,0.04), 0 24px 48px -12px rgba(17,24,39,0.16);
+    animation: swCardIn 420ms var(--ease-out);
+    overflow:hidden;
+}
+@keyframes swCardIn{ from{ opacity:0; transform:translateY(10px) scale(.98); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce){ .sw-login-card{ animation:none; } }
+/* 卡片顶部一条极窄的品牌色装饰条，是全站唯一允许在这里出现渐变的地方 */
+.sw-login-card::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--primary-500), #818CF8);
+}
 [data-theme="dark"] .sw-login-card{ background:#161922; border-color:#262B36; }
-.sw-login-logo{ width:56px; height:56px; border-radius:var(--r-lg); background:var(--primary-500); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 16px; }
-.sw-login-title{ text-align:center; font-weight:700; font-size:1.15rem; margin-bottom:4px; }
-.sw-login-sub{ text-align:center; color:var(--gray-500); font-size:.85rem; margin-bottom:24px; }
+.sw-login-logo{
+    width:60px; height:60px; border-radius:var(--r-xl);
+    background:linear-gradient(150deg, var(--primary-500), var(--primary-600,#4338CA));
+    color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px;
+    margin:4px auto 18px; box-shadow:0 10px 20px -6px rgba(79,70,229,0.45);
+}
+.sw-login-title{ text-align:center; font-weight:700; font-size:1.2rem; letter-spacing:var(--ls-tight,-0.02em); margin-bottom:4px; }
+.sw-login-sub{ text-align:center; color:var(--gray-500); font-size:.85rem; margin-bottom:8px; }
+.sw-login-badge{
+    display:block; width:fit-content; margin:0 auto 22px; padding:3px 12px;
+    border-radius:var(--r-full); background:var(--primary-50); color:var(--primary-600,#4338CA);
+    font-size:.72rem; font-weight:600; letter-spacing:.03em;
+}
+[data-theme="dark"] .sw-login-badge{ background:rgba(129,140,248,0.14); color:#A5B4FC; }
 .sw-field-error{ color:var(--danger,#EF4444); font-size:.78rem; margin-top:4px; display:none; }
 .sw-is-invalid ~ .sw-field-error{ display:block; }
-.sw-btn-primary{ background:var(--primary-500); border:none; color:#fff; border-radius:var(--r-md); font-weight:600; padding:10px; width:100%; }
-.sw-btn-primary:hover{ background:var(--primary-600,#4338CA); color:#fff; }
-.sw-btn-primary:disabled{ opacity:.6; }
+.sw-btn-primary{
+    background:var(--primary-500); border:none; color:#fff; border-radius:var(--r-md);
+    font-weight:600; padding:11px; width:100%;
+    box-shadow:0 1px 2px rgba(17,24,39,.05);
+    transition:background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.sw-btn-primary:hover{ background:var(--primary-600,#4338CA); color:#fff; transform:translateY(-1px); box-shadow:0 8px 16px -6px rgba(79,70,229,.45); }
+.sw-btn-primary:active{ transform:translateY(0); }
+.sw-btn-primary:disabled{ opacity:.6; transform:none; box-shadow:none; }
 #sw-login-error{ display:none; background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; border-radius:var(--r-md); padding:10px 12px; font-size:.82rem; margin-bottom:14px; }
 [data-theme="dark"] #sw-login-error{ background:#2A1315; border-color:#4A1F22; color:#F87171; }
 .sw-pwd-rule{ font-size:.75rem; color:var(--gray-500); margin-top:2px; }
 .sw-pwd-rule.ok{ color:var(--success,#10B981); }
+
+/* 带图标 / 显隐切换的登录输入框，样式对齐全站已有的 .query-input-group 规范 */
+.sw-input-group{ position:relative; margin-bottom:16px; }
+.sw-input-group label{ font-size:var(--fs-sm); font-weight:var(--fw-medium); color:var(--text-secondary); margin-bottom:6px; display:block; }
+.sw-input-group .sw-input-icon{ position:absolute; left:14px; top:41px; color:var(--gray-400); font-size:14px; pointer-events:none; }
+.sw-input-group input.form-control{
+    height:46px; border-radius:10px; border:1px solid var(--border); font-size:var(--fs-base);
+    padding:0 14px 0 38px; transition:border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.sw-input-group input.form-control:focus{ border-color:var(--primary-500); box-shadow:var(--ring, 0 0 0 3px rgba(79,70,229,.15)); }
+.sw-input-group .sw-pwd-toggle{
+    position:absolute; right:12px; top:41px; color:var(--gray-400); font-size:14px;
+    cursor:pointer; background:none; border:none; padding:4px;
+}
+.sw-input-group .sw-pwd-toggle:hover{ color:var(--gray-600); }
+.sw-input-group input.form-control[type="password"],
+.sw-input-group input.form-control[type="text"].sw-has-toggle{ padding-right:38px; }
 
 #sw-workspace{ display:none; min-height:100vh; background:var(--gray-25,#F9FAFB); }
 [data-theme="dark"] #sw-workspace{ background:#0B0E14; }
@@ -4408,18 +4482,22 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
           <div class="sw-login-logo"><i class="fas fa-user-graduate"></i></div>
           <div class="sw-login-title">MAKER组 学生工作台</div>
           <div class="sw-login-sub">新山宽柔中学电脑协会杂家</div>
+          <div class="sw-login-badge"><i class="fas fa-shield-halved me-1"></i>学号 + 密码登录</div>
 
           <div id="sw-login-error"><i class="fas fa-exclamation-circle me-1"></i><span id="sw-login-error-text"></span></div>
 
           <form id="sw-login-form" novalidate>
-            <div class="mb-3">
+            <div class="sw-input-group">
               <label class="form-label">账号</label>
-              <input type="text" class="form-control" id="sw-login-studentid" placeholder="请输入账号，格式为学校电邮前缀，例：jbXXXXXX" autocomplete="username" required>
+              <i class="fas fa-id-card sw-input-icon"></i>
+              <input type="text" class="form-control" id="sw-login-studentid" placeholder="学校电邮前缀，例：jb220225" autocomplete="username" required>
               <div class="sw-field-error">请输入学号</div>
             </div>
-            <div class="mb-2">
+            <div class="sw-input-group mb-2">
               <label class="form-label">密码</label>
+              <i class="fas fa-lock sw-input-icon"></i>
               <input type="password" class="form-control" id="sw-login-password" placeholder="请输入密码" autocomplete="current-password" required>
+              <button type="button" class="sw-pwd-toggle" data-sw-toggle="sw-login-password" aria-label="显示/隐藏密码"><i class="fas fa-eye"></i></button>
               <div class="sw-field-error">请输入密码</div>
             </div>
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -4433,7 +4511,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
               <span id="sw-login-btn-text">登录</span>
               <i class="fas fa-circle-notch sw-spin d-none" id="sw-login-btn-spinner"></i>
             </button>
-            <div class="text-center small text-muted mt-3">首次登录默认密码为学号后 6 位</div>
+            <div class="text-center small text-muted mt-3"><i class="fas fa-circle-info me-1"></i>首次登录默认密码为学号后 6 位</div>
             <div class="text-center small mt-2"><a href="#" onclick="swExitToGuestQuery(); return false;">改用访客临时查询 →</a></div>
           </form>
         </div>
@@ -4447,15 +4525,19 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
           <div class="sw-login-sub">为了账号安全，请修改默认密码后再继续</div>
           <div id="sw-force-pwd-error" style="display:none;" class="mb-2"><small class="text-danger" id="sw-force-pwd-error-text"></small></div>
           <form id="sw-force-pwd-form">
-            <div class="mb-3">
+            <div class="sw-input-group">
               <label class="form-label">新密码</label>
+              <i class="fas fa-lock sw-input-icon"></i>
               <input type="password" class="form-control" id="sw-new-pwd-1" placeholder="至少 8 位，含字母与数字" required>
+              <button type="button" class="sw-pwd-toggle" data-sw-toggle="sw-new-pwd-1" aria-label="显示/隐藏密码"><i class="fas fa-eye"></i></button>
               <div class="sw-pwd-rule" id="sw-pwd-rule-len"><i class="fas fa-circle" style="font-size:5px;"></i> 至少 8 位</div>
               <div class="sw-pwd-rule" id="sw-pwd-rule-mix"><i class="fas fa-circle" style="font-size:5px;"></i> 同时包含字母和数字</div>
             </div>
-            <div class="mb-3">
+            <div class="sw-input-group">
               <label class="form-label">确认新密码</label>
+              <i class="fas fa-lock sw-input-icon"></i>
               <input type="password" class="form-control" id="sw-new-pwd-2" placeholder="再次输入新密码" required>
+              <button type="button" class="sw-pwd-toggle" data-sw-toggle="sw-new-pwd-2" aria-label="显示/隐藏密码"><i class="fas fa-eye"></i></button>
               <div class="sw-field-error" id="sw-pwd-match-error" style="display:none;">两次输入的密码不一致</div>
             </div>
             <button type="submit" class="sw-btn-primary">确认修改并进入工作台</button>
@@ -5398,6 +5480,9 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                                 <button class="btn btn-sm btn-success me-2" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                                     <i class="fas fa-plus me-1"></i>添加学生
                                 </button>
+                                <button class="btn btn-sm btn-outline-primary me-2" id="batch-provision-accounts-btn" title="给列表里所有还没有登录账号的学生一键开通">
+                                    <i class="fas fa-user-shield me-1"></i>批量开通登录账号
+                                </button>
                                 <button class="btn btn-sm btn-primary" id="export-students-btn">
                                     <i class="fas fa-file-export me-1"></i>导出
                                 </button>
@@ -5459,6 +5544,7 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                                             <th>级别</th>
                                             <th>学习组</th>
                                             <th>工作组</th>
+                                            <th>登录账号</th>
                                             <th>操作</th>
                                         </tr>
                                     </thead>
@@ -5965,7 +6051,8 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                         </div>
                         <div class="mb-3">
                             <label for="student-id" class="form-label">学号 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="student-id" required>
+                            <input type="text" class="form-control" id="student-id" placeholder="例如：jb220225" required>
+                            <small class="text-muted">保存后会自动开通登录账号：账号为「学号@foonyew.edu.my」，初始密码为学号后 6 位</small>
                         </div>
                         <div class="mb-3">
         <label for="student-email" class="form-label">学校邮箱（选填）</label>
@@ -6587,6 +6674,52 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
         // 添加Google登录提供程序
         const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+        // ==================== 学生登录账号开通（不使用 Cloud Function）====================
+        // 背景：学生登录用的是 Firebase Auth（邮箱 = 学号@foonyew.edu.my）。但如果直接在
+        // 当前已登录的 auth 实例上调用 createUserWithEmailAndPassword() 来给学生建号，
+        // Firebase 会把"当前登录用户"直接切换成刚创建的这个新账号——管理员自己会被顶下线。
+        // 常见解法是写一个 Cloud Function，用 Admin SDK 在服务器端建号，但那需要开通
+        // Blaze 计费方案并部署云函数，对协会这种小项目没必要。
+        // 这里改用「临时的第二个 Firebase App 实例」：用同一份 firebaseConfig 再单独
+        // 初始化一个命名不同的 app，只用它自己的 auth 去建号，建完立刻登出、销毁这个
+        // 临时 app，全程不影响管理员在主 app（`auth`）上的登录态。整个过程只依赖
+        // Firebase 客户端 SDK，不需要云函数、不需要 Admin SDK、不需要服务器。
+        function swStudentEmail(studentId) { return `${(studentId || '').trim()}@foonyew.edu.my`; }
+        function swStudentDefaultPassword(studentId) { return (studentId || '').trim().slice(-6); }
+
+        async function swCreateStudentAuthAccount(studentId) {
+            const sid = (studentId || '').trim();
+            const email = swStudentEmail(sid);
+            const password = swStudentDefaultPassword(sid);
+            if (password.length < 6) {
+                throw new Error('学号至少需要 6 位（默认密码=学号后6位，Firebase要求密码至少6位）');
+            }
+            const tempAppName = 'sw-account-creator-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+            const tempApp = firebase.initializeApp(firebaseConfig, tempAppName);
+            try {
+                const cred = await tempApp.auth().createUserWithEmailAndPassword(email, password);
+                const uid = cred.user.uid;
+                await tempApp.auth().signOut();
+                return { uid, password, alreadyExisted: false };
+            } catch (err) {
+                if (err.code === 'auth/email-already-in-use') {
+                    // 账号早就建好了（可能是重复操作，或之前建号成功但没来得及回写 authUid）。
+                    // 客户端不知道旧密码，拿不到这个已有账号的 uid；不用担心——学生登录时
+                    // swHandleAuthUser() 有按邮箱前缀反查 students 并自动回写 authUid 的兜底逻辑。
+                    return { uid: null, password: null, alreadyExisted: true };
+                }
+                throw err;
+            } finally {
+                try { await tempApp.delete(); } catch (e) { /* 清理临时 app 失败可忽略，不影响主流程 */ }
+            }
+        }
+
+        // 给管理员用：账号已存在但学生忘记密码时，发送 Firebase 官方密码重置邮件到该生的
+        // 学校邮箱。sendPasswordResetEmail() 不会改变任何人的登录状态，可直接用主 auth 调用。
+        function swSendPasswordResetEmail(studentId) {
+            return auth.sendPasswordResetEmail(swStudentEmail(studentId));
+        }
+
         // 全局变量
         let currentUser = null;
         let students = [];
@@ -6928,6 +7061,8 @@ if (generateBtn) {
             
             // 导出学生
             document.getElementById('export-students-btn').addEventListener('click', exportStudents);
+            // 批量开通学生登录账号
+            document.getElementById('batch-provision-accounts-btn').addEventListener('click', batchProvisionAllStudentAccounts);
             
             // 学生搜索
             document.getElementById('student-search').addEventListener('input', filterStudents);
@@ -7517,8 +7652,9 @@ async function loadAllDataForQuery() {
         // 和管理端"学生管理"里 studentEmail 字段、Google 登录邮箱前缀匹配用的是同一套约定）。
         // Firestore students/{id} 需要有 authUid 字段指回 Firebase Auth 的 uid。
         // 首次登录密码 = 学号后 6 位，forcePasswordChange !== false 时强制改密。
+        // swStudentEmail() / swCreateStudentAuthAccount() 已在文件顶部 Firebase 初始化
+        // 之后统一定义，供管理端（开通账号）和这里（学生登录）共用，此处不再重复定义。
         // ============================================================
-        function swStudentEmail(studentId){ return `${studentId}@foonyew.edu.my`; }
 
         let swCurrentStudent = null;
         let swCurrentMember = null;
@@ -7586,8 +7722,49 @@ async function loadAllDataForQuery() {
 
         document.getElementById('sw-forgot-pwd-link').addEventListener('click', function(e){
             e.preventDefault();
-            alert('请联系电脑协会 MAKER 组管理员重置密码，无法自助找回。');
+            const sidEl = document.getElementById('sw-login-studentid');
+            const sid = (sidEl.value || '').trim();
+            if (!sid) {
+                sidEl.classList.add('sw-is-invalid');
+                swShowLoginError('请先在上方"账号"栏填写你的学号，再点击"忘记密码"');
+                return;
+            }
+            sidEl.classList.remove('sw-is-invalid');
+            const link = document.getElementById('sw-forgot-pwd-link');
+            const originalText = link.textContent;
+            link.textContent = '发送中…';
+            auth.sendPasswordResetEmail(swStudentEmail(sid))
+                .then(()=>{
+                    swShowLoginError('');
+                    document.getElementById('sw-login-error').style.display = 'none';
+                    alert(`密码重置邮件已发送到 ${swStudentEmail(sid)}，请查收学校邮箱（也请检查垃圾邮件），按邮件指示设置新密码后再回来登录。`);
+                })
+                .catch(err => {
+                    swShowLoginError(err.code === 'auth/user-not-found'
+                        ? '该学号还没有开通登录账号，请联系管理员开通'
+                        : ('发送重置邮件失败：' + err.message));
+                })
+                .finally(()=>{ link.textContent = originalText; });
         });
+
+        // 学生登录卡片的密码显隐切换（.sw-pwd-toggle），与访客查询页的
+        // .query-password-toggle 是各自独立的一套，互不影响。
+        (function swInitPasswordToggles(){
+            document.querySelectorAll('#student-workspace-app .sw-pwd-toggle').forEach(btn=>{
+                btn.addEventListener('click', function(){
+                    const input = document.getElementById(this.dataset.swToggle);
+                    if(!input) return;
+                    const icon = this.querySelector('i');
+                    if(input.type === 'password'){
+                        input.type = 'text';
+                        if(icon){ icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+                    } else {
+                        input.type = 'password';
+                        if(icon){ icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+                    }
+                });
+            });
+        })();
 
         (function swPrefillLastStudentId(){
             const last = localStorage.getItem('swLastStudentId');
@@ -9080,6 +9257,18 @@ function addStudentToTable(student) {
         <td><span class="badge bg-success">${levelName}</span></td>
         <td>${student.studyGroup ? `<span class="badge bg-info">${student.studyGroup}</span>` : '-'}</td>
         <td>${student.workGroup ? `<span class="badge bg-warning text-dark">${student.workGroup}</span>` : '-'}</td>
+        <td class="text-nowrap sw-account-cell">
+            ${student.authUid
+                ? `<span class="badge bg-success d-inline-block mb-1"><i class="fas fa-check-circle me-1"></i>已开通</span><br>
+                   <button class="btn btn-sm btn-outline-secondary reset-student-pwd" data-student-id="${student.studentId}" title="发送密码重置邮件">
+                       <i class="fas fa-key"></i> 重置密码
+                   </button>`
+                : `<span class="badge bg-secondary d-inline-block mb-1"><i class="fas fa-hourglass-half me-1"></i>未开通</span><br>
+                   <button class="btn btn-sm btn-outline-primary provision-student-account" data-id="${student.id}" data-student-id="${student.studentId}" title="开通登录账号">
+                       <i class="fas fa-user-plus"></i> 开通账号
+                   </button>`
+            }
+        </td>
         <td class="text-nowrap">
             <button class="btn btn-sm btn-ghost promote-student" data-id="${student.id}" title="升级" ${canPromote ? '' : 'disabled'}>
                 <i class="fas fa-arrow-up"></i>
@@ -9129,6 +9318,16 @@ function addStudentToTable(student) {
         deleteBtn.addEventListener('click', () => showDeleteConfirm('student', student.id, `确定要删除学生 ${student.name} (${student.studentId}) 吗？`));
     }
     
+    // 开通登录账号 / 重置密码
+    const provisionBtn = row.querySelector('.provision-student-account');
+    if (provisionBtn) {
+        provisionBtn.addEventListener('click', () => provisionStudentAccount(student.id, student.studentId));
+    }
+    const resetPwdBtn = row.querySelector('.reset-student-pwd');
+    if (resetPwdBtn) {
+        resetPwdBtn.addEventListener('click', () => resetStudentPassword(student.studentId));
+    }
+
     // 添加清理重复分数事件
     const cleanBtn = row.querySelector('.clean-student-duplicates');
     if (cleanBtn) {
@@ -9172,7 +9371,7 @@ function addStudentToTable(student) {
  * 写入 Firestore 的 students 集合。
  * @returns {void}
  */
-function saveStudent() {
+async function saveStudent() {
     const name = document.getElementById('student-name').value.trim();
     const studentClass = document.getElementById('student-class').value.trim();
     const studentId = document.getElementById('student-id').value.trim();
@@ -9189,41 +9388,137 @@ function saveStudent() {
         showAlert("请选择级别", "warning");
         return;
     }
+
+    if (studentId.length < 6) {
+        showAlert("学号至少需要 6 位，否则无法生成默认登录密码（默认密码=学号后6位）", "warning");
+        return;
+    }
     
     const btn = document.getElementById('save-student-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 保存中...';
     
     const level = levels.find(l => l.id === levelId);
-    
-    db.collection('students').add({
-        name,
-        class: studentClass,
-        studentId,
-        studentEmail: document.getElementById('student-email').value.trim() || null,
-        levelId,
-        levelName: level ? level.name : null,  // 冗余存储级别名称，方便查询
-        studyGroup: studyGroup || null,
-        workGroup: workGroup || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    })
-    .then(() => {
-        showAlert("学生添加成功", "success");
+
+    try {
+        const docRef = await db.collection('students').add({
+            name,
+            class: studentClass,
+            studentId,
+            studentEmail: document.getElementById('student-email').value.trim() || null,
+            levelId,
+            levelName: level ? level.name : null,  // 冗余存储级别名称，方便查询
+            studyGroup: studyGroup || null,
+            workGroup: workGroup || null,
+            forcePasswordChange: true, // 新账号一律要求首次登录改密
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
         document.getElementById('addStudentModal').querySelector('.btn-close').click();
         document.getElementById('add-student-form').reset();
         loadStudents();
         addActivity(`添加学生: ${name} (${studentId})`, "success");
         logAudit({ module: 'student', action: '添加', targetName: `${name} (${studentId})`, detail: `添加学生: ${name} (${studentId})` });
-    })
-    .catch(error => {
+
+        // 学生资料已经写进 Firestore，接下来顺手开通 Firebase 登录账号（学号+密码）。
+        // 这一步走的是客户端 Firebase Auth（见文件顶部 swCreateStudentAuthAccount 的
+        // 说明），不涉及 Cloud Function；即使这一步失败，学生资料本身已经保存成功，
+        // 管理员之后可以在学生列表里对这一行单独点"开通登录账号"重试。
+        try {
+            const result = await swCreateStudentAuthAccount(studentId);
+            if (result.alreadyExisted) {
+                showAlert(`学生添加成功；登录账号 ${swStudentEmail(studentId)} 此前已存在，如该生忘记密码请用列表里的"重置密码"`, "info");
+            } else {
+                await db.collection('students').doc(docRef.id).update({ authUid: result.uid });
+                showAlert(`学生添加成功，登录账号已开通（初始密码为学号后 6 位：${result.password}）`, "success");
+            }
+        } catch (authErr) {
+            console.error("开通登录账号失败: ", authErr);
+            showAlert(`学生资料已保存，但登录账号开通失败：${authErr.message}。可稍后在学生列表该行点击"开通登录账号"重试`, "warning");
+        }
+    } catch (error) {
         console.error("添加学生失败: ", error);
-        showAlert("添加学生失败", "danger");
+        showAlert("添加学生失败: " + error.message, "danger");
         addActivity("添加学生失败", "danger");
-    })
-    .finally(() => {
+    } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-save me-1"></i>保存';
-    });
+    }
+}
+
+/**
+ * 给单个学生开通登录账号（用于早于本次更新就已存在、还没有 Firebase Auth 账号的学生，
+ * 或者上面 saveStudent() / importExcel() 建号那一步失败之后的重试入口）。
+ */
+async function provisionStudentAccount(docId, studentId) {
+    if (!confirm(`确定要为学号「${studentId}」开通登录账号吗？\n\n登录邮箱：${swStudentEmail(studentId)}\n初始密码：学号后 6 位（首次登录会强制要求修改密码）`)) return;
+    try {
+        showFullscreenLoader('正在开通登录账号...');
+        const result = await swCreateStudentAuthAccount(studentId);
+        if (result.alreadyExisted) {
+            showAlert(`登录账号 ${swStudentEmail(studentId)} 已经存在（可能之前已开通过），如该生忘记密码请用"重置密码"`, "info");
+        } else {
+            await db.collection('students').doc(docId).update({ authUid: result.uid, forcePasswordChange: true });
+            showAlert(`登录账号开通成功，初始密码为学号后 6 位（${result.password}）`, "success");
+            addActivity(`为学生 ${studentId} 开通登录账号`, "success");
+            loadStudents();
+        }
+    } catch (err) {
+        console.error("开通登录账号失败: ", err);
+        showAlert("开通失败：" + err.message, "danger");
+    } finally {
+        hideFullscreenLoader();
+    }
+}
+
+/**
+ * 给已有登录账号的学生发送 Firebase 官方密码重置邮件（学生自己"忘记密码"时，
+ * 管理端也走这同一个函数）。全程不需要知道旧密码，也不涉及 Cloud Function。
+ */
+function resetStudentPassword(studentId) {
+    if (!confirm(`将向 ${swStudentEmail(studentId)}（该生的学校邮箱）发送密码重置邮件，是否继续？`)) return;
+    swSendPasswordResetEmail(studentId)
+        .then(() => showAlert(`密码重置邮件已发送到 ${swStudentEmail(studentId)}`, "success"))
+        .catch(err => showAlert("发送失败：" + err.message, "danger"));
+}
+
+/**
+ * 一键给所有还没有 authUid（=还没有 Firebase 登录账号）的学生批量开通登录账号。
+ * 主要用来修复"这次更新之前就已经存在、但从来没建过 Auth 账号"的历史学生数据——
+ * 这正是学生登录页此前"学号不存在"报错的根本原因：Firestore 里有学生资料，
+ * 但 Firebase Auth 里从来没有对应的账号。逐个建号、逐个 await，不能用 batch，
+ * 人数多的话会慢一些，但不需要任何服务器端代码。
+ */
+async function batchProvisionAllStudentAccounts() {
+    const targets = students.filter(s => !s.authUid);
+    if (targets.length === 0) {
+        showAlert("所有学生都已经开通了登录账号", "info");
+        return;
+    }
+    if (!confirm(`共有 ${targets.length} 名学生尚未开通登录账号，确定现在批量开通吗？\n\n每人的初始密码统一为「各自学号后 6 位」，操作过程中请不要关闭或刷新页面。`)) return;
+
+    let okCount = 0, skipCount = 0, failCount = 0;
+    showFullscreenLoader(`正在开通登录账号 0 / ${targets.length}...`);
+    for (let i = 0; i < targets.length; i++) {
+        const s = targets[i];
+        showFullscreenLoader(`正在开通登录账号 ${i + 1} / ${targets.length}（学号 ${s.studentId}）...`);
+        try {
+            const result = await swCreateStudentAuthAccount(s.studentId);
+            if (result.alreadyExisted) {
+                skipCount++;
+            } else {
+                await db.collection('students').doc(s.id).update({ authUid: result.uid, forcePasswordChange: true });
+                okCount++;
+            }
+        } catch (err) {
+            console.error(`开通失败（学号 ${s.studentId}）:`, err);
+            failCount++;
+        }
+    }
+    hideFullscreenLoader();
+    showAlert(`批量开通完成：成功 ${okCount} 个，已存在跳过 ${skipCount} 个，失败 ${failCount} 个${failCount > 0 ? '（失败的可在对应学生这一行单独点"开通账号"重试）' : ''}`, failCount > 0 ? "warning" : "success");
+    addActivity(`批量开通学生登录账号：成功 ${okCount}，跳过 ${skipCount}，失败 ${failCount}`, "info");
+    loadStudents();
 }
 
         // 编辑学生 - 修改版本
@@ -11423,6 +11718,10 @@ function saveLevel() {
                     
                     let batch = db.batch();
                     let successCount = 0;
+                    // 记下每个新学生的 Firestore 文档 id + 学号，批量写入完成后
+                    // 用来逐个开通 Firebase 登录账号（doc() 会在客户端就先分配好 id，
+                    // 不需要等 commit 完成）。
+                    const newStudentsForAccounts = [];
                     
                     jsonData.forEach((row, index) => {
                         // 检查必填字段
@@ -11432,28 +11731,55 @@ function saveLevel() {
                         }
                         
                         // 准备学生数据
+                        const sid = row['学号'].toString().trim();
                         const studentData = {
                             name: row['姓名'].toString().trim(),
                             class: row['班级'].toString().trim(),
-                            studentId: row['学号'].toString().trim(),
+                            studentId: sid,
                             studyGroup: optionalFields[0] in row ? row['学习组']?.toString().trim() : null,
                             workGroup: optionalFields[1] in row ? row['工作组']?.toString().trim() : null,
+                            forcePasswordChange: true,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
                         
                         // 添加到批量操作
                         const docRef = db.collection('students').doc();
                         batch.set(docRef, studentData);
+                        newStudentsForAccounts.push({ docId: docRef.id, studentId: sid });
                         successCount++;
                     });
                     
                     // 执行批量操作
                     batch.commit()
-                        .then(() => {
-                            showAlert(`成功导入 ${successCount} 名学生`, "success");
+                        .then(async () => {
+                            showAlert(`成功导入 ${successCount} 名学生，正在为他们开通登录账号…`, "success");
                             event.target.value = ''; // 清空文件输入
                             loadStudents();
                             addActivity(`从Excel导入 ${successCount} 名学生`, "success");
+
+                            // 逐个开通登录账号：createUserWithEmailAndPassword() 必须走
+                            // 临时的第二个 Firebase App 实例（见文件顶部 swCreateStudentAuthAccount
+                            // 说明），没法用 batch 一次性搞定，只能挨个来，学号少的话很快。
+                            let okCount = 0, skipCount = 0, failCount = 0;
+                            for (let i = 0; i < newStudentsForAccounts.length; i++) {
+                                const item = newStudentsForAccounts[i];
+                                btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> 开通账号 ${i + 1}/${newStudentsForAccounts.length}...`;
+                                try {
+                                    const result = await swCreateStudentAuthAccount(item.studentId);
+                                    if (result.alreadyExisted) {
+                                        skipCount++;
+                                    } else {
+                                        await db.collection('students').doc(item.docId).update({ authUid: result.uid });
+                                        okCount++;
+                                    }
+                                } catch (accErr) {
+                                    console.error(`开通登录账号失败（学号 ${item.studentId}）:`, accErr);
+                                    failCount++;
+                                }
+                            }
+                            showAlert(`登录账号开通完成：成功 ${okCount} 个，已存在跳过 ${skipCount} 个，失败 ${failCount} 个${failCount > 0 ? '（失败的可在学生列表里单独点"开通登录账号"重试）' : ''}`, failCount > 0 ? "warning" : "success");
+                            addActivity(`批量开通学生登录账号：成功 ${okCount}，跳过 ${skipCount}，失败 ${failCount}`, "info");
+                            loadStudents();
                         })
                         .catch(error => {
                             console.error("导入失败: ", error);
