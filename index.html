@@ -5051,6 +5051,14 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                                     <i class="fas fa-address-book"></i><span>会员管理</span>
                                 </a>
                             </li>
+                            <li class="sidebar-divider" role="separator"></li>
+                            <li class="sidebar-group-label">系统</li>
+                            <li class="nav-item">
+                                <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#audit-tab"
+                                   data-page-icon="fa-shield-halved" data-page-title="操作审计日志" data-page-subtitle="统一查看学生/级别/点名/会员/成绩的操作记录">
+                                    <i class="fas fa-shield-halved"></i><span>审计日志</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </nav>
@@ -5149,6 +5157,70 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
                         <!-- 会员数据动态加载 -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+                <!-- 操作审计日志：统一汇总 auditLogs（学生/级别/点名/会员增删改，见 logAudit()）
+                     + scoreLogs（改分记录，见 logScoreChange()）+ promotionLogs（级别升降，见
+                     applyStudentLevelChange()）三个集合，按时间倒序合并展示。分开写、合并读，
+                     是为了不动那两个已经被别处代码依赖的既有集合结构。 -->
+<div class="tab-pane fade" id="audit-tab">
+    <div class="card fade-in">
+        <div class="card-header">
+            <i class="fas fa-shield-halved me-2"></i>操作审计日志
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                汇总学生管理、级别管理、点名系统、会员管理的增删改操作，以及成绩改动 / 级别升降记录，按时间倒序排列。
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <select class="form-select" id="audit-filter-module">
+                        <option value="">全部类型</option>
+                        <option value="student">学生管理</option>
+                        <option value="level">级别管理</option>
+                        <option value="attendance">点名系统</option>
+                        <option value="member">会员管理</option>
+                        <option value="score">成绩改动</option>
+                        <option value="promotion">级别升降</option>
+                        <option value="other">其它</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <input type="text" class="form-control" id="audit-filter-operator" placeholder="按操作人筛选（邮箱）">
+                </div>
+                <div class="col-6 col-md-3">
+                    <input type="text" class="form-control" id="audit-filter-keyword" placeholder="搜索姓名/学号/关键词">
+                </div>
+                <div class="col-6 col-md-3">
+                    <button class="btn btn-secondary w-100" id="audit-refresh-btn" type="button">
+                        <i class="fas fa-rotate me-1"></i>刷新
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>类型</th>
+                            <th>操作</th>
+                            <th>对象</th>
+                            <th>详情</th>
+                            <th>操作人</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-log-table-body">
+                        <tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>正在加载…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-2">
+                <button class="btn btn-sm btn-outline-secondary d-none" id="audit-load-more-btn" type="button">
+                    <i class="fas fa-angles-down me-1"></i>加载更多
+                </button>
             </div>
         </div>
     </div>
@@ -8497,6 +8569,7 @@ function updateLevel() {
         document.getElementById('editLevelModal').querySelector('.btn-close').click();
         loadLevels();
         addActivity(`更新级别: ${name}`, "info");
+        logAudit({ module: 'level', action: '更新', targetId: id, targetName: name, detail: `更新级别: ${name}` });
     })
     .catch(error => {
         console.error("更新级别失败: ", error);
@@ -8855,6 +8928,7 @@ function saveLevelProject() {
                         selectedStudentIds.clear();
                         showAlert(`已删除 ${ids.length} 位学生`, 'success');
                         addActivity(`批量删除 ${ids.length} 位学生`, 'warning');
+                        logAudit({ module: 'student', action: '批量删除', detail: `批量删除 ${ids.length} 位学生（学号：${ids.map(id=>students.find(s=>s.id===id)?.studentId).filter(Boolean).join('、')}）` });
                         await loadStudents();
                     } catch (error) {
                         console.error(error);
@@ -9131,6 +9205,7 @@ function saveStudent() {
         document.getElementById('add-student-form').reset();
         loadStudents();
         addActivity(`添加学生: ${name} (${studentId})`, "success");
+        logAudit({ module: 'student', action: '添加', targetName: `${name} (${studentId})`, detail: `添加学生: ${name} (${studentId})` });
     })
     .catch(error => {
         console.error("添加学生失败: ", error);
@@ -9200,6 +9275,7 @@ function updateStudent() {
         document.getElementById('editStudentModal').querySelector('.btn-close').click();
         loadStudents();
         addActivity(`更新学生信息: ${name} (${studentId})`, "info");
+        logAudit({ module: 'student', action: '更新', targetId: id, targetName: `${name} (${studentId})`, detail: `更新学生信息: ${name} (${studentId})` });
     })
     .catch(error => {
         console.error("更新学生信息失败: ", error);
@@ -9808,6 +9884,13 @@ function addScoreToTable(score) {
                         const newValue = scoresBatchComputeNewValue(mode, r.score, r.fullMark, inputValue);
                         batch.update(db.collection('scores').doc(r.id), {
                             score: newValue,
+                            // 批量改分之前会直接覆盖"已发布"记录的分数，学生瞬间就能看到改动，
+                            // 完全绕开了单条录入/Excel 导入都会走的"录入→待审核→发布"流程。
+                            // 这里补上和那两条路径一致的处理：改动后打回待审核，需要管理员在
+                            // "待审核成绩"队列里重新审核通过才会再次对学生可见。
+                            status: SCORE_STATUS_PENDING,
+                            approvedBy: firebase.firestore.FieldValue.delete(),
+                            approvedAt: firebase.firestore.FieldValue.delete(),
                             lastEditedAt: firebase.firestore.FieldValue.serverTimestamp(),
                             lastEditedBy: currentUser?.email || 'unknown'
                         });
@@ -9830,7 +9913,7 @@ function addScoreToTable(score) {
                     }
                 }
 
-                showAlert(`已成功修改 ${rows.length} 条分数记录`, 'success');
+                showAlert(`已提交 ${rows.length} 条分数修改，等待审核后重新发布`, 'success');
                 const modalEl = document.getElementById('scoresBatchEditModal');
                 const modalInstance = bootstrap.Modal.getInstance(modalEl);
                 if (modalInstance) modalInstance.hide();
@@ -11211,16 +11294,19 @@ function confirmDelete() {
                 loadStudents();
                 loadScores();
                 addActivity(successMessage, "info");
+                logAudit({ module: 'student', action: '删除', targetId: deleteId, targetName: successMessage, detail: successMessage });
             } else if (deleteType === 'project') {
                 loadProjects();
                 loadScores();
                 addActivity(successMessage, "info");
+                logAudit({ module: 'other', action: '删除评分项目', targetId: deleteId, targetName: successMessage, detail: successMessage });
             } else if (deleteType === 'score') {
                 loadScores();
                 addActivity(successMessage, "info");
             } else if (deleteType === 'level') {
                 loadLevels();
                 addActivity(successMessage, "info");
+                logAudit({ module: 'level', action: '删除', targetId: deleteId, targetName: successMessage, detail: successMessage });
             } else if (deleteType === 'levelProject') {
                 loadLevelProjects();
                 addActivity(successMessage, "info");
@@ -11228,6 +11314,7 @@ function confirmDelete() {
                 // 重新加载会员数据
                 loadMembers();
                 addActivity(successMessage, "info");
+                logAudit({ module: 'member', action: '删除', targetId: deleteId, targetName: successMessage, detail: successMessage });
             }
         })
         .catch(error => {
@@ -11291,6 +11378,7 @@ function saveLevel() {
         
         loadLevels();
         addActivity(`添加级别: ${name}`, "success");
+        logAudit({ module: 'level', action: '添加', targetName: name, detail: `添加级别: ${name}` });
     })
     .catch(error => {
         console.error("添加级别失败: ", error);
@@ -14514,6 +14602,31 @@ function createReportHTML(selectedClass, studentAverages, projects) {
             }
         }
 
+        // ==================== 操作审计日志 ====================
+        // addActivity() 只是仪表盘"最近活动"的本地 DOM 提示，刷新页面/换一个管理员登录
+        // 就什么都看不到了，不是真正的审计记录。这里补一个持久化到 Firestore 的版本，
+        // 覆盖 scoreLogs / promotionLogs 之外的操作类型：学生增删改、级别管理、点名操作、
+        // 会员增删改。审计日志页会把这个新集合和已有的 scoreLogs / promotionLogs 合并展示，
+        // 所以这里不重复记分数变动和升降级——那两类各自的集合已经在记，且有别处代码在读它们
+        // （swRenderScoreLogTimeline / 学生工作台级别变更时间线），重复记两份容易互相不一致。
+        // module 用于审计日志页的类型筛选，取值：student / level / attendance / member。
+        function logAudit({ module, action, targetId, targetName, detail }) {
+            try {
+                db.collection('auditLogs').add({
+                    module: module || 'other',
+                    action: action || '', // 如 '添加'/'更新'/'删除'/'批量删除'
+                    targetId: targetId || null,
+                    targetName: targetName || '',
+                    detail: detail || '',
+                    operator: currentUser?.email || 'unknown',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (error) {
+                // 审计日志写入失败不应阻断主操作流程，静默降级为只在控制台提示
+                console.error('写入审计日志失败:', error);
+            }
+        }
+
         // 显示加载状态
         function showLoading(elementId) {
             const element = document.getElementById(elementId);
@@ -15638,11 +15751,13 @@ function updateCurrentSessionInfo() {
 // 取消点名
 function cancelAttendance(attendanceId) {
     showConfirmDialog('取消点名', '确定要取消这次点名吗？取消后学生将无法签到。', '确定取消', '返回', () => {
+        const attendance = attendances.find(a => a.id === attendanceId);
         db.collection('attendances').doc(attendanceId).update({ cancelled: true })
             .then(() => {
                 showAlert('点名已取消', 'info');
                 loadAttendances();
                 addActivity('取消了一次点名', 'warning');
+                logAudit({ module: 'attendance', action: '取消', targetId: attendanceId, targetName: attendance?.title || '', detail: `取消点名: ${attendance?.title || ''}` });
             })
             .catch(error => {
                 showAlert('操作失败: ' + error.message, 'danger');
@@ -15667,6 +15782,7 @@ function deleteAttendance(attendanceId) {
                 showAlert('点名已删除', 'success');
                 loadAttendances();
                 addActivity('删除了一次点名', 'warning');
+                logAudit({ module: 'attendance', action: '删除', targetId: attendanceId, targetName: attendance?.title || '', detail: `删除点名: ${attendance?.title || ''}` });
             })
             .catch(error => {
                 showAlert('删除失败: ' + error.message, 'danger');
@@ -16417,6 +16533,7 @@ function updateMember() {
             showAlert("会员更新成功", "success");
             document.getElementById('editMemberModal').querySelector('.btn-close').click();
             loadMembers();
+            logAudit({ module: 'member', action: '更新', targetId: id, targetName: `${name} (${studentId})`, detail: `更新会员: ${name} (${studentId})` });
         })
         .catch(error => showAlert("更新失败: " + error.message, "danger"))
         .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>更新'; });
@@ -17372,6 +17489,7 @@ window.saveAttendance = function() {
             safeHideModal(document.getElementById('attendanceModal'));
             loadAttendances();
             addActivity(`${id ? '更新' : '创建'}点名: ${title}`, 'success');
+            logAudit({ module: 'attendance', action: id ? '更新' : '创建', targetId: id || null, targetName: title, detail: `${id ? '更新' : '创建'}点名: ${title}（${date} ${startTimeStr}-${endTimeStr}）` });
         })
         .catch(error => {
             console.error('保存点名失败:', error);
@@ -19413,6 +19531,7 @@ window.saveMember = function() {
         document.getElementById('addMemberModal').querySelector('.btn-close').click();
         document.getElementById('add-member-form').reset();
         loadMembers();
+        logAudit({ module: 'member', action: '添加', targetName: `${name} (${studentId})`, detail: `添加会员: ${name} (${studentId})` });
     })
     .catch(error => {
         showAlert("添加失败: " + error.message, "danger");
@@ -20043,7 +20162,129 @@ function initAdminSidebar() {
 
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(initAdminSidebar, 500);
+    setTimeout(initAuditLogPage, 500);
 });
+    </script>
+
+    <!-- ============================================================
+         操作审计日志页：合并 auditLogs / scoreLogs / promotionLogs 三个集合，
+         懒加载（首次点开"审计日志"这个 tab 才查询，不占登录时的 loadAllData()）。
+         ============================================================ -->
+    <script>
+        let auditLogsRaw = [];      // 三个集合合并、按时间倒序排好序的原始记录
+        let auditLogsLimit = 50;    // 每个集合各取多少条，"加载更多"会把这个数加大再重新查一次
+        let auditLogsLoadedOnce = false;
+
+        // 把三种不同 schema 的日志记录统一成审计日志页要用的形状，方便合并渲染。
+        function normalizeAuditEntry(raw, source) {
+            const createdAt = raw.createdAt && typeof raw.createdAt.toDate === 'function' ? raw.createdAt.toDate() : null;
+            if (source === 'auditLogs') {
+                return {
+                    time: createdAt, module: raw.module || 'other', action: raw.action || '',
+                    targetName: raw.targetName || '', detail: raw.detail || '', operator: raw.operator || 'unknown'
+                };
+            }
+            if (source === 'scoreLogs') {
+                const actionText = raw.action === 'add' ? '新增分数' : raw.action === 'batch_update' ? '批量改分' : '修改分数';
+                return {
+                    time: createdAt, module: 'score', action: actionText,
+                    targetName: `${raw.studentName || ''} · ${raw.projectName || ''}`,
+                    detail: `${raw.oldValue === null || raw.oldValue === undefined ? '—' : raw.oldValue} → ${raw.newValue}${raw.reason ? '（' + raw.reason + '）' : ''}`,
+                    operator: raw.operatorEmail || 'unknown'
+                };
+            }
+            // promotionLogs
+            return {
+                time: createdAt, module: 'promotion', action: raw.type === 'promote' ? '升级' : '降级',
+                targetName: raw.studentName || '', detail: `${raw.fromLevelName || '—'} → ${raw.toLevelName || ''}`,
+                operator: raw.operatorEmail || 'unknown'
+            };
+        }
+
+        const AUDIT_MODULE_LABELS = {
+            student: '学生管理', level: '级别管理', attendance: '点名系统',
+            member: '会员管理', score: '成绩改动', promotion: '级别升降', other: '其它'
+        };
+
+        async function loadAuditLogs() {
+            const tbody = document.getElementById('audit-log-table-body');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> 加载中…</td></tr>';
+            try {
+                const [auditSnap, scoreSnap, promoSnap] = await Promise.all([
+                    db.collection('auditLogs').orderBy('createdAt', 'desc').limit(auditLogsLimit).get(),
+                    db.collection('scoreLogs').orderBy('createdAt', 'desc').limit(auditLogsLimit).get(),
+                    db.collection('promotionLogs').orderBy('createdAt', 'desc').limit(auditLogsLimit).get()
+                ]);
+                const merged = [
+                    ...auditSnap.docs.map(d => normalizeAuditEntry(d.data(), 'auditLogs')),
+                    ...scoreSnap.docs.map(d => normalizeAuditEntry(d.data(), 'scoreLogs')),
+                    ...promoSnap.docs.map(d => normalizeAuditEntry(d.data(), 'promotionLogs'))
+                ].filter(e => e.time); // 还没落地的 serverTimestamp（几乎不会在这里遇到）先跳过，避免排序出错
+                merged.sort((a, b) => b.time - a.time);
+                auditLogsRaw = merged;
+                auditLogsLoadedOnce = true;
+                // 三个集合里只要有一个"刚好取满"，就说明可能还有更早的数据没取到，"加载更多"按钮继续显示
+                const loadMoreBtn = document.getElementById('audit-load-more-btn');
+                if (loadMoreBtn) {
+                    const mayHaveMore = auditSnap.size === auditLogsLimit || scoreSnap.size === auditLogsLimit || promoSnap.size === auditLogsLimit;
+                    loadMoreBtn.classList.toggle('d-none', !mayHaveMore);
+                }
+                renderAuditLogs();
+            } catch (error) {
+                console.error('加载审计日志失败:', error);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">加载失败，请稍后重试</td></tr>';
+            }
+        }
+
+        function renderAuditLogs() {
+            const tbody = document.getElementById('audit-log-table-body');
+            if (!tbody) return;
+            const moduleFilter = document.getElementById('audit-filter-module')?.value || '';
+            const operatorFilter = (document.getElementById('audit-filter-operator')?.value || '').trim().toLowerCase();
+            const keyword = (document.getElementById('audit-filter-keyword')?.value || '').trim().toLowerCase();
+
+            const filtered = auditLogsRaw.filter(e => {
+                if (moduleFilter && e.module !== moduleFilter) return false;
+                if (operatorFilter && !(e.operator || '').toLowerCase().includes(operatorFilter)) return false;
+                if (keyword && !`${e.targetName} ${e.detail}`.toLowerCase().includes(keyword)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>暂无符合条件的审计记录</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(e => `
+                <tr>
+                    <td data-label="时间">${e.time ? e.time.toLocaleString() : '—'}</td>
+                    <td data-label="类型"><span class="badge bg-secondary-subtle text-secondary-emphasis">${AUDIT_MODULE_LABELS[e.module] || e.module}</span></td>
+                    <td data-label="操作">${escapeHtml(e.action)}</td>
+                    <td data-label="对象">${escapeHtml(e.targetName)}</td>
+                    <td data-label="详情" class="small text-muted">${escapeHtml(e.detail)}</td>
+                    <td data-label="操作人" class="small">${escapeHtml(e.operator)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function initAuditLogPage() {
+            const auditLink = document.querySelector('.admin-sidebar .sidebar-item[data-bs-target="#audit-tab"]');
+            if (auditLink) {
+                auditLink.addEventListener('shown.bs.tab', function () {
+                    if (!auditLogsLoadedOnce) loadAuditLogs();
+                });
+            }
+            const refreshBtn = document.getElementById('audit-refresh-btn');
+            if (refreshBtn) refreshBtn.addEventListener('click', () => loadAuditLogs());
+
+            const loadMoreBtn = document.getElementById('audit-load-more-btn');
+            if (loadMoreBtn) loadMoreBtn.addEventListener('click', () => { auditLogsLimit += 50; loadAuditLogs(); });
+
+            ['audit-filter-module', 'audit-filter-operator', 'audit-filter-keyword'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', renderAuditLogs);
+            });
+        }
     </script>
 
     <!-- ============================================================
