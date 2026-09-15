@@ -3738,6 +3738,91 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     #student-query-page.qa-redesign [data-qa-in] { opacity: 1; transform: none; animation: none; }
 }
 
+/* ============================================================
+   学生工作台（学号+密码登录后的新界面）样式
+   全部选择器限定在 #student-workspace-app 命名空间下，
+   不会和 #student-query-page（原有的临时查询页）冲突，
+   两套界面互斥显示：有学生账号密码登录 → 工作台；
+   否则仍走原来的临时查询/Google 登录流程。
+   直接复用文件顶部已经定义好的 --primary-500 / --gray-* / --r-* 变量。
+   ============================================================ */
+#student-workspace-app{ display:none; }
+#student-workspace-app *{ box-sizing:border-box; }
+#sw-login-screen, #sw-force-pwd-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.sw-login-card{ width:100%; max-width:380px; background:var(--card-bg,#fff); border:1px solid var(--gray-200); border-radius:var(--r-2xl); padding:36px 30px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+[data-theme="dark"] .sw-login-card{ background:#161922; border-color:#262B36; }
+.sw-login-logo{ width:56px; height:56px; border-radius:var(--r-lg); background:var(--primary-500); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 16px; }
+.sw-login-title{ text-align:center; font-weight:700; font-size:1.15rem; margin-bottom:4px; }
+.sw-login-sub{ text-align:center; color:var(--gray-500); font-size:.85rem; margin-bottom:24px; }
+.sw-field-error{ color:var(--danger,#EF4444); font-size:.78rem; margin-top:4px; display:none; }
+.sw-is-invalid ~ .sw-field-error{ display:block; }
+.sw-btn-primary{ background:var(--primary-500); border:none; color:#fff; border-radius:var(--r-md); font-weight:600; padding:10px; width:100%; }
+.sw-btn-primary:hover{ background:var(--primary-600,#4338CA); color:#fff; }
+.sw-btn-primary:disabled{ opacity:.6; }
+#sw-login-error{ display:none; background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; border-radius:var(--r-md); padding:10px 12px; font-size:.82rem; margin-bottom:14px; }
+[data-theme="dark"] #sw-login-error{ background:#2A1315; border-color:#4A1F22; color:#F87171; }
+.sw-pwd-rule{ font-size:.75rem; color:var(--gray-500); margin-top:2px; }
+.sw-pwd-rule.ok{ color:var(--success,#10B981); }
+
+#sw-workspace{ display:none; min-height:100vh; background:var(--gray-25,#F9FAFB); }
+[data-theme="dark"] #sw-workspace{ background:#0B0E14; }
+.sw-topbar{ position:sticky; top:0; z-index:1040; background:var(--card-bg,#fff); border-bottom:1px solid var(--gray-200); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; }
+[data-theme="dark"] .sw-topbar{ background:#161922; border-color:#262B36; }
+.sw-brand{ display:flex; align-items:center; gap:10px; font-weight:700; font-size:.95rem; }
+.sw-brand .sw-mark{ width:32px; height:32px; border-radius:var(--r-sm); background:var(--primary-500); color:#fff; display:flex; align-items:center; justify-content:center; }
+.sw-notif-bell{ position:relative; cursor:pointer; font-size:1.15rem; color:var(--gray-600); }
+.sw-notif-dot{ position:absolute; top:-4px; right:-4px; width:9px; height:9px; border-radius:50%; background:var(--danger,#EF4444); border:2px solid var(--card-bg,#fff); display:none; }
+.sw-body{ display:flex; }
+.sw-sidebar{ width:210px; flex-shrink:0; border-right:1px solid var(--gray-200); padding:16px 10px; min-height:calc(100vh - 53px); }
+[data-theme="dark"] .sw-sidebar{ border-color:#262B36; }
+.sw-nav-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r-md); color:var(--gray-600); font-size:.88rem; font-weight:600; cursor:pointer; margin-bottom:4px; }
+.sw-nav-item i{ width:18px; text-align:center; }
+.sw-nav-item.active{ background:var(--primary-50,#EEF2FF); color:var(--primary-600,#4338CA); }
+[data-theme="dark"] .sw-nav-item.active{ background:rgba(79,70,229,.18); color:#A5B4FC; }
+.sw-main{ flex:1; padding:20px; max-width:960px; }
+.sw-bottom-tab{ display:none; }
+@media (max-width:768px){
+  .sw-sidebar{ display:none; }
+  .sw-main{ padding:14px; padding-bottom:76px; }
+  .sw-bottom-tab{ display:flex; position:fixed; bottom:0; left:0; right:0; z-index:1040; background:var(--card-bg,#fff); border-top:1px solid var(--gray-200); padding:6px 0 calc(6px + env(safe-area-inset-bottom)); }
+  .sw-bottom-tab .sw-tab-item{ flex:1; text-align:center; font-size:.68rem; color:var(--gray-500); cursor:pointer; padding:4px 0; }
+  .sw-bottom-tab .sw-tab-item i{ display:block; font-size:1.05rem; margin-bottom:2px; }
+  .sw-bottom-tab .sw-tab-item.active{ color:var(--primary-500); }
+}
+.sw-card{ background:var(--card-bg,#fff); border:1px solid var(--gray-200); border-radius:var(--r-lg); padding:18px; margin-bottom:16px; }
+[data-theme="dark"] .sw-card{ background:#161922; border-color:#262B36; }
+.sw-panel-title{ font-weight:700; font-size:1rem; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.sw-stat-mini{ background:var(--gray-50); border-radius:var(--r-md); padding:12px 14px; }
+[data-theme="dark"] .sw-stat-mini{ background:#1C2029; }
+.sw-stat-mini .sw-num{ font-size:1.4rem; font-weight:800; color:var(--primary-500); }
+.sw-stat-mini .sw-lbl{ font-size:.75rem; color:var(--gray-500); }
+.sw-score-row{ border-bottom:1px solid var(--gray-200); padding:12px 0; }
+[data-theme="dark"] .sw-score-row{ border-color:#262B36; }
+.sw-score-row:last-child{ border-bottom:none; }
+.sw-score-row .sw-name{ font-weight:600; font-size:.9rem; }
+.sw-score-row .sw-meta{ font-size:.75rem; color:var(--gray-500); }
+.sw-progress{ height:8px; border-radius:var(--r-full); background:var(--gray-100); margin-top:6px; }
+.sw-progress-bar{ height:100%; border-radius:var(--r-full); background:var(--primary-500); }
+.sw-safe-code-box{ text-align:center; padding:20px; }
+.sw-safe-code-text{ font-family:'Courier New',monospace; font-size:1.5rem; font-weight:800; letter-spacing:2px; color:var(--primary-600,#4338CA); margin:14px 0 6px; }
+[data-theme="dark"] .sw-safe-code-text{ color:#A5B4FC; }
+#sw-safe-qr{ display:flex; justify-content:center; margin:10px 0; }
+.sw-rank-row{ display:flex; align-items:center; gap:12px; padding:10px 6px; border-radius:var(--r-md); }
+.sw-rank-row.sw-me{ background:var(--primary-50,#EEF2FF); }
+[data-theme="dark"] .sw-rank-row.sw-me{ background:rgba(79,70,229,.15); }
+.sw-rank-badge{ width:26px; height:26px; border-radius:50%; background:var(--gray-100); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.78rem; }
+.sw-notif-item{ display:flex; gap:10px; padding:12px 6px; border-bottom:1px solid var(--gray-200); cursor:pointer; }
+[data-theme="dark"] .sw-notif-item{ border-color:#262B36; }
+.sw-notif-item.sw-unread{ background:var(--primary-50,#EEF2FF); }
+[data-theme="dark"] .sw-notif-item.sw-unread{ background:rgba(79,70,229,.12); }
+.sw-notif-icon{ width:34px; height:34px; border-radius:50%; background:var(--gray-100); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sw-empty-state{ text-align:center; padding:40px 10px; color:var(--gray-500); }
+.sw-empty-state i{ font-size:2rem; margin-bottom:10px; opacity:.5; }
+.sw-skeleton{ background:linear-gradient(90deg,var(--gray-100) 25%,var(--gray-200) 37%,var(--gray-100) 63%); background-size:400% 100%; animation:sw-sk 1.4s ease infinite; border-radius:var(--r-sm); }
+@keyframes sw-sk{ 0%{background-position:100% 50%;} 100%{background-position:0 50%;} }
+.sw-spin{ animation:sw-spin 1s linear infinite; }
+@keyframes sw-spin{ to{ transform:rotate(360deg); } }
+
 </style>
 
 <style id="welcome-page-redesign">
@@ -4262,6 +4347,251 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 </head>
     
 <body>
+    <!-- ============================================================
+         学生工作台整体容器（学号+密码登录，独立于下方原有的
+         "学生查询页"临时查询流程）。默认隐藏，只有当
+         Firebase Auth 当前登录邮箱形如 学号@student.local 时，
+         由 auth.onAuthStateChanged 里新增的分支负责显示这一整块，
+         并隐藏 #student-query-page 和管理员后台。
+         ============================================================ -->
+    <div id="student-workspace-app">
+
+      <!-- A1. 学生登录页 -->
+      <div id="sw-login-screen">
+        <div class="sw-login-card">
+          <div class="sw-login-logo"><i class="fas fa-user-graduate"></i></div>
+          <div class="sw-login-title">MAKER组 学生工作台</div>
+          <div class="sw-login-sub">新山宽柔中学电脑协会杂家</div>
+
+          <div id="sw-login-error"><i class="fas fa-exclamation-circle me-1"></i><span id="sw-login-error-text"></span></div>
+
+          <form id="sw-login-form" novalidate>
+            <div class="mb-3">
+              <label class="form-label">学号</label>
+              <input type="text" class="form-control" id="sw-login-studentid" placeholder="请输入学号" autocomplete="username" required>
+              <div class="sw-field-error">请输入学号</div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">密码</label>
+              <input type="password" class="form-control" id="sw-login-password" placeholder="请输入密码" autocomplete="current-password" required>
+              <div class="sw-field-error">请输入密码</div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sw-login-remember" checked>
+                <label class="form-check-label small" for="sw-login-remember">记住我</label>
+              </div>
+              <a href="#" class="small" id="sw-forgot-pwd-link">忘记密码？</a>
+            </div>
+            <button type="submit" class="sw-btn-primary" id="sw-login-submit-btn">
+              <span id="sw-login-btn-text">登录</span>
+              <i class="fas fa-circle-notch sw-spin d-none" id="sw-login-btn-spinner"></i>
+            </button>
+            <div class="text-center small text-muted mt-3">首次登录默认密码为学号后 6 位</div>
+            <div class="text-center small mt-2"><a href="#" onclick="swExitToGuestQuery(); return false;">改用访客临时查询 →</a></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 首次登录强制改密 -->
+      <div id="sw-force-pwd-screen" class="d-none">
+        <div class="sw-login-card">
+          <div class="sw-login-logo"><i class="fas fa-key"></i></div>
+          <div class="sw-login-title">首次登录，请设置新密码</div>
+          <div class="sw-login-sub">为了账号安全，请修改默认密码后再继续</div>
+          <div id="sw-force-pwd-error" style="display:none;" class="mb-2"><small class="text-danger" id="sw-force-pwd-error-text"></small></div>
+          <form id="sw-force-pwd-form">
+            <div class="mb-3">
+              <label class="form-label">新密码</label>
+              <input type="password" class="form-control" id="sw-new-pwd-1" placeholder="至少 8 位，含字母与数字" required>
+              <div class="sw-pwd-rule" id="sw-pwd-rule-len"><i class="fas fa-circle" style="font-size:5px;"></i> 至少 8 位</div>
+              <div class="sw-pwd-rule" id="sw-pwd-rule-mix"><i class="fas fa-circle" style="font-size:5px;"></i> 同时包含字母和数字</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">确认新密码</label>
+              <input type="password" class="form-control" id="sw-new-pwd-2" placeholder="再次输入新密码" required>
+              <div class="sw-field-error" id="sw-pwd-match-error" style="display:none;">两次输入的密码不一致</div>
+            </div>
+            <button type="submit" class="sw-btn-primary">确认修改并进入工作台</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- A2. 学生工作台 -->
+      <div id="sw-workspace">
+        <div class="sw-topbar">
+          <div class="sw-brand">
+            <div class="sw-mark"><i class="fas fa-cubes"></i></div>
+            <span id="sw-student-name">加载中…</span>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <div class="sw-notif-bell" id="sw-notif-bell-btn" onclick="swSwitchModule('notifications')">
+              <i class="fas fa-bell"></i>
+              <span class="sw-notif-dot" id="sw-notif-dot"></span>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="swDoLogout()"><i class="fas fa-sign-out-alt"></i></button>
+          </div>
+        </div>
+
+        <div class="sw-body">
+          <div class="sw-sidebar">
+            <div class="sw-nav-item active" data-module="scores" onclick="swSwitchModule('scores')"><i class="fas fa-chart-line"></i> 我的成绩</div>
+            <div class="sw-nav-item" data-module="attendance" onclick="swSwitchModule('attendance')"><i class="fas fa-qrcode"></i> 我的签到</div>
+            <div class="sw-nav-item" data-module="profile" onclick="swSwitchModule('profile')"><i class="fas fa-id-card"></i> 个人资料</div>
+            <div class="sw-nav-item" data-module="leaderboard" onclick="swSwitchModule('leaderboard')"><i class="fas fa-trophy"></i> 排行榜</div>
+            <div class="sw-nav-item" data-module="notifications" onclick="swSwitchModule('notifications')"><i class="fas fa-bell"></i> 通知中心</div>
+          </div>
+
+          <div class="sw-main">
+            <!-- ① 我的成绩 -->
+            <section id="sw-module-scores">
+              <div class="sw-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div class="sw-panel-title mb-0"><i class="fas fa-layer-group text-primary"></i> 级别</div>
+                  <select class="form-select form-select-sm" style="width:auto;" id="sw-level-history-select" onchange="swOnLevelHistoryChange()"></select>
+                </div>
+                <div class="row g-2 mb-2" id="sw-score-stat-cards"></div>
+              </div>
+              <div class="sw-card">
+                <div class="sw-panel-title"><i class="fas fa-list-check text-primary"></i> 项目明细</div>
+                <div id="sw-score-detail-list"></div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="sw-card">
+                    <div class="sw-panel-title"><i class="fas fa-chart-area text-primary"></i> 能力雷达图</div>
+                    <canvas id="sw-radar-chart" height="220"></canvas>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="sw-card">
+                    <div class="sw-panel-title"><i class="fas fa-chart-line text-primary"></i> 成绩趋势</div>
+                    <canvas id="sw-trend-chart" height="220"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="sw-card d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-bold" id="sw-score-rank-text">排名加载中…</div>
+                  <div class="text-muted small" id="sw-score-percentile-text"></div>
+                </div>
+                <div>
+                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="window.print()"><i class="fas fa-print"></i> 打印</button>
+                  <button class="btn btn-sm sw-btn-primary" style="width:auto;display:inline-block;" onclick="swExportMyReportPDF()"><i class="fas fa-file-pdf"></i> 导出 PDF</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ② 我的签到 -->
+            <section id="sw-module-attendance" class="d-none">
+              <div id="sw-active-checkin-area"></div>
+              <div class="sw-card">
+                <div class="sw-panel-title"><i class="fas fa-shield-alt text-primary"></i> 我的个人安全码</div>
+                <div class="sw-safe-code-box">
+                  <div id="sw-safe-qr"></div>
+                  <div class="sw-safe-code-text" id="sw-safe-code-text">------</div>
+                  <button class="btn btn-sm btn-outline-secondary" onclick="swCopySafeCode()"><i class="fas fa-copy"></i> 复制安全码</button>
+                  <div class="text-muted small mt-2">点名时请向老师出示此码，或使用二维码扫码签到</div>
+                </div>
+              </div>
+              <div class="sw-card">
+                <div class="row g-2 mb-3" id="sw-attendance-stat-cards"></div>
+                <div class="sw-panel-title"><i class="fas fa-history text-primary"></i> 历史签到记录</div>
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead><tr><th>日期</th><th>点名标题</th><th>状态</th><th>签到时间</th></tr></thead>
+                    <tbody id="sw-attendance-history-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- ③ 个人资料 -->
+            <section id="sw-module-profile" class="d-none">
+              <div class="sw-card">
+                <div class="sw-panel-title"><i class="fas fa-id-card text-primary"></i> 基本信息</div>
+                <div class="row g-3 mb-2">
+                  <div class="col-6"><label class="form-label">学号</label><input class="form-control" id="sw-profile-studentid" disabled></div>
+                  <div class="col-6"><label class="form-label">姓名</label><input class="form-control" id="sw-profile-name" disabled></div>
+                  <div class="col-6"><label class="form-label">班级</label><input class="form-control" id="sw-profile-class" disabled></div>
+                  <div class="col-6"><label class="form-label">当前级别</label><input class="form-control" id="sw-profile-level" disabled></div>
+                </div>
+                <form id="sw-profile-edit-form">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">邮箱</label>
+                      <input type="email" class="form-control" id="sw-profile-email">
+                      <div class="sw-field-error">请输入有效邮箱</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">电话</label>
+                      <input type="tel" class="form-control" id="sw-profile-phone">
+                      <div class="sw-field-error">请输入有效电话号码</div>
+                    </div>
+                  </div>
+                  <button type="submit" class="btn sw-btn-primary mt-3" style="width:auto;display:inline-block;">保存修改</button>
+                </form>
+              </div>
+              <div class="sw-card">
+                <div class="sw-panel-title"><i class="fas fa-lock text-primary"></i> 修改密码</div>
+                <form id="sw-change-pwd-form" class="row g-3">
+                  <div class="col-md-4"><label class="form-label">当前密码</label><input type="password" class="form-control" id="sw-cur-pwd" required></div>
+                  <div class="col-md-4"><label class="form-label">新密码</label><input type="password" class="form-control" id="sw-new-pwd" required></div>
+                  <div class="col-md-4"><label class="form-label">确认新密码</label><input type="password" class="form-control" id="sw-new-pwd-confirm" required></div>
+                  <div class="col-12"><button type="submit" class="btn btn-outline-secondary btn-sm">更新密码</button></div>
+                </form>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="sw-card">
+                    <div class="sw-panel-title"><i class="fas fa-arrow-up-right-dots text-primary"></i> 级别变更历史</div>
+                    <div id="sw-level-history-timeline"></div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="sw-card">
+                    <div class="sw-panel-title"><i class="fas fa-pen text-primary"></i> 改分记录</div>
+                    <div id="sw-score-log-timeline"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ④ 排行榜 -->
+            <section id="sw-module-leaderboard" class="d-none">
+              <div class="sw-card">
+                <div class="sw-panel-title"><i class="fas fa-crown text-primary"></i> 本级别 Top 10</div>
+                <div id="sw-leaderboard-list"></div>
+              </div>
+              <div class="sw-card text-center">
+                <div class="text-muted small mb-1">匿名对比</div>
+                <div class="fw-bold" id="sw-leaderboard-percentile-text" style="font-size:1.1rem;"></div>
+              </div>
+            </section>
+
+            <!-- ⑤ 通知中心 -->
+            <section id="sw-module-notifications" class="d-none">
+              <div class="sw-card">
+                <div class="d-flex justify-content-between align-items-center sw-panel-title">
+                  <span><i class="fas fa-bell text-primary"></i> 通知</span>
+                  <button class="btn btn-sm btn-link" onclick="swMarkAllNotifRead()">全部标为已读</button>
+                </div>
+                <div id="sw-notif-list"></div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="sw-bottom-tab">
+          <div class="sw-tab-item active" data-module="scores" onclick="swSwitchModule('scores')"><i class="fas fa-chart-line"></i>成绩</div>
+          <div class="sw-tab-item" data-module="attendance" onclick="swSwitchModule('attendance')"><i class="fas fa-qrcode"></i>签到</div>
+          <div class="sw-tab-item" data-module="profile" onclick="swSwitchModule('profile')"><i class="fas fa-id-card"></i>资料</div>
+          <div class="sw-tab-item" data-module="leaderboard" onclick="swSwitchModule('leaderboard')"><i class="fas fa-trophy"></i>排行</div>
+          <div class="sw-tab-item" data-module="notifications" onclick="swSwitchModule('notifications')"><i class="fas fa-bell"></i>通知</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 学生查询页面 -->
     <div id="student-query-page" class="container qa-redesign">
         <div class="query-shell">
@@ -6113,7 +6443,15 @@ let currentReportData = null;
             showMainSystem();
             loadAllData();
             addActivity("用户登录系统", "success");
+        } else if (user && (user.email || '').endsWith('@student.local')) {
+            // 学号+密码登录的学生账号：邮箱约定为 `${studentId}@student.local`
+            // （与会员管理里已经在用的兜底邮箱写法保持一致，见 saveMember 相关逻辑），
+            // 交给学生工作台自己的初始化流程处理，不走管理员后台/访客查询页。
+            document.getElementById('student-query-page').style.display = 'none';
+            document.getElementById('main-system').style.display = 'none';
+            swHandleAuthUser(user);
         } else {
+            document.getElementById('student-workspace-app').style.display = 'none';
             showStudentQueryPage();
         }
     });
@@ -6881,6 +7219,8 @@ async function loadAllDataForQuery() {
         function showStudentQueryPage() {
             document.getElementById('student-query-page').style.removeProperty('display');
             document.getElementById('main-system').style.display = 'none';
+            const swApp = document.getElementById('student-workspace-app');
+            if (swApp) swApp.style.display = 'none';
             document.getElementById('login-form').reset();
             initQueryLandingExtras();
         }
@@ -6889,8 +7229,628 @@ async function loadAllDataForQuery() {
         function showMainSystem() {
             document.getElementById('student-query-page').style.display = 'none';
             document.getElementById('main-system').style.display = 'block';
+            const swApp = document.getElementById('student-workspace-app');
+            if (swApp) swApp.style.display = 'none';
         }
-        
+
+        // 从学生工作台切回访客临时查询页（不登出 Firebase Auth 学生账号，
+        // 只是切换界面；下次刷新 onAuthStateChanged 仍会带回工作台，
+        // 如果学生确实想登出，请用工作台右上角的登出按钮 swDoLogout()）
+        function swExitToGuestQuery() {
+            document.getElementById('student-workspace-app').style.display = 'none';
+            showStudentQueryPage();
+        }
+
+        // ============================================================
+        // 学生工作台（学号+密码登录体系）—— 第 1 批新增功能
+        // 复用文件顶部已经初始化好的 firebase / auth / db，不重复初始化。
+        // 所有函数、DOM id、CSS class 一律加 sw- 前缀，避免和原有代码撞名。
+        // ------------------------------------------------------------
+        // 账号约定：登录邮箱 = `${studentId}@student.local`
+        // （与会员管理 saveMember 里已经在用的兜底邮箱写法一致），
+        // Firestore students/{id} 需要有 authUid 字段指回 Firebase Auth 的 uid。
+        // 首次登录密码 = 学号后 6 位，forcePasswordChange !== false 时强制改密。
+        // ============================================================
+        function swStudentEmail(studentId){ return `${studentId}@student.local`; }
+
+        let swCurrentStudent = null;
+        let swCurrentMember = null;
+        let swCurrentAuthUser = null;
+        let swMyScores = [];
+        let swMyLevelsHistory = [];
+        let swSelectedLevelId = null;
+        let swAllProjects = [];
+        let swAllLevelProjects = [];
+        let swAllLevels = [];
+        let swMyAttendanceRecords = [];
+        let swAllAttendances = [];
+        let swRadarChartInst = null;
+        let swTrendChartInst = null;
+        let swNotifUnsub = null;
+
+        // ---------------- 登录表单 ----------------
+        document.getElementById('sw-login-form').addEventListener('submit', function(e){
+            e.preventDefault();
+            const sid = document.getElementById('sw-login-studentid');
+            const pwd = document.getElementById('sw-login-password');
+            let ok = true;
+            [sid, pwd].forEach(el=>{
+                if(!el.value.trim()){ el.classList.add('sw-is-invalid'); ok = false; }
+                else el.classList.remove('sw-is-invalid');
+            });
+            if(!ok) return;
+
+            const btn = document.getElementById('sw-login-submit-btn');
+            const text = document.getElementById('sw-login-btn-text');
+            const spinner = document.getElementById('sw-login-btn-spinner');
+            btn.disabled = true; text.textContent = '登录中…'; spinner.classList.remove('d-none');
+            swHideLoginError();
+
+            const remember = document.getElementById('sw-login-remember').checked;
+            const persistence = remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+
+            auth.setPersistence(persistence)
+                .then(()=> auth.signInWithEmailAndPassword(swStudentEmail(sid.value.trim()), pwd.value))
+                .then(()=>{
+                    if(remember) localStorage.setItem('swLastStudentId', sid.value.trim());
+                })
+                .catch(err => {
+                    btn.disabled = false; text.textContent = '登录'; spinner.classList.add('d-none');
+                    swShowLoginError(swMapAuthError(err));
+                });
+        });
+
+        function swMapAuthError(err){
+            const map = {
+                'auth/user-not-found': '学号不存在，请确认后重试，或联系管理员开通账号',
+                'auth/wrong-password': '密码错误，请重新输入',
+                'auth/too-many-requests': '尝试次数过多，请稍后再试',
+                'auth/invalid-email': '学号格式不正确',
+                'auth/user-disabled': '该账号已被停用，请联系管理员'
+            };
+            return map[err.code] || ('登录失败：' + err.message);
+        }
+        function swShowLoginError(msg){
+            document.getElementById('sw-login-error-text').textContent = msg;
+            document.getElementById('sw-login-error').style.display = 'block';
+        }
+        function swHideLoginError(){ document.getElementById('sw-login-error').style.display = 'none'; }
+
+        document.getElementById('sw-forgot-pwd-link').addEventListener('click', function(e){
+            e.preventDefault();
+            alert('请联系电脑协会 MAKER 组管理员重置密码，无法自助找回。');
+        });
+
+        (function swPrefillLastStudentId(){
+            const last = localStorage.getItem('swLastStudentId');
+            if(last) {
+                const el = document.getElementById('sw-login-studentid');
+                if (el) el.value = last;
+            }
+        })();
+
+        // ---------------- 登录态处理（由顶部 auth.onAuthStateChanged 调用） ----------------
+        async function swHandleAuthUser(user){
+            swCurrentAuthUser = user;
+            document.getElementById('sw-login-screen').style.display = 'none';
+            document.getElementById('sw-force-pwd-screen').classList.add('d-none');
+            document.getElementById('sw-workspace').style.display = 'none';
+            document.getElementById('student-workspace-app').style.display = 'block';
+
+            const snap = await db.collection('students').where('authUid', '==', user.uid).limit(1).get();
+            if(snap.empty){
+                // 兼容"管理员刚开通账号、还没来得及写 authUid"的边界情况：
+                // 按邮箱前缀（学号）兜底查一次并回写 authUid
+                const sid = (user.email || '').split('@')[0];
+                const snap2 = await db.collection('students').where('studentId', '==', sid).limit(1).get();
+                if(snap2.empty){
+                    document.getElementById('student-workspace-app').style.display = 'block';
+                    document.getElementById('sw-login-screen').style.display = 'flex';
+                    swShowLoginError('未找到该学号对应的学生档案，请联系管理员');
+                    auth.signOut();
+                    return;
+                }
+                const doc = snap2.docs[0];
+                await db.collection('students').doc(doc.id).update({ authUid: user.uid });
+                swCurrentStudent = { id: doc.id, ...doc.data(), authUid: user.uid };
+            } else {
+                const doc = snap.docs[0];
+                swCurrentStudent = { id: doc.id, ...doc.data() };
+            }
+
+            if(swCurrentStudent.forcePasswordChange !== false){
+                document.getElementById('sw-login-screen').style.display = 'none';
+                document.getElementById('sw-force-pwd-screen').classList.remove('d-none');
+                return;
+            }
+
+            swEnterWorkspace();
+        }
+
+        // ---------------- 首次登录强制改密 ----------------
+        const swPwd1 = document.getElementById('sw-new-pwd-1');
+        swPwd1.addEventListener('input', ()=>{
+            const v = swPwd1.value;
+            swToggleRule('sw-pwd-rule-len', v.length >= 8);
+            swToggleRule('sw-pwd-rule-mix', /[A-Za-z]/.test(v) && /[0-9]/.test(v));
+        });
+        function swToggleRule(id, pass){ document.getElementById(id).classList.toggle('ok', pass); }
+
+        document.getElementById('sw-force-pwd-form').addEventListener('submit', function(e){
+            e.preventDefault();
+            const v1 = document.getElementById('sw-new-pwd-1').value;
+            const v2 = document.getElementById('sw-new-pwd-2').value;
+            const matchErr = document.getElementById('sw-pwd-match-error');
+            if(v1 !== v2){ matchErr.style.display='block'; return; } else matchErr.style.display='none';
+            if(v1.length < 8 || !/[A-Za-z]/.test(v1) || !/[0-9]/.test(v1)){
+                swShowForcePwdError('密码需至少 8 位并同时包含字母和数字'); return;
+            }
+            swCurrentAuthUser.updatePassword(v1)
+                .then(()=> db.collection('students').doc(swCurrentStudent.id).update({ forcePasswordChange: false }))
+                .then(()=>{
+                    swCurrentStudent.forcePasswordChange = false;
+                    document.getElementById('sw-force-pwd-screen').classList.add('d-none');
+                    swEnterWorkspace();
+                })
+                .catch(err=>{
+                    if(err.code === 'auth/requires-recent-login'){
+                        swShowForcePwdError('安全校验已过期，请重新登录后再修改密码');
+                        auth.signOut();
+                    } else swShowForcePwdError('修改失败：' + err.message);
+                });
+        });
+        function swShowForcePwdError(msg){
+            document.getElementById('sw-force-pwd-error-text').textContent = msg;
+            document.getElementById('sw-force-pwd-error').style.display = 'block';
+        }
+
+        function swDoLogout(){ auth.signOut(); }
+
+        // ---------------- 进入工作台 ----------------
+        async function swEnterWorkspace(){
+            document.getElementById('sw-login-screen').style.display = 'none';
+            document.getElementById('sw-workspace').style.display = 'block';
+            document.getElementById('sw-student-name').textContent = `${swCurrentStudent.name}（${swCurrentStudent.studentId}）`;
+
+            swShowSkeletons();
+
+            const [scoresSnap, projectsSnap, lpSnap, levelsSnap, membersSnap] = await Promise.all([
+                db.collection('scores').where('studentId', '==', swCurrentStudent.id).get(),
+                db.collection('projects').get(),
+                db.collection('levelProjects').get(),
+                db.collection('levels').get(),
+                db.collection('members').where('studentId', '==', swCurrentStudent.studentId).limit(1).get()
+            ]);
+            swMyScores = scoresSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swAllProjects = projectsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swAllLevelProjects = lpSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swAllLevels = levelsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swCurrentMember = membersSnap.empty ? null : {id:membersSnap.docs[0].id, ...membersSnap.docs[0].data()};
+
+            swSelectedLevelId = swCurrentStudent.levelId || (swAllLevels[0] && swAllLevels[0].id);
+            swBuildLevelHistoryOptions();
+            swRenderScoresModule();
+            swRenderProfileModule();
+            swRenderLeaderboardModule();
+            swLoadAttendanceModule();
+            swListenNotifications();
+
+            swSwitchModule('scores');
+        }
+
+        function swShowSkeletons(){
+            document.getElementById('sw-score-detail-list').innerHTML = swSkeletonRows(4);
+            document.getElementById('sw-attendance-history-body').innerHTML = `<tr><td colspan="4">${swSkeletonRows(3)}</td></tr>`;
+            document.getElementById('sw-leaderboard-list').innerHTML = swSkeletonRows(5);
+            document.getElementById('sw-notif-list').innerHTML = swSkeletonRows(3);
+        }
+        function swSkeletonRows(n){
+            let html = '';
+            for(let i=0;i<n;i++) html += `<div class="sw-skeleton" style="height:16px; margin:8px 0; width:${80-i*8}%;"></div>`;
+            return html;
+        }
+
+        // ---------------- 模块切换 ----------------
+        function swSwitchModule(name){
+            ['scores','attendance','profile','leaderboard','notifications'].forEach(m=>{
+                document.getElementById('sw-module-'+m).classList.toggle('d-none', m !== name);
+            });
+            document.querySelectorAll('.sw-nav-item').forEach(el=> el.classList.toggle('active', el.dataset.module === name));
+            document.querySelectorAll('.sw-bottom-tab .sw-tab-item').forEach(el=> el.classList.toggle('active', el.dataset.module === name));
+            history.replaceState(null, '', `?swtab=${name}`);
+            if(name === 'scores') swRenderCharts();
+        }
+        (function swInitDeepLink(){
+            const params = new URLSearchParams(location.search);
+            const tab = params.get('swtab');
+            if(tab) window.addEventListener('load', ()=> setTimeout(()=>{ if(document.getElementById('sw-workspace').style.display === 'block') swSwitchModule(tab); }, 500));
+        })();
+
+        // ---------------- ① 我的成绩 ----------------
+        function swBuildLevelHistoryOptions(){
+            const idsInScores = [...new Set(swMyScores.map(s=>s.levelId).filter(Boolean))];
+            const ids = [...new Set([...idsInScores, swCurrentStudent.levelId].filter(Boolean))];
+            swMyLevelsHistory = swAllLevels.filter(l=> ids.includes(l.id));
+            if(swMyLevelsHistory.length === 0 && swAllLevels.length){
+                swMyLevelsHistory = [swAllLevels.find(l=>l.id===swCurrentStudent.levelId) || swAllLevels[0]];
+            }
+            const sel = document.getElementById('sw-level-history-select');
+            sel.innerHTML = swMyLevelsHistory.map(l=>`<option value="${l.id}" ${l.id===swSelectedLevelId?'selected':''}>${swEsc(l.name)}${l.id===swCurrentStudent.levelId?'（当前）':''}</option>`).join('');
+        }
+        function swOnLevelHistoryChange(){
+            swSelectedLevelId = document.getElementById('sw-level-history-select').value;
+            swRenderScoresModule();
+            swRenderCharts();
+        }
+
+        function swRenderScoresModule(){
+            const levelScores = swMyScores.filter(s=> s.levelId === swSelectedLevelId);
+            const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
+
+            let totalScore = 0, totalMax = 0;
+            const rows = lpForLevel.map(lp=>{
+                const project = swAllProjects.find(p=>p.id===lp.projectId) || {};
+                const scoreDoc = levelScores.find(s=> s.projectId === lp.projectId);
+                const got = scoreDoc ? Number(scoreDoc.score) || 0 : 0;
+                const max = Number(lp.maxScore || project.maxScore || 100);
+                const weight = lp.weight != null ? lp.weight : 1;
+                totalScore += got * weight; totalMax += max * weight;
+                const pct = max ? Math.round((got/max)*100) : 0;
+                return {name: project.name || '未命名项目', got, max, weight, pct, hasScore: !!scoreDoc};
+            });
+
+            document.getElementById('sw-score-stat-cards').innerHTML = `
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${rows.length}</div><div class="sw-lbl">评分项目</div></div></div>
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${totalMax? Math.round((totalScore/totalMax)*100):0}%</div><div class="sw-lbl">总得分率</div></div></div>
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${rows.filter(r=>r.hasScore).length}/${rows.length}</div><div class="sw-lbl">已录入</div></div></div>
+            `;
+
+            const list = document.getElementById('sw-score-detail-list');
+            if(rows.length === 0){
+                list.innerHTML = swEmptyState('fa-inbox', '暂无该级别的评分项目', '还没有为这个级别设置评分项目');
+            } else {
+                list.innerHTML = rows.map(r=>`
+                    <div class="sw-score-row">
+                        <div class="d-flex justify-content-between">
+                            <span class="sw-name">${swEsc(r.name)}</span>
+                            <span class="sw-meta">${r.hasScore? `${r.got} / ${r.max}` : '未录入'}（权重 ${r.weight}）</span>
+                        </div>
+                        <div class="sw-progress"><div class="sw-progress-bar" style="width:${r.pct}%"></div></div>
+                    </div>
+                `).join('');
+            }
+            swComputeRankAndPercentile();
+        }
+
+        async function swComputeRankAndPercentile(){
+            const rankTextEl = document.getElementById('sw-score-rank-text');
+            const pctTextEl = document.getElementById('sw-score-percentile-text');
+            rankTextEl.textContent = '排名计算中…';
+            try{
+                const [studentsSnap, scoresSnap] = await Promise.all([
+                    db.collection('students').where('levelId','==', swSelectedLevelId).get(),
+                    db.collection('scores').where('levelId','==', swSelectedLevelId).get()
+                ]);
+                const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+                const levelScores = scoresSnap.docs.map(d=>d.data());
+                const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
+
+                const totals = levelStudents.map(stu=>{
+                    let got=0, max=0;
+                    lpForLevel.forEach(lp=>{
+                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.projectId);
+                        const w = lp.weight != null ? lp.weight : 1;
+                        got += (sd? Number(sd.score)||0 : 0) * w;
+                        max += Number(lp.maxScore||100) * w;
+                    });
+                    return { id: stu.id, pct: max? (got/max)*100 : 0 };
+                }).sort((a,b)=> b.pct - a.pct);
+
+                const myIndex = totals.findIndex(t=> t.id === swCurrentStudent.id);
+                const rank = myIndex + 1;
+                const total = totals.length;
+                const percentile = total>1 ? Math.round(((total-rank)/(total-1))*100) : 100;
+
+                rankTextEl.textContent = myIndex>=0 ? `本级别排名：第 ${rank} 名 / 共 ${total} 人` : '暂无排名数据';
+                pctTextEl.textContent = myIndex>=0 ? `超过了 ${percentile}% 的同学` : '';
+            }catch(e){
+                rankTextEl.textContent = '排名加载失败';
+                console.error(e);
+            }
+        }
+
+        function swRenderCharts(){
+            const levelScores = swMyScores.filter(s=> s.levelId === swSelectedLevelId);
+            const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
+            const labels = lpForLevel.map(lp=> (swAllProjects.find(p=>p.id===lp.projectId)||{}).name || '项目');
+            const pcts = lpForLevel.map(lp=>{
+                const sd = levelScores.find(s=> s.projectId===lp.projectId);
+                const max = Number(lp.maxScore||100);
+                return sd && max ? Math.round((Number(sd.score)/max)*100) : 0;
+            });
+
+            if(swRadarChartInst) swRadarChartInst.destroy();
+            const radarCtx = document.getElementById('sw-radar-chart');
+            if(labels.length){
+                swRadarChartInst = new Chart(radarCtx, {
+                    type:'radar',
+                    data:{ labels, datasets:[{ label:'得分率 (%)', data:pcts, backgroundColor:'rgba(79,70,229,.15)', borderColor:'#4F46E5', pointBackgroundColor:'#4F46E5' }] },
+                    options:{ scales:{ r:{ suggestedMin:0, suggestedMax:100 } }, plugins:{ legend:{display:false} } }
+                });
+            }
+
+            if(swTrendChartInst) swTrendChartInst.destroy();
+            const trendCtx = document.getElementById('sw-trend-chart');
+            const trendData = swMyLevelsHistory.map(lv=>{
+                const lp = swAllLevelProjects.filter(x=>x.levelId===lv.id);
+                let got=0, max=0;
+                lp.forEach(x=>{
+                    const sd = swMyScores.find(s=> s.levelId===lv.id && s.projectId===x.projectId);
+                    got += sd? Number(sd.score)||0 : 0; max += Number(x.maxScore||100);
+                });
+                return { name: lv.name, pct: max? Math.round((got/max)*100):0 };
+            });
+            swTrendChartInst = new Chart(trendCtx, {
+                type:'line',
+                data:{ labels: trendData.map(t=>t.name), datasets:[{ label:'总得分率 (%)', data: trendData.map(t=>t.pct), borderColor:'#4F46E5', backgroundColor:'rgba(79,70,229,.1)', tension:.3, fill:true }] },
+                options:{ scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{display:false} } }
+            });
+        }
+
+        async function swExportMyReportPDF(){
+            const target = document.getElementById('sw-module-scores');
+            const canvas = await html2canvas(target, { scale:2 });
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p','mm','a4');
+            const imgW = 190;
+            const imgH = canvas.height * imgW / canvas.width;
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, imgH);
+            pdf.save(`${swCurrentStudent.name}_${swCurrentStudent.studentId}_成绩单.pdf`);
+        }
+
+        // ---------------- ② 我的签到 ----------------
+        async function swLoadAttendanceModule(){
+            swRenderSafeCode();
+            const [attSnap, recSnap] = await Promise.all([
+                db.collection('attendances').orderBy('createdAt','desc').get(),
+                swCurrentMember ? db.collection('attendanceRecords').where('memberId','==', swCurrentMember.id).get() : Promise.resolve({docs:[]})
+            ]);
+            swAllAttendances = attSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swMyAttendanceRecords = recSnap.docs.map(d=>({id:d.id, ...d.data()}));
+            swRenderActiveCheckin();
+            swRenderAttendanceHistory();
+        }
+
+        function swRenderSafeCode(){
+            const code = swCurrentMember && swCurrentMember.personalCode ? swCurrentMember.personalCode : null;
+            document.getElementById('sw-safe-code-text').textContent = code || '尚未生成，请联系管理员';
+            document.getElementById('sw-safe-qr').innerHTML = '';
+            if(code && window.QRCode){
+                new QRCode(document.getElementById('sw-safe-qr'), { text: code, width:150, height:150, colorDark:'#4F46E5', colorLight:'#ffffff' });
+            }
+        }
+        function swCopySafeCode(){
+            const code = swCurrentMember && swCurrentMember.personalCode;
+            if(!code){ alert('暂无安全码可复制'); return; }
+            navigator.clipboard.writeText(code).then(()=> alert('安全码已复制到剪贴板'));
+        }
+
+        function swRenderActiveCheckin(){
+            const area = document.getElementById('sw-active-checkin-area');
+            const active = swAllAttendances.find(a=> !a.cancelled && a.status !== 'ended');
+            if(!active){ area.innerHTML=''; return; }
+            const already = swMyAttendanceRecords.some(r=> r.attendanceId === active.id);
+            area.innerHTML = `
+                <div class="sw-card" style="border-color:var(--primary-500);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold"><i class="fas fa-broadcast-tower text-danger"></i> 点名进行中：${swEsc(active.title||'未命名点名')}</div>
+                            <div class="text-muted small">${already? '你已签到' : '请使用安全码或验证码完成三重验证签到'}</div>
+                        </div>
+                        ${already
+                            ? `<span class="badge bg-success">已签到</span>`
+                            : `<button class="btn sw-btn-primary" style="width:auto;" onclick="swExitToGuestQuery(); alert('请在「点名签到」入口完成三重验证签到；Batch 2 会把这一步直接接入工作台内。');"><i class="fas fa-check"></i> 去签到</button>`
+                        }
+                    </div>
+                </div>`;
+        }
+
+        function swRenderAttendanceHistory(){
+            const body = document.getElementById('sw-attendance-history-body');
+            if(swMyAttendanceRecords.length === 0){
+                body.innerHTML = `<tr><td colspan="4">${swEmptyState('fa-calendar-xmark','暂无签到记录','点名开始后签到记录会显示在这里')}</td></tr>`;
+            } else {
+                body.innerHTML = swMyAttendanceRecords
+                    .sort((a,b)=> (b.checkinTime?.seconds||0) - (a.checkinTime?.seconds||0))
+                    .map(r=>{
+                        const att = swAllAttendances.find(a=>a.id===r.attendanceId) || {};
+                        const time = r.checkinTime ? new Date(r.checkinTime.seconds*1000).toLocaleString('zh-CN') : '-';
+                        const status = r.late ? '<span class="badge bg-warning text-dark">迟到</span>' : '<span class="badge bg-success">正常</span>';
+                        return `<tr><td>${time.split(' ')[0]}</td><td>${swEsc(att.title||'-')}</td><td>${status}</td><td>${time}</td></tr>`;
+                    }).join('');
+            }
+            const total = swAllAttendances.filter(a=>a.cancelled!==true).length;
+            const attended = swMyAttendanceRecords.length;
+            const late = swMyAttendanceRecords.filter(r=>r.late).length;
+            const rate = total? Math.round((attended/total)*100) : 0;
+            document.getElementById('sw-attendance-stat-cards').innerHTML = `
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${attended}/${total}</div><div class="sw-lbl">出勤次数</div></div></div>
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${rate}%</div><div class="sw-lbl">出勤率</div></div></div>
+                <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${late}</div><div class="sw-lbl">迟到次数</div></div></div>
+            `;
+        }
+
+        // ---------------- ③ 个人资料 ----------------
+        function swRenderProfileModule(){
+            document.getElementById('sw-profile-studentid').value = swCurrentStudent.studentId || '';
+            document.getElementById('sw-profile-name').value = swCurrentStudent.name || '';
+            document.getElementById('sw-profile-class').value = swCurrentStudent.class || '';
+            const lv = swAllLevels.find(l=>l.id===swCurrentStudent.levelId);
+            document.getElementById('sw-profile-level').value = lv? lv.name : '-';
+            document.getElementById('sw-profile-email').value = swCurrentStudent.email || '';
+            document.getElementById('sw-profile-phone').value = swCurrentStudent.phone || '';
+            swRenderLevelHistoryTimeline();
+            swRenderScoreLogTimeline();
+        }
+
+        document.getElementById('sw-profile-edit-form').addEventListener('submit', function(e){
+            e.preventDefault();
+            const emailEl = document.getElementById('sw-profile-email');
+            const phoneEl = document.getElementById('sw-profile-phone');
+            let ok = true;
+            if(emailEl.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value)){ emailEl.classList.add('sw-is-invalid'); ok=false; } else emailEl.classList.remove('sw-is-invalid');
+            if(phoneEl.value && !/^[0-9+\-\s]{7,15}$/.test(phoneEl.value)){ phoneEl.classList.add('sw-is-invalid'); ok=false; } else phoneEl.classList.remove('sw-is-invalid');
+            if(!ok) return;
+            db.collection('students').doc(swCurrentStudent.id).update({ email: emailEl.value.trim(), phone: phoneEl.value.trim() })
+                .then(()=>{ swCurrentStudent.email=emailEl.value.trim(); swCurrentStudent.phone=phoneEl.value.trim(); alert('资料已更新'); })
+                .catch(err=> alert('更新失败：'+err.message));
+        });
+
+        document.getElementById('sw-change-pwd-form').addEventListener('submit', function(e){
+            e.preventDefault();
+            const cur = document.getElementById('sw-cur-pwd').value;
+            const n1 = document.getElementById('sw-new-pwd').value;
+            const n2 = document.getElementById('sw-new-pwd-confirm').value;
+            if(n1 !== n2){ alert('两次输入的新密码不一致'); return; }
+            if(n1.length < 8 || !/[A-Za-z]/.test(n1) || !/[0-9]/.test(n1)){ alert('新密码需至少8位并同时包含字母和数字'); return; }
+            const cred = firebase.auth.EmailAuthProvider.credential(swCurrentAuthUser.email, cur);
+            swCurrentAuthUser.reauthenticateWithCredential(cred)
+                .then(()=> swCurrentAuthUser.updatePassword(n1))
+                .then(()=>{ alert('密码已更新'); document.getElementById('sw-change-pwd-form').reset(); })
+                .catch(err=>{
+                    const msg = err.code==='auth/wrong-password' ? '当前密码不正确' : ('修改失败：'+err.message);
+                    alert(msg);
+                });
+        });
+
+        function swRenderLevelHistoryTimeline(){
+            const el = document.getElementById('sw-level-history-timeline');
+            db.collection('promotionLogs').where('studentId','==', swCurrentStudent.id).orderBy('createdAt','desc').limit(20).get()
+                .then(snap=>{
+                    if(snap.empty){ el.innerHTML = swEmptyState('fa-arrow-trend-up','暂无级别变更记录',''); return; }
+                    el.innerHTML = snap.docs.map(d=>{
+                        const log = d.data();
+                        const time = log.createdAt ? new Date(log.createdAt.seconds*1000).toLocaleDateString('zh-CN') : '-';
+                        return `<div class="sw-score-row"><div class="sw-name">${swEsc(log.fromLevelName||'-')} → ${swEsc(log.toLevelName||'-')}</div><div class="sw-meta">${time}</div></div>`;
+                    }).join('');
+                })
+                .catch(()=> el.innerHTML = swEmptyState('fa-triangle-exclamation','加载失败',''));
+        }
+        function swRenderScoreLogTimeline(){
+            const el = document.getElementById('sw-score-log-timeline');
+            db.collection('scoreLogs').where('studentId','==', swCurrentStudent.id).orderBy('createdAt','desc').limit(20).get()
+                .then(snap=>{
+                    if(snap.empty){ el.innerHTML = swEmptyState('fa-pen','暂无改分记录',''); return; }
+                    el.innerHTML = snap.docs.map(d=>{
+                        const log = d.data();
+                        const time = log.createdAt ? new Date(log.createdAt.seconds*1000).toLocaleDateString('zh-CN') : '-';
+                        return `<div class="sw-score-row"><div class="sw-name">${swEsc(log.projectName||'项目')}：${log.oldScore ?? '-'} → ${log.newScore ?? '-'}</div><div class="sw-meta">${time}</div></div>`;
+                    }).join('');
+                })
+                .catch(()=> el.innerHTML = swEmptyState('fa-triangle-exclamation','加载失败',''));
+        }
+
+        // ---------------- ④ 排行榜 ----------------
+        async function swRenderLeaderboardModule(){
+            const listEl = document.getElementById('sw-leaderboard-list');
+            try{
+                const [studentsSnap, scoresSnap] = await Promise.all([
+                    db.collection('students').where('levelId','==', swCurrentStudent.levelId).get(),
+                    db.collection('scores').where('levelId','==', swCurrentStudent.levelId).get()
+                ]);
+                const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+                const levelScores = scoresSnap.docs.map(d=>d.data());
+                const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swCurrentStudent.levelId);
+
+                const ranked = levelStudents.map(stu=>{
+                    let got=0, max=0;
+                    lpForLevel.forEach(lp=>{
+                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.projectId);
+                        got += sd? Number(sd.score)||0 : 0; max += Number(lp.maxScore||100);
+                    });
+                    return { name: stu.name, studentId: stu.studentId, id: stu.id, avg: max? Math.round((got/max)*100):0 };
+                }).sort((a,b)=> b.avg - a.avg);
+
+                if(ranked.length === 0){ listEl.innerHTML = swEmptyState('fa-trophy','暂无排行榜数据',''); return; }
+
+                listEl.innerHTML = ranked.slice(0,10).map((r,i)=>`
+                    <div class="sw-rank-row ${r.id===swCurrentStudent.id?'sw-me':''}">
+                        <div class="sw-rank-badge">${i+1}</div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${swEsc(r.name)}${r.id===swCurrentStudent.id?'（我）':''}</div>
+                            <div class="text-muted small">${swEsc(r.studentId)}</div>
+                        </div>
+                        <div class="fw-bold text-primary">${r.avg}%</div>
+                    </div>
+                `).join('');
+
+                const myIdx = ranked.findIndex(r=>r.id===swCurrentStudent.id);
+                const pct = ranked.length>1 && myIdx>=0 ? Math.round(((ranked.length-1-myIdx)/(ranked.length-1))*100) : null;
+                document.getElementById('sw-leaderboard-percentile-text').textContent = pct!=null ? `你超过了本级别 ${pct}% 的同学` : '暂无足够数据计算百分位';
+            }catch(e){
+                listEl.innerHTML = swEmptyState('fa-triangle-exclamation','加载失败','');
+                console.error(e);
+            }
+        }
+
+        // ---------------- ⑤ 通知中心 ----------------
+        // notifications 集合是新设计的（recipientId/type/title/body/read/createdAt），
+        // 主系统目前没有任何代码会写入它；Batch 2 会在管理端"录入成绩/发布点名/
+        // 变更级别"的地方补上写入逻辑。本批先把学生端读取和已读状态做完整，
+        // 集合建好索引、有数据之后不需要再改这边代码。
+        function swListenNotifications(){
+            if(swNotifUnsub) swNotifUnsub();
+            swNotifUnsub = db.collection('notifications')
+                .where('recipientId','==', swCurrentStudent.id)
+                .orderBy('createdAt','desc')
+                .limit(50)
+                .onSnapshot(snap=>{
+                    const list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+                    swRenderNotifList(list);
+                    const unread = list.some(n=>!n.read);
+                    document.getElementById('sw-notif-dot').style.display = unread ? 'block' : 'none';
+                }, err=>{
+                    document.getElementById('sw-notif-list').innerHTML = swEmptyState('fa-bell-slash','暂无通知','');
+                    console.warn('通知监听失败（可能是集合尚未初始化）：', err.message);
+                });
+        }
+        function swRenderNotifList(list){
+            const el = document.getElementById('sw-notif-list');
+            if(list.length === 0){ el.innerHTML = swEmptyState('fa-bell-slash','暂无通知','新成绩、点名、级别变更会在这里提醒你'); return; }
+            const iconMap = { score:'fa-chart-line', attendance:'fa-qrcode', level:'fa-arrow-trend-up' };
+            el.innerHTML = list.map(n=>{
+                const time = n.createdAt ? new Date(n.createdAt.seconds*1000).toLocaleString('zh-CN') : '';
+                return `<div class="sw-notif-item ${n.read?'':'sw-unread'}" onclick="swMarkNotifRead('${n.id}')">
+                    <div class="sw-notif-icon"><i class="fas ${iconMap[n.type]||'fa-bell'} text-primary"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold small">${swEsc(n.title||'通知')}</div>
+                        <div class="text-muted small">${swEsc(n.body||'')}</div>
+                        <div class="text-muted" style="font-size:.72rem;">${time}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        function swMarkNotifRead(id){
+            db.collection('notifications').doc(id).update({ read: true }).catch(()=>{});
+        }
+        function swMarkAllNotifRead(){
+            db.collection('notifications').where('recipientId','==', swCurrentStudent.id).where('read','==', false).get()
+                .then(snap=>{
+                    const batch = db.batch();
+                    snap.docs.forEach(d=> batch.update(d.ref, { read:true }));
+                    return batch.commit();
+                }).catch(()=>{});
+        }
+
+        // ---------------- 工具函数 ----------------
+        function swEsc(str){
+            if(str==null) return '';
+            return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        function swEmptyState(icon, title, desc){
+            return `<div class="sw-empty-state"><i class="fas ${icon}"></i><div class="fw-bold">${swEsc(title)}</div><div class="small">${swEsc(desc||'')}</div></div>`;
+        }
+
         // ========== 增强版 Toast 通知系统 ==========
 
 // 替换原有的 showAlert 函数
