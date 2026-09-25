@@ -4073,53 +4073,32 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
     padding:64px 58px 46px !important;
     border:0 !important;
     color:#fff !important;
-    background:
-      radial-gradient(circle at 88% 8%, rgba(255,255,255,.20), transparent 23%),
-      radial-gradient(circle at 14% 92%, rgba(67,56,202,.32), transparent 27%),
-      linear-gradient(145deg,var(--hero-1) 0%,var(--hero-2) 48%,var(--hero-3) 100%) !important;
+    background: var(--gray-900) !important;
     overflow:hidden !important;
 }
+/* 装饰性网格纹理 / 光斑 / 浮动光点：黑白版不需要，全部关掉，避免和黑底叠出脏灰 */
 #student-query-page.qa-redesign .query-brand-panel::before{
-    content:"" !important;
-    display:block !important;
-    position:absolute !important;
-    inset:0 !important;
-    background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1px) !important;
-    background-size:22px 22px !important;
-    opacity:.28 !important;
+    content:none !important;
+    display:none !important;
 }
 #student-query-page.qa-redesign .query-brand-panel::after{
-    content:"" !important;
-    display:block !important;
-    position:absolute !important;
-    width:280px;height:280px;
-    right:-120px;bottom:-130px;
-    border-radius:50%;
-    background:rgba(255,255,255,.12);
-    filter:blur(2px);
-    animation:welcomeOrb 12s ease-in-out infinite alternate !important;
+    content:none !important;
+    display:none !important;
 }
-@keyframes welcomeOrb{to{transform:translate(-35px,-25px) scale(1.12)}}
 #student-query-page.qa-redesign .query-brand-glow-2{
-    display:block !important;
-    width:340px !important;height:340px !important;
-    left:-190px !important;top:34% !important;
-    background:rgba(67,56,202,.22) !important;
-    filter:blur(55px) !important;
-    animation:none !important;
+    display:none !important;
 }
 #student-query-page.qa-redesign .query-float-dots{
-    display:block !important;
+    display:none !important;
 }
 #student-query-page.qa-redesign .query-float-dot{
-    display:block !important;
-    background:rgba(255,255,255,.65) !important;
-    filter:none !important;
+    display:none !important;
 }
 #student-query-page.qa-redesign .query-brand-panel > *{
     position:relative;
     z-index:2;
 }
+
 
 /* 左侧品牌信息 */
 #student-query-page.qa-redesign .query-brand-panel .login-logo{
@@ -4152,11 +4131,11 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 #student-query-page.qa-redesign .qa-tagline-bold::after{
     content:"";
     display:inline-block;
-    width:10px;height:10px;
-    margin:0 0 8px 8px;
+    width:8px;height:8px;
+    margin:0 0 10px 10px;
     border-radius:50%;
-    background:#F9A8D4;
-    box-shadow:0 0 0 7px rgba(249,168,212,.16);
+    background:#fff;
+    box-shadow:0 0 0 6px rgba(255,255,255,.14);
 }
 #student-query-page.qa-redesign .qa-tagline-desc{
     max-width:390px !important;
@@ -5384,6 +5363,7 @@ a { border-bottom: 1px solid transparent; }
                                 <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#scores-tab"
                                    data-page-icon="fa-edit" data-page-title="分数录入" data-page-subtitle="录入、导入与批量管理学生成绩">
                                     <i class="fas fa-edit"></i><span>分数录入</span>
+                                    <span id="sidebar-pending-score-badge" class="sidebar-pending-badge d-none">0</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -5593,6 +5573,14 @@ a { border-bottom: 1px solid transparent; }
                             <h3 id="dashboard-welcome-title">欢迎回来</h3>
                             <p id="dashboard-welcome-sub" class="text-muted mb-0">正在加载今日概况…</p>
                         </div>
+                    </div>
+
+                    <div class="dashboard-pending-alert d-none" id="dashboard-pending-alert" role="alert">
+                        <i class="fas fa-hourglass-half"></i>
+                        <span>有 <strong id="dashboard-pending-alert-count">0</strong> 条成绩待审核 —— 学生在审核通过前看不到这些成绩，也不计入排行榜和统计。</span>
+                        <button type="button" class="btn btn-sm btn-primary" id="dashboard-pending-alert-btn">
+                            立即审核 <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
                     </div>
 
                     <div class="row dashboard-stat-row">
@@ -7109,6 +7097,15 @@ let currentReportData = null;
             } catch(e) { console.warn(e); }
         });
         console.log('✅ 所有Tab组件已重新初始化');
+
+        const pendingAlertBtn = document.getElementById('dashboard-pending-alert-btn');
+        if (pendingAlertBtn) {
+            pendingAlertBtn.addEventListener('click', function() {
+                const scoresTabLink = document.querySelector('.admin-sidebar [data-bs-target="#scores-tab"]');
+                if (scoresTabLink) new bootstrap.Tab(scoresTabLink).show();
+                document.getElementById('scores-pending-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
     });
     
     // ========== 没有分享链接，正常初始化 ==========
@@ -8239,7 +8236,11 @@ async function loadAllDataForQuery() {
 
         // ---------------- ① 我的成绩 ----------------
         function swBuildLevelHistoryOptions(){
-            const idsInScores = [...new Set(swMyScores.map(s=>s.levelId).filter(Boolean))];
+            // scores 文档没有 levelId 字段，要通过 projectId 反查它属于哪个/哪些级别
+            // （levelProjects 里 projectId -> levelId 的映射），不能直接读 s.levelId。
+            const idsInScores = [...new Set(
+                swMyScores.flatMap(s => swAllLevelProjects.filter(lp => lp.projectId === s.projectId).map(lp => lp.levelId))
+            )].filter(Boolean);
             const ids = [...new Set([...idsInScores, swCurrentStudent.levelId].filter(Boolean))];
             swMyLevelsHistory = swAllLevels.filter(l=> ids.includes(l.id));
             if(swMyLevelsHistory.length === 0 && swAllLevels.length){
@@ -8255,8 +8256,14 @@ async function loadAllDataForQuery() {
         }
 
         function swRenderScoresModule(){
-            const levelScores = swMyScores.filter(s=> s.levelId === swSelectedLevelId);
+            // 注意：分数文档（scores 集合）本身不存 levelId 字段，只有 projectId。
+            // 之前这里直接比对 s.levelId === swSelectedLevelId，因为字段根本不存在，
+            // 永远是 undefined !== 选中的级别id，导致"我的成绩"里所有项目永远显示成
+            // "未录入"——这正是每个学生打开菜单都像是"暂无记录"的根源之一。
+            // 正确做法：先算出这个级别有哪些评分项目（lpForLevel），
+            // 再用 projectId 去 swMyScores 里找有没有对应分数。
             const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
+            const levelScores = swMyScores.filter(s=> lpForLevel.some(lp=> lp.projectId === s.projectId));
 
             let totalScore = 0, totalMax = 0;
             const rows = lpForLevel.map(lp=>{
@@ -8307,13 +8314,19 @@ async function loadAllDataForQuery() {
             const pctTextEl = document.getElementById('sw-score-percentile-text');
             rankTextEl.textContent = '排名计算中…';
             try{
+                // 分数文档没有 levelId 字段，不能直接 where('levelId','==',...) 查 scores 集合——
+                // 那样查出来永远是空集合。这里改成拉全部 scores，再用该级别的评分项目
+                // (lpForLevel 的 projectId) 反过来筛出属于这个级别的分数，和其它模块保持一致。
                 const [studentsSnap, scoresSnap] = await Promise.all([
                     db.collection('students').where('levelId','==', swSelectedLevelId).get(),
-                    db.collection('scores').where('levelId','==', swSelectedLevelId).get()
+                    db.collection('scores').get()
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
-                const levelScores = scoresSnap.docs.map(d=>d.data()).filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)); // 待审核成绩不计入排名/排行榜
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
+                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.projectId));
+                const levelScores = scoresSnap.docs.map(d=>d.data())
+                    .filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)) // 待审核成绩不计入排名/排行榜
+                    .filter(s=> lpProjectIds.has(s.projectId));
 
                 const totals = levelStudents.map(stu=>{
                     let got=0, max=0;
@@ -8534,13 +8547,19 @@ async function loadAllDataForQuery() {
         async function swRenderLeaderboardModule(){
             const listEl = document.getElementById('sw-leaderboard-list');
             try{
+                // 同上：scores 集合没有 levelId 字段，where('levelId',...) 查询永远返回空，
+                // 这也是排行榜之前一直显示"暂无排行榜数据"的原因——改成拉全部再按
+                // projectId 归属这个级别来筛。
                 const [studentsSnap, scoresSnap] = await Promise.all([
                     db.collection('students').where('levelId','==', swCurrentStudent.levelId).get(),
-                    db.collection('scores').where('levelId','==', swCurrentStudent.levelId).get()
+                    db.collection('scores').get()
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
-                const levelScores = scoresSnap.docs.map(d=>d.data()).filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)); // 待审核成绩不计入排名/排行榜
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swCurrentStudent.levelId);
+                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.projectId));
+                const levelScores = scoresSnap.docs.map(d=>d.data())
+                    .filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)) // 待审核成绩不计入排名/排行榜
+                    .filter(s=> lpProjectIds.has(s.projectId));
 
                 const ranked = levelStudents.map(stu=>{
                     let got=0, max=0;
@@ -10838,6 +10857,20 @@ function renderPendingScoreQueue(pendingList) {
     const badge = document.getElementById('scores-pending-count-badge');
     if (!tbody) return;
     if (badge) badge.textContent = pendingList.length;
+
+    // 待审核数量在两处额外提醒管理员，避免"分数已导入/录入，但学生和排行榜一直是空的"
+    // 这种情况被误以为是 bug——其实只是还没有人来这个待审核队列点"通过"。
+    const sidebarBadge = document.getElementById('sidebar-pending-score-badge');
+    if (sidebarBadge) {
+        sidebarBadge.textContent = pendingList.length > 99 ? '99+' : pendingList.length;
+        sidebarBadge.classList.toggle('d-none', pendingList.length === 0);
+    }
+    const dashAlert = document.getElementById('dashboard-pending-alert');
+    const dashAlertCount = document.getElementById('dashboard-pending-alert-count');
+    if (dashAlert) {
+        dashAlert.classList.toggle('d-none', pendingList.length === 0);
+        if (dashAlertCount) dashAlertCount.textContent = pendingList.length;
+    }
 
     // 队列内容变了，之前的勾选大概率对不上了，直接清空更安全
     scoresPendingSelectedIds.clear();
