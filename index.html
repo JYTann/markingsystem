@@ -5669,6 +5669,118 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
         </div>
     </div>
 </div>
+                <!-- 作业进度：管理员手动维护每个作业/项目的完成情况（未交/已交/已批改/已发回），
+                     不接 Google Classroom API，全部靠管理员手动更新。数据独立存放在
+                     assignments / assignmentProgress 两个集合，懒加载（首次点开这个 tab
+                     才查询，见 hwInit()），不挂在 loadAllData() 上，避免拖慢登录。
+                     侧边栏入口是既有的 #homework-progress-tab（见上方导航），这里只补内容。 -->
+<div class="tab-pane fade" id="homework-progress-tab">
+    <!-- 卡片 1：作业列表 -->
+    <div class="card fade-in mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-diagram-project me-2"></i>作业列表</span>
+            <div>
+                <button class="btn btn-sm btn-success me-2" id="hw-add-assignment-btn">
+                    <i class="fas fa-plus me-1"></i>新建作业
+                </button>
+                <button class="btn btn-sm btn-secondary" id="hw-refresh-btn">
+                    <i class="fas fa-sync-alt me-1"></i>刷新
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                手动记录每个作业/项目的完成进度，学生端可查看自己的状态。暂不对接 Google Classroom，全部由管理员手动更新。
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <select class="form-select" id="hw-filter-level">
+                        <option value="">全部级别</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <input type="text" class="form-control" id="hw-search" placeholder="搜索作业标题...">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>作业标题</th>
+                            <th>级别</th>
+                            <th>截止日期</th>
+                            <th>进度概览</th>
+                            <th style="width:200px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hw-assignment-list">
+                        <tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>加载中…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 卡片 2：选中作业的进度明细 -->
+    <div class="card fade-in" id="hw-detail-card" style="display:none;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-list-check me-2"></i><span id="hw-detail-title">作业标题</span> - 学生进度</span>
+            <div>
+                <button class="btn btn-sm btn-secondary me-2" id="hw-batch-set-submitted">
+                    <i class="fas fa-check me-1"></i>批量设为已交
+                </button>
+                <button class="btn btn-sm btn-secondary me-2" id="hw-batch-set-pending">
+                    <i class="fas fa-undo me-1"></i>批量设为未交
+                </button>
+                <button class="btn btn-sm btn-secondary" id="hw-export-progress-btn">
+                    <i class="fas fa-file-export me-1"></i>导出 Excel
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <select class="form-select" id="hw-filter-status">
+                        <option value="">全部状态</option>
+                        <option value="pending">未交</option>
+                        <option value="submitted">已交</option>
+                        <option value="graded">已批改</option>
+                        <option value="returned">已发回</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="hw-filter-class">
+                        <option value="">全部班级</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="hw-detail-search" placeholder="搜索姓名或学号...">
+                </div>
+            </div>
+
+            <!-- 状态统计条 -->
+            <div class="row g-2 mb-3" id="hw-status-summary"></div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width:36px;"><input type="checkbox" id="hw-select-all"></th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>班级</th>
+                            <th style="width:180px;">状态</th>
+                            <th>备注</th>
+                            <th>更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hw-progress-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- 仪表盘 -->
                 <div class="tab-pane fade show active" id="dashboard-tab">
                     <div class="dashboard-welcome-banner">
@@ -6838,6 +6950,48 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
         </div>
     </div>
 </div>
+
+    <!-- 新建/编辑作业模态框（作业进度功能） -->
+    <div class="modal fade" id="hwAssignmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="hw-modal-title">新建作业</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="hw-assignment-form">
+                        <input type="hidden" id="hw-edit-id">
+                        <div class="mb-3">
+                            <label for="hw-title" class="form-label">作业标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="hw-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="hw-level" class="form-label">级别</label>
+                            <select class="form-select" id="hw-level">
+                                <option value="">全部级别</option>
+                            </select>
+                            <small class="text-muted">选「全部级别」则所有学生都出现在进度表中</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="hw-due-date" class="form-label">截止日期</label>
+                            <input type="date" class="form-control" id="hw-due-date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="hw-description" class="form-label">说明</label>
+                            <textarea class="form-control" id="hw-description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="hw-save-assignment-btn">
+                        <i class="fas fa-save me-1"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 删除确认模态框 -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
@@ -20972,6 +21126,564 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(initAdminSidebar, 500);
     setTimeout(initAuditLogPage, 500);
 });
+    </script>
+
+    <!-- ============================================================
+         作业进度功能：管理员手动记录每个作业/项目的完成情况。
+         数据独立存在 assignments / assignmentProgress 两个新集合，
+         懒加载（首次点开"作业进度"这个 tab 才查询，见 hwInit()），
+         不接 Google Classroom API，不改动任何既有函数/id/class，只新增。
+         所有新增 id 前缀 hw-，所有新增函数前缀 hw，避免和既有代码冲突。
+         ============================================================ -->
+    <script>
+        let hwAssignments = [];
+        let hwProgress = [];
+        let hwSelectedAssignmentId = null;
+        let hwFilteredStudents = [];
+        let hwSelectedStudentIds = new Set();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(hwInit, 800);
+        });
+
+        function hwInit() {
+            const addBtn = document.getElementById('hw-add-assignment-btn');
+            if (!addBtn) return; // 元素不存在，说明这次渲染里没有这个 tab（防御性写法）
+
+            addBtn.addEventListener('click', () => hwOpenAssignmentModal());
+            document.getElementById('hw-refresh-btn').addEventListener('click', () => hwLoadAll(true));
+            document.getElementById('hw-save-assignment-btn').addEventListener('click', hwSaveAssignment);
+            document.getElementById('hw-filter-level').addEventListener('change', hwRenderAssignmentList);
+            document.getElementById('hw-search').addEventListener('input', hwRenderAssignmentList);
+            document.getElementById('hw-filter-status').addEventListener('change', hwRenderProgressTable);
+            document.getElementById('hw-filter-class').addEventListener('change', hwRenderProgressTable);
+            document.getElementById('hw-detail-search').addEventListener('input', hwRenderProgressTable);
+            document.getElementById('hw-select-all').addEventListener('change', hwOnSelectAll);
+            document.getElementById('hw-batch-set-submitted').addEventListener('click', () => hwBatchSetStatus('submitted'));
+            document.getElementById('hw-batch-set-pending').addEventListener('click', () => hwBatchSetStatus('pending'));
+            document.getElementById('hw-export-progress-btn').addEventListener('click', hwExportProgressExcel);
+
+            hwPopulateLevelSelects();
+            hwLoadAll();
+        }
+
+        // 级别下拉框依赖既有全局变量 levels（loadLevels() 已加载），这里只读不改
+        function hwPopulateLevelSelects() {
+            const levelFilter = document.getElementById('hw-filter-level');
+            const levelSelect = document.getElementById('hw-level');
+            if (!levelFilter || !levelSelect) return;
+            const opts = '<option value="">全部级别</option>' +
+                (typeof levels !== 'undefined' ? levels : []).map(l =>
+                    `<option value="${l.id}">${escapeHtml(l.name)}</option>`
+                ).join('');
+            levelFilter.innerHTML = opts;
+            levelSelect.innerHTML = opts;
+        }
+
+        // ---------- 数据加载 ----------
+        async function hwLoadAll(showToast = false) {
+            const tbody = document.getElementById('hw-assignment-list');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div> 加载中…</td></tr>';
+            try {
+                const [aSnap, pSnap] = await Promise.all([
+                    db.collection('assignments').orderBy('createdAt', 'desc').get(),
+                    db.collection('assignmentProgress').get()
+                ]);
+                hwAssignments = aSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                hwProgress = pSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                hwRenderAssignmentList();
+                if (hwSelectedAssignmentId) hwRenderProgressTable();
+                if (showToast) showAlert('已刷新', 'success');
+            } catch (err) {
+                console.error('加载作业数据失败:', err);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">加载失败：' + escapeHtml(err.message) + '</td></tr>';
+                showAlert('加载失败：' + err.message, 'danger');
+            }
+        }
+
+        // ---------- 作业列表 ----------
+        function hwRenderAssignmentList() {
+            const tbody = document.getElementById('hw-assignment-list');
+            if (!tbody) return;
+
+            const levelFilter = document.getElementById('hw-filter-level').value;
+            const keyword = (document.getElementById('hw-search').value || '').trim().toLowerCase();
+
+            const list = hwAssignments.filter(a => {
+                if (levelFilter && a.levelId !== levelFilter) return false;
+                if (keyword && !(a.title || '').toLowerCase().includes(keyword)) return false;
+                return true;
+            });
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-inbox me-2"></i>暂无作业，点击右上角「新建作业」</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(a => {
+                const lvl = (typeof levels !== 'undefined' ? levels : []).find(l => l.id === a.levelId);
+                const stats = hwComputeStats(a.id);
+                const total = stats.pending + stats.submitted + stats.graded + stats.returned;
+                const done = stats.submitted + stats.graded + stats.returned;
+                const pct = total > 0 ? Math.round(done / total * 100) : 0;
+                const due = a.dueDate ? formatDate(new Date(a.dueDate), 'YYYY-MM-DD') : '—';
+                const isOverdue = a.dueDate && new Date(a.dueDate) < new Date() && done < total;
+
+                return `<tr>
+                    <td>
+                        <div class="fw-semibold">${escapeHtml(a.title)}</div>
+                        ${a.description ? `<div class="small text-muted mt-1">${escapeHtml(a.description)}</div>` : ''}
+                    </td>
+                    <td>${lvl ? `<span class="badge bg-primary">${escapeHtml(lvl.name)}</span>` : '<span class="badge bg-secondary">全部</span>'}</td>
+                    <td class="${isOverdue ? 'text-danger' : ''}">${due}${isOverdue ? ' <i class="fas fa-exclamation-circle"></i>' : ''}</td>
+                    <td style="min-width:180px;">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>${done} / ${total}</span>
+                            <span class="fw-semibold">${pct}%</span>
+                        </div>
+                        <div class="progress" style="height:6px;">
+                            <div class="progress-bar" style="width:${pct}%"></div>
+                        </div>
+                        <div class="d-flex gap-2 small text-muted mt-1">
+                            <span>未交 ${stats.pending}</span>
+                            <span>已交 ${stats.submitted}</span>
+                            <span>已批改 ${stats.graded}</span>
+                            <span>已发回 ${stats.returned}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary hw-view-detail" data-id="${a.id}">
+                            <i class="fas fa-list-check"></i> 查看进度
+                        </button>
+                        <button class="btn btn-sm btn-ghost hw-edit-assignment" data-id="${a.id}" title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger hw-delete-assignment" data-id="${a.id}" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            tbody.querySelectorAll('.hw-view-detail').forEach(btn => {
+                btn.addEventListener('click', () => hwShowDetail(btn.dataset.id));
+            });
+            tbody.querySelectorAll('.hw-edit-assignment').forEach(btn => {
+                btn.addEventListener('click', () => hwOpenAssignmentModal(btn.dataset.id));
+            });
+            tbody.querySelectorAll('.hw-delete-assignment').forEach(btn => {
+                btn.addEventListener('click', () => hwDeleteAssignment(btn.dataset.id));
+            });
+        }
+
+        function hwComputeStats(assignmentId) {
+            const stats = { pending: 0, submitted: 0, graded: 0, returned: 0 };
+            const a = hwAssignments.find(x => x.id === assignmentId);
+            const studentsInScope = hwGetStudentsInScope(a);
+            const progressMap = {};
+            hwProgress.filter(p => p.assignmentId === assignmentId).forEach(p => { progressMap[p.studentId] = p.status; });
+            studentsInScope.forEach(s => {
+                const st = progressMap[s.id] || 'pending';
+                if (stats[st] !== undefined) stats[st]++;
+            });
+            return stats;
+        }
+
+        // 作业关联的级别为空 = 覆盖全部学生；否则只覆盖该级别的学生（字段名对齐既有的 student.levelId）
+        function hwGetStudentsInScope(assignment) {
+            const all = (typeof students !== 'undefined' ? students : []);
+            if (!assignment || !assignment.levelId) return all;
+            return all.filter(s => s.levelId === assignment.levelId);
+        }
+
+        // ---------- 新建 / 编辑作业 ----------
+        function hwOpenAssignmentModal(editId) {
+            const modalEl = document.getElementById('hwAssignmentModal');
+            const titleEl = document.getElementById('hw-modal-title');
+            const form = document.getElementById('hw-assignment-form');
+            form.reset();
+            document.getElementById('hw-edit-id').value = '';
+
+            hwPopulateLevelSelects();
+
+            if (editId) {
+                const a = hwAssignments.find(x => x.id === editId);
+                if (!a) return;
+                titleEl.textContent = '编辑作业';
+                document.getElementById('hw-edit-id').value = a.id;
+                document.getElementById('hw-title').value = a.title || '';
+                document.getElementById('hw-level').value = a.levelId || '';
+                document.getElementById('hw-due-date').value = a.dueDate || '';
+                document.getElementById('hw-description').value = a.description || '';
+            } else {
+                titleEl.textContent = '新建作业';
+            }
+
+            new bootstrap.Modal(modalEl).show();
+        }
+
+        async function hwSaveAssignment() {
+            const editId = document.getElementById('hw-edit-id').value;
+            const title = document.getElementById('hw-title').value.trim();
+            const levelId = document.getElementById('hw-level').value;
+            const dueDate = document.getElementById('hw-due-date').value;
+            const description = document.getElementById('hw-description').value.trim();
+
+            if (!title) {
+                showAlert('请填写作业标题', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('hw-save-assignment-btn');
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> 保存中…';
+
+            try {
+                const payload = {
+                    title,
+                    levelId: levelId || null,
+                    dueDate: dueDate || null,
+                    description: description || null,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (editId) {
+                    await db.collection('assignments').doc(editId).update(payload);
+                    showAlert('作业已更新', 'success');
+                    addActivity(`作业「${title}」已更新`, 'info');
+                    logAudit({ module: 'other', action: '更新作业', targetId: editId, targetName: title, detail: `更新作业：${title}` });
+                } else {
+                    payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    payload.createdBy = currentUser?.email || 'unknown';
+                    const ref = await db.collection('assignments').add(payload);
+                    showAlert('作业已创建', 'success');
+                    addActivity(`新建作业「${title}」`, 'success');
+                    logAudit({ module: 'other', action: '新建作业', targetId: ref.id, targetName: title, detail: `新建作业：${title}` });
+                }
+                bootstrap.Modal.getInstance(document.getElementById('hwAssignmentModal'))?.hide();
+                await hwLoadAll();
+            } catch (err) {
+                console.error('保存作业失败:', err);
+                showAlert('保存失败：' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        // 删除作业：不复用 confirmDelete()（那个函数的 switch-case 是为既有几种类型写死的，
+        // 且这里删作业还要连带删掉一堆 assignmentProgress 文档，逻辑不一样），
+        // 改用同样弹 #confirmDeleteModal 但更通用的 showConfirmDialog()，对既有代码零侵入。
+        function hwDeleteAssignment(id) {
+            const a = hwAssignments.find(x => x.id === id);
+            showConfirmDialog(
+                '删除作业',
+                `确定要删除作业「${a?.title || ''}」吗？该作业的所有学生进度记录也会一并删除，此操作不可撤销。`,
+                '删除', '取消',
+                async () => {
+                    try {
+                        const toDelete = hwProgress.filter(p => p.assignmentId === id);
+                        const batch = db.batch();
+                        batch.delete(db.collection('assignments').doc(id));
+                        toDelete.forEach(p => batch.delete(db.collection('assignmentProgress').doc(p.id)));
+                        await batch.commit();
+
+                        const successMessage = `作业「${a?.title || ''}」删除成功`;
+                        showAlert(successMessage, 'success');
+                        addActivity(successMessage, 'info');
+                        logAudit({ module: 'other', action: '删除作业', targetId: id, targetName: a?.title || '', detail: successMessage });
+
+                        if (hwSelectedAssignmentId === id) {
+                            hwSelectedAssignmentId = null;
+                            document.getElementById('hw-detail-card').style.display = 'none';
+                        }
+                        await hwLoadAll();
+                    } catch (err) {
+                        console.error('删除作业失败:', err);
+                        showAlert('删除失败：' + err.message, 'danger');
+                    }
+                }
+            );
+        }
+
+        // ---------- 进度明细 ----------
+        function hwShowDetail(assignmentId) {
+            const a = hwAssignments.find(x => x.id === assignmentId);
+            if (!a) return;
+            hwSelectedAssignmentId = assignmentId;
+            document.getElementById('hw-detail-card').style.display = 'block';
+            document.getElementById('hw-detail-title').textContent = a.title;
+
+            const classFilter = document.getElementById('hw-filter-class');
+            const classes = [...new Set(hwGetStudentsInScope(a).map(s => s.class).filter(Boolean))];
+            const current = classFilter.value;
+            classFilter.innerHTML = '<option value="">全部班级</option>' +
+                classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            classFilter.value = current;
+
+            hwSelectedStudentIds.clear();
+            hwRenderProgressTable();
+            document.getElementById('hw-detail-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hwRenderProgressTable() {
+            const tbody = document.getElementById('hw-progress-table-body');
+            if (!tbody || !hwSelectedAssignmentId) return;
+
+            const a = hwAssignments.find(x => x.id === hwSelectedAssignmentId);
+            if (!a) return;
+
+            const statusFilter = document.getElementById('hw-filter-status').value;
+            const classFilter = document.getElementById('hw-filter-class').value;
+            const keyword = (document.getElementById('hw-detail-search').value || '').trim().toLowerCase();
+
+            const progressMap = {};
+            hwProgress.filter(p => p.assignmentId === hwSelectedAssignmentId).forEach(p => {
+                progressMap[p.studentId] = p;
+            });
+
+            hwFilteredStudents = hwGetStudentsInScope(a).filter(s => {
+                const p = progressMap[s.id];
+                const st = p ? p.status : 'pending';
+                if (statusFilter && st !== statusFilter) return false;
+                if (classFilter && s.class !== classFilter) return false;
+                if (keyword) {
+                    const hay = `${s.name || ''} ${s.studentId || ''}`.toLowerCase();
+                    if (!hay.includes(keyword)) return false;
+                }
+                return true;
+            });
+
+            const allStats = hwComputeStats(hwSelectedAssignmentId);
+            document.getElementById('hw-status-summary').innerHTML = `
+                ${hwRenderSummaryCard('未交', allStats.pending, 'danger')}
+                ${hwRenderSummaryCard('已交', allStats.submitted, 'info')}
+                ${hwRenderSummaryCard('已批改', allStats.graded, 'warning')}
+                ${hwRenderSummaryCard('已发回', allStats.returned, 'success')}
+            `;
+
+            if (hwFilteredStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">没有符合条件的学生</td></tr>';
+                hwUpdateSelectAll();
+                return;
+            }
+
+            const STATUS_LABELS = {
+                pending: { text: '未交', class: 'danger' },
+                submitted: { text: '已交', class: 'info' },
+                graded: { text: '已批改', class: 'warning' },
+                returned: { text: '已发回', class: 'success' }
+            };
+
+            tbody.innerHTML = hwFilteredStudents.map(s => {
+                const p = progressMap[s.id];
+                const st = p ? p.status : 'pending';
+                const note = p?.note || '';
+                const updatedAt = p?.updatedAt?.toDate ? formatDate(p.updatedAt.toDate(), 'YYYY-MM-DD HH:mm') : '—';
+                const checked = hwSelectedStudentIds.has(s.id) ? 'checked' : '';
+
+                return `<tr data-student-id="${s.id}">
+                    <td><input type="checkbox" class="hw-row-check" data-id="${s.id}" ${checked}></td>
+                    <td class="text-nowrap">${escapeHtml(s.studentId || '-')}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar me-2" style="width:28px;height:28px;background-color:${stringToColor(s.name || '')};color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;">
+                                ${escapeHtml((s.name || '?').charAt(0))}
+                            </div>
+                            ${escapeHtml(s.name || '')}
+                        </div>
+                    </td>
+                    <td>${escapeHtml(s.class || '-')}</td>
+                    <td>
+                        <select class="form-select form-select-sm hw-status-select" data-id="${s.id}">
+                            <option value="pending" ${st === 'pending' ? 'selected' : ''}>未交</option>
+                            <option value="submitted" ${st === 'submitted' ? 'selected' : ''}>已交</option>
+                            <option value="graded" ${st === 'graded' ? 'selected' : ''}>已批改</option>
+                            <option value="returned" ${st === 'returned' ? 'selected' : ''}>已发回</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm hw-note-input" data-id="${s.id}" value="${escapeHtml(note)}" placeholder="备注...">
+                    </td>
+                    <td class="small text-muted">${updatedAt}</td>
+                </tr>`;
+            }).join('');
+
+            tbody.querySelectorAll('.hw-status-select').forEach(sel => {
+                sel.addEventListener('change', hwOnStatusChange);
+            });
+            tbody.querySelectorAll('.hw-note-input').forEach(inp => {
+                inp.addEventListener('blur', hwOnNoteBlur);
+            });
+            tbody.querySelectorAll('.hw-row-check').forEach(cb => {
+                cb.addEventListener('change', e => {
+                    if (e.target.checked) hwSelectedStudentIds.add(e.target.dataset.id);
+                    else hwSelectedStudentIds.delete(e.target.dataset.id);
+                    hwUpdateSelectAll();
+                });
+            });
+            hwUpdateSelectAll();
+        }
+
+        function hwRenderSummaryCard(label, count, colorClass) {
+            return `<div class="col-6 col-md-3">
+                <div class="p-3 rounded border text-center">
+                    <div class="h4 mb-0 fw-bold text-${colorClass}">${count}</div>
+                    <div class="small text-muted">${label}</div>
+                </div>
+            </div>`;
+        }
+
+        function hwUpdateSelectAll() {
+            const allBox = document.getElementById('hw-select-all');
+            if (!allBox) return;
+            const allIds = hwFilteredStudents.map(s => s.id);
+            if (allIds.length === 0) {
+                allBox.checked = false;
+                allBox.indeterminate = false;
+                return;
+            }
+            const checkedCount = allIds.filter(id => hwSelectedStudentIds.has(id)).length;
+            allBox.checked = checkedCount === allIds.length;
+            allBox.indeterminate = checkedCount > 0 && checkedCount < allIds.length;
+        }
+
+        function hwOnSelectAll(e) {
+            const allIds = hwFilteredStudents.map(s => s.id);
+            if (e.target.checked) allIds.forEach(id => hwSelectedStudentIds.add(id));
+            else allIds.forEach(id => hwSelectedStudentIds.delete(id));
+            hwRenderProgressTable();
+        }
+
+        // ---------- 单条状态 / 备注修改 ----------
+        async function hwOnStatusChange(e) {
+            const studentId = e.target.dataset.id;
+            const status = e.target.value;
+            await hwSaveProgress(studentId, status, null);
+            hwRenderAssignmentList();
+        }
+
+        async function hwOnNoteBlur(e) {
+            const studentId = e.target.dataset.id;
+            const note = e.target.value.trim();
+            const current = hwProgress.find(p => p.assignmentId === hwSelectedAssignmentId && p.studentId === studentId);
+            const status = current?.status || 'pending';
+            await hwSaveProgress(studentId, status, note);
+        }
+
+        async function hwSaveProgress(studentId, status, note) {
+            if (!hwSelectedAssignmentId) return;
+            try {
+                const existing = hwProgress.find(p => p.assignmentId === hwSelectedAssignmentId && p.studentId === studentId);
+                const payload = {
+                    assignmentId: hwSelectedAssignmentId,
+                    studentId,
+                    status,
+                    note: note !== null && note !== undefined ? note : (existing?.note || ''),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedBy: currentUser?.email || 'unknown'
+                };
+                if (existing) {
+                    await db.collection('assignmentProgress').doc(existing.id).update(payload);
+                    Object.assign(existing, payload);
+                } else {
+                    const ref = await db.collection('assignmentProgress').add(payload);
+                    hwProgress.push({ id: ref.id, ...payload });
+                }
+                // 单条修改是高频操作，静默保存，不弹 toast，避免刷屏
+            } catch (err) {
+                console.error('保存进度失败:', err);
+                showAlert('保存失败：' + err.message, 'danger');
+            }
+        }
+
+        // ---------- 批量设置状态 ----------
+        async function hwBatchSetStatus(status) {
+            const ids = [...hwSelectedStudentIds];
+            if (ids.length === 0) {
+                showAlert('请先勾选学生', 'warning');
+                return;
+            }
+            const label = { pending: '未交', submitted: '已交', graded: '已批改', returned: '已发回' }[status];
+            showConfirmDialog(
+                '批量更新',
+                `确定将选中的 ${ids.length} 位学生状态改为「${label}」吗？`,
+                '确认', '取消',
+                async () => {
+                    showFullscreenLoader('正在更新...');
+                    try {
+                        const batch = db.batch();
+                        for (const sid of ids) {
+                            const existing = hwProgress.find(p => p.assignmentId === hwSelectedAssignmentId && p.studentId === sid);
+                            const payload = {
+                                assignmentId: hwSelectedAssignmentId,
+                                studentId: sid,
+                                status,
+                                note: existing?.note || '',
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                updatedBy: currentUser?.email || 'unknown'
+                            };
+                            if (existing) {
+                                batch.update(db.collection('assignmentProgress').doc(existing.id), payload);
+                                Object.assign(existing, payload);
+                            } else {
+                                const ref = db.collection('assignmentProgress').doc();
+                                batch.set(ref, payload);
+                                hwProgress.push({ id: ref.id, ...payload });
+                            }
+                        }
+                        await batch.commit();
+                        showAlert(`已更新 ${ids.length} 条`, 'success');
+                        addActivity(`批量设置作业进度为「${label}」（${ids.length} 人）`, 'info');
+                        logAudit({ module: 'other', action: '批量更新作业进度', targetId: hwSelectedAssignmentId, detail: `批量设为${label}（${ids.length} 人）` });
+                        hwSelectedStudentIds.clear();
+                        hwRenderProgressTable();
+                        hwRenderAssignmentList();
+                    } catch (err) {
+                        console.error('批量更新失败:', err);
+                        showAlert('批量更新失败：' + err.message, 'danger');
+                    } finally {
+                        hideFullscreenLoader();
+                    }
+                }
+            );
+        }
+
+        // ---------- 导出 Excel ----------
+        function hwExportProgressExcel() {
+            if (!hwSelectedAssignmentId) return;
+            const a = hwAssignments.find(x => x.id === hwSelectedAssignmentId);
+            if (!a) return;
+
+            const progressMap = {};
+            hwProgress.filter(p => p.assignmentId === hwSelectedAssignmentId).forEach(p => {
+                progressMap[p.studentId] = p;
+            });
+
+            const STATUS_CN = { pending: '未交', submitted: '已交', graded: '已批改', returned: '已发回' };
+
+            const data = hwGetStudentsInScope(a).map(s => {
+                const p = progressMap[s.id];
+                const st = p?.status || 'pending';
+                return {
+                    '学号': s.studentId || '',
+                    '姓名': s.name || '',
+                    '班级': s.class || '',
+                    '级别': s.levelName || '',
+                    '状态': STATUS_CN[st],
+                    '备注': p?.note || '',
+                    '更新时间': p?.updatedAt?.toDate ? formatDate(p.updatedAt.toDate(), 'YYYY-MM-DD HH:mm') : ''
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            ws['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 24 }, { wch: 18 }];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '作业进度');
+            const dateStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `${a.title}_进度_${dateStr}.xlsx`);
+            showAlert('导出成功', 'success');
+        }
     </script>
 
     <!-- ============================================================
