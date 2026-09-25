@@ -4716,6 +4716,109 @@ a { border-bottom: 1px solid transparent; }
 #student-query-page .qa-tagline-bold { font-weight: var(--fw-black); color: var(--gray-0); font-size: clamp(40px, 5vw, 64px); }
 </style>
 
+<style id="welcome-page-color-restore">
+/* ============================================================================
+   欢迎页配色修复
+   问题：前面的单色设计系统把全站变量 --gray-900 / --brand 都改成了近黑色，
+   导致欢迎页左侧品牌区、主按钮全部变成纯黑，和原本设计里写死的靛蓝阴影
+   （rgba(79,70,229,...)）互相打架，视觉上显脏；标语第一行的白色透明度只有 0.4，
+   在纯黑底上几乎看不清。这里只针对 #student-query-page（欢迎/登录页）恢复彩色，
+   不改动后台管理页——那里仍然维持黑白灰的极简系统。
+   全部选择器加了 body 前缀提高优先级，且本区块加载于文件末尾，
+   能稳定盖过前面所有 !important 规则，不需要动 HTML/JS。
+   ============================================================================ */
+
+body #student-query-page.qa-redesign {
+    --qa-hero-1: #4F46E5;   /* 靛蓝 */
+    --qa-hero-2: #7C3AED;   /* 紫罗兰 */
+    --qa-hero-3: #C026D3;   /* 洋红，只做极淡点缀 */
+    --qa-gold:   #FCD34D;   /* 暖金，用于点题的那一笔 */
+}
+
+/* 左侧品牌区：黑色 → 靛蓝-紫罗兰渐变，并把原本关掉的光斑重新点亮 */
+body #student-query-page.qa-redesign .query-brand-panel {
+    background:
+        radial-gradient(620px circle at 8% -10%, rgba(255,255,255,0.16), transparent 60%),
+        radial-gradient(520px circle at 100% 115%, rgba(192,38,211,0.35), transparent 65%),
+        linear-gradient(155deg, var(--qa-hero-1) 0%, var(--qa-hero-2) 60%, #5B21B6 100%) !important;
+}
+body #student-query-page.qa-redesign .query-brand-panel::before,
+body #student-query-page.qa-redesign .query-brand-panel::after {
+    content: "" !important;
+    display: block !important;
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(2px);
+}
+body #student-query-page.qa-redesign .query-brand-panel::before {
+    width: 360px; height: 360px; top: -120px; right: -100px;
+    background: radial-gradient(circle, rgba(252,211,77,0.22), transparent 70%);
+}
+body #student-query-page.qa-redesign .query-brand-panel::after {
+    width: 300px; height: 300px; bottom: -110px; left: -80px;
+    background: radial-gradient(circle, rgba(255,255,255,0.10), transparent 70%);
+}
+
+/* 标语：第一行原本白色 40% 透明度，在黑底上几乎不可见，改成暖金实色；
+   第二行保持白色，两行都加轻微阴影确保任何背景下都清晰可读 */
+body #student-query-page.qa-redesign .qa-tagline-brush {
+    color: var(--qa-gold) !important;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.18);
+}
+body #student-query-page.qa-redesign .qa-tagline-bold {
+    color: #fff !important;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.22);
+}
+body #student-query-page.qa-redesign .qa-tagline-desc {
+    color: rgba(255,255,255,0.82) !important;
+}
+
+/* 价值点：三个图标改成三种颜色的实心圆徽，而不是同一种半透明白 */
+body #student-query-page.qa-redesign .query-brand-features li:nth-child(1) .query-feature-icon {
+    background: #FBBF24 !important; color: #1C1300 !important;
+}
+body #student-query-page.qa-redesign .query-brand-features li:nth-child(2) .query-feature-icon {
+    background: #22D3EE !important; color: #002229 !important;
+}
+body #student-query-page.qa-redesign .query-brand-features li:nth-child(3) .query-feature-icon {
+    background: #34D399 !important; color: #002415 !important;
+}
+body #student-query-page.qa-redesign .query-feature-title { color: #fff !important; }
+
+/* 系统实时数据：数字用暖金强调色，避免和标题一样全白显得没有层次 */
+body #student-query-page.qa-redesign .query-stat-value { color: var(--qa-gold) !important; }
+body #student-query-page.qa-redesign .query-stats-today i { color: var(--qa-gold) !important; }
+
+/* 右侧表单：主按钮改回和左侧呼应的靛蓝-紫罗兰渐变，阴影同色系，不再黑紫打架；
+   分段导航的选中态、表单聚焦环、忘记密码等链接也统一用同一个靛蓝品牌色 */
+body #student-query-page.qa-redesign .query-btn-primary {
+    background: linear-gradient(135deg, var(--qa-hero-1), var(--qa-hero-2)) !important;
+    box-shadow: 0 10px 24px rgba(79,70,229,0.32) !important;
+}
+body #student-query-page.qa-redesign .query-btn-primary:hover {
+    box-shadow: 0 14px 30px rgba(79,70,229,0.4) !important;
+    filter: brightness(1.05);
+}
+body #student-query-page.qa-redesign .nav-tabs .nav-link.active {
+    color: var(--qa-hero-1) !important;
+}
+body #student-query-page.qa-redesign .query-input-group .form-control:focus {
+    border-color: var(--qa-hero-1) !important;
+}
+body #student-query-page.qa-redesign .query-form-row-between a,
+body #student-query-page.qa-redesign .qa-topbar-clock .clock-line {
+    color: var(--qa-hero-1) !important;
+}
+body #student-query-page.qa-redesign .qa-topbar-clock .clock-line { background: #EEF2FF !important; }
+body #student-query-page.qa-redesign .qa-topbar-brand .login-logo { background: #EEF2FF !important; }
+
+/* 查询结果卡片左边条也换成品牌靛蓝，替换掉原来的深灰 */
+body #student-query-page.qa-redesign #query-results .student-score-card {
+    border-left-color: var(--qa-hero-1) !important;
+}
+</style>
+
 </head>
     
 <body>
