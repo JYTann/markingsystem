@@ -3943,6 +3943,27 @@ textarea.form-control { height: auto; min-height: 78px; padding: 9px 12px; line-
 .sw-spin{ animation:sw-spin 1s linear infinite; }
 @keyframes sw-spin{ to{ transform:rotate(360deg); } }
 
+/* ---- 作业进度（学生端） ---- */
+.sw-hw-item{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:14px 4px; border-bottom:1px solid var(--gray-200); transition:background var(--dur-fast,.15s) var(--ease,ease); border-radius:var(--r-md); }
+.sw-hw-item:hover{ background:var(--gray-50); }
+[data-theme="dark"] .sw-hw-item{ border-color:#262B36; }
+[data-theme="dark"] .sw-hw-item:hover{ background:#1C2029; }
+.sw-hw-item:last-child{ border-bottom:none; }
+.sw-hw-title{ font-weight:700; font-size:.92rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.sw-hw-desc{ font-size:.78rem; color:var(--gray-500); margin-top:3px; }
+.sw-hw-meta-row{ font-size:.75rem; color:var(--gray-500); margin-top:6px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.sw-hw-meta-row span{ display:inline-flex; align-items:center; gap:5px; }
+.sw-hw-due.sw-hw-overdue{ color:var(--danger); font-weight:700; }
+.sw-hw-note{ font-size:.75rem; color:var(--gray-500); margin-top:6px; padding:6px 10px; background:var(--gray-50); border-radius:var(--r-sm); border-left:2px solid var(--gray-300); }
+[data-theme="dark"] .sw-hw-note{ background:#1C2029; }
+.sw-hw-badge{ font-size:.72rem; font-weight:700; padding:5px 12px; border-radius:var(--r-full); white-space:nowrap; flex-shrink:0; }
+.sw-hw-badge.pending{ background:var(--gray-100); color:var(--gray-600); }
+[data-theme="dark"] .sw-hw-badge.pending{ background:#262B36; color:var(--gray-400); }
+.sw-hw-badge.late{ background:var(--danger-bg); color:var(--danger-fg); }
+.sw-hw-badge.submitted{ background:var(--info-bg); color:var(--info-fg); }
+.sw-hw-badge.graded{ background:var(--warning-bg); color:var(--warning-fg); }
+.sw-hw-badge.returned{ background:var(--success-bg); color:var(--success-fg); }
+
 </style>
 
 <style id="welcome-page-redesign">
@@ -4920,6 +4941,7 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
           <div class="sw-sidebar">
             <div class="sw-nav-item active" data-module="scores" onclick="swSwitchModule('scores')"><i class="fas fa-chart-line"></i> 我的成绩</div>
             <div class="sw-nav-item" data-module="attendance" onclick="swSwitchModule('attendance')"><i class="fas fa-qrcode"></i> 我的签到</div>
+            <div class="sw-nav-item" data-module="homework" onclick="swSwitchModule('homework')"><i class="fas fa-diagram-project"></i> 作业进度<span class="sw-notif-dot" id="sw-hw-dot" style="position:static;display:none;margin-left:2px;"></span></div>
             <div class="sw-nav-item" data-module="profile" onclick="swSwitchModule('profile')"><i class="fas fa-id-card"></i> 个人资料</div>
             <div class="sw-nav-item" data-module="leaderboard" onclick="swSwitchModule('leaderboard')"><i class="fas fa-trophy"></i> 排行榜</div>
             <div class="sw-nav-item" data-module="notifications" onclick="swSwitchModule('notifications')"><i class="fas fa-bell"></i> 通知中心</div>
@@ -4987,6 +5009,29 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
                     <tbody id="sw-attendance-history-body"></tbody>
                   </table>
                 </div>
+              </div>
+            </section>
+
+            <!-- ②.5 作业进度 -->
+            <section id="sw-module-homework" class="d-none">
+              <div class="sw-card">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                  <div class="sw-panel-title mb-0"><i class="fas fa-diagram-project text-primary"></i> 作业进度</div>
+                  <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" style="width:auto;" id="sw-hw-status-filter" onchange="swRenderHomeworkModule()">
+                      <option value="">全部状态</option>
+                      <option value="pending">未交</option>
+                      <option value="late">迟交</option>
+                      <option value="submitted">已交</option>
+                      <option value="graded">已批改</option>
+                      <option value="returned">已发回</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row g-2" id="sw-hw-stat-cards"></div>
+              </div>
+              <div class="sw-card">
+                <div id="sw-hw-list"></div>
               </div>
             </section>
 
@@ -5069,6 +5114,7 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
         <div class="sw-bottom-tab">
           <div class="sw-tab-item active" data-module="scores" onclick="swSwitchModule('scores')"><i class="fas fa-chart-line"></i>成绩</div>
           <div class="sw-tab-item" data-module="attendance" onclick="swSwitchModule('attendance')"><i class="fas fa-qrcode"></i>签到</div>
+          <div class="sw-tab-item" data-module="homework" onclick="swSwitchModule('homework')"><i class="fas fa-diagram-project"></i>作业</div>
           <div class="sw-tab-item" data-module="profile" onclick="swSwitchModule('profile')"><i class="fas fa-id-card"></i>资料</div>
           <div class="sw-tab-item" data-module="leaderboard" onclick="swSwitchModule('leaderboard')"><i class="fas fa-trophy"></i>排行</div>
           <div class="sw-tab-item" data-module="notifications" onclick="swSwitchModule('notifications')"><i class="fas fa-bell"></i>通知</div>
@@ -5477,7 +5523,7 @@ body #student-query-page.qa-redesign #query-results .student-score-card {
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link sidebar-item" data-bs-toggle="tab" data-bs-target="#homework-progress-tab"
-                                   data-page-icon="fa-diagram-project" data-page-title="作业项目进度" data-page-subtitle="手动设置作业/项目进度，学生可查看，支持关联Google Classroom">
+                                   data-page-icon="fa-diagram-project" data-page-title="作业项目进度" data-page-subtitle="手动设置作业/项目进度，学生端可实时查看完成、迟交、批改等状态">
                                     <i class="fas fa-diagram-project"></i><span>作业进度</span>
                                 </a>
                             </li>
@@ -8221,6 +8267,8 @@ async function loadAllDataForQuery() {
         let swAllLevels = [];
         let swMyAttendanceRecords = [];
         let swAllAttendances = [];
+        let swAllAssignments = [];
+        let swMyHwProgress = [];
         let swRadarChartInst = null;
         let swTrendChartInst = null;
         let swNotifUnsub = null;
@@ -8458,6 +8506,7 @@ async function loadAllDataForQuery() {
             swRenderProfileModule();
             swRenderLeaderboardModule();
             swLoadAttendanceModule();
+            swLoadHomeworkModule();
             swListenNotifications();
 
             swSwitchModule('scores');
@@ -8477,7 +8526,7 @@ async function loadAllDataForQuery() {
 
         // ---------------- 模块切换 ----------------
         function swSwitchModule(name){
-            ['scores','attendance','profile','leaderboard','notifications'].forEach(m=>{
+            ['scores','attendance','homework','profile','leaderboard','notifications'].forEach(m=>{
                 document.getElementById('sw-module-'+m).classList.toggle('d-none', m !== name);
             });
             document.querySelectorAll('.sw-nav-item').forEach(el=> el.classList.toggle('active', el.dataset.module === name));
@@ -8728,6 +8777,102 @@ async function loadAllDataForQuery() {
                 <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${rate}%</div><div class="sw-lbl">出勤率</div></div></div>
                 <div class="col-4"><div class="sw-stat-mini"><div class="sw-num">${late}</div><div class="sw-lbl">迟到次数</div></div></div>
             `;
+        }
+
+        // ---------------- ②.5 作业进度 ----------------
+        // 复用管理端「作业进度」功能写入的 assignments / assignmentProgress 两个集合（只读）。
+        // assignment.levelId 为空 = 面向全体学生；否则只有对应级别的学生才会看到这条作业，
+        // 与管理端 hwGetStudentsInScope() 的筛选逻辑保持一致。
+        // assignmentProgress 只有 pending/submitted/graded/returned 四种原始状态，没有单独的
+        // "迟交"字段——迟交是在学生端派生出来的展示状态：状态仍是 pending 且已过截止日期。
+        async function swLoadHomeworkModule(){
+            try{
+                const [aSnap, pSnap] = await Promise.all([
+                    db.collection('assignments').get(),
+                    db.collection('assignmentProgress').where('studentId','==', swCurrentStudent.id).get()
+                ]);
+                swAllAssignments = aSnap.docs.map(d=>({id:d.id, ...d.data()}))
+                    .filter(a=> !a.levelId || a.levelId === swCurrentStudent.levelId);
+                swMyHwProgress = pSnap.docs.map(d=>({id:d.id, ...d.data()}));
+                swRenderHomeworkModule();
+            }catch(e){
+                console.error('加载作业进度失败:', e);
+                const el = document.getElementById('sw-hw-list');
+                if(el) el.innerHTML = swEmptyState('fa-triangle-exclamation','加载失败','请稍后重试');
+            }
+        }
+
+        // 根据作业+该生的进度记录，算出用于展示的状态（含派生的"迟交"）
+        function swHwStatusInfo(assignment, progress){
+            const raw = progress ? progress.status : 'pending';
+            const overdue = assignment.dueDate && new Date(assignment.dueDate) < new Date();
+            if(raw === 'graded') return { key:'graded', label:'已批改' };
+            if(raw === 'returned') return { key:'returned', label:'已发回' };
+            if(raw === 'submitted') return { key:'submitted', label:'已交' };
+            // raw === 'pending'
+            if(overdue) return { key:'late', label:'迟交' };
+            return { key:'pending', label:'未交' };
+        }
+
+        function swRenderHomeworkModule(){
+            const progressMap = {};
+            swMyHwProgress.forEach(p=> progressMap[p.assignmentId] = p);
+
+            const items = swAllAssignments.map(a=>{
+                const p = progressMap[a.id];
+                const status = swHwStatusInfo(a, p);
+                return { assignment:a, progress:p, status };
+            }).sort((a,b)=>{
+                // 未交/迟交排前面提醒学生，已批改/已发回排后面；同组内按截止日期近的在前
+                const order = { late:0, pending:1, submitted:2, graded:3, returned:4 };
+                const oa = order[a.status.key] ?? 5, ob = order[b.status.key] ?? 5;
+                if(oa !== ob) return oa - ob;
+                const da = a.assignment.dueDate ? new Date(a.assignment.dueDate).getTime() : Infinity;
+                const db_ = b.assignment.dueDate ? new Date(b.assignment.dueDate).getTime() : Infinity;
+                return da - db_;
+            });
+
+            // 统计卡片
+            const total = items.length;
+            const counts = { pending:0, late:0, submitted:0, graded:0, returned:0 };
+            items.forEach(it=> counts[it.status.key]++);
+            const doneCount = counts.submitted + counts.graded + counts.returned;
+            document.getElementById('sw-hw-stat-cards').innerHTML = `
+                <div class="col-6 col-md-3"><div class="sw-stat-mini"><div class="sw-num">${total}</div><div class="sw-lbl">作业总数</div></div></div>
+                <div class="col-6 col-md-3"><div class="sw-stat-mini"><div class="sw-num">${doneCount}/${total}</div><div class="sw-lbl">已完成</div></div></div>
+                <div class="col-6 col-md-3"><div class="sw-stat-mini"><div class="sw-num" style="color:var(--danger)">${counts.late}</div><div class="sw-lbl">迟交</div></div></div>
+                <div class="col-6 col-md-3"><div class="sw-stat-mini"><div class="sw-num" style="color:var(--warning)">${counts.graded}</div><div class="sw-lbl">已批改</div></div></div>
+            `;
+
+            const hwDot = document.getElementById('sw-hw-dot');
+            if(hwDot) hwDot.style.display = (counts.late > 0) ? 'inline-block' : 'none';
+
+            const filter = document.getElementById('sw-hw-status-filter')?.value || '';
+            const filtered = filter ? items.filter(it=> it.status.key === filter) : items;
+
+            const list = document.getElementById('sw-hw-list');
+            if(filtered.length === 0){
+                list.innerHTML = swEmptyState('fa-diagram-project', total===0 ? '暂无作业' : '没有符合筛选条件的作业', total===0 ? '管理员发布作业后会显示在这里' : '试试切换上方的状态筛选');
+                return;
+            }
+            list.innerHTML = filtered.map(({assignment:a, progress:p, status})=>{
+                const overdue = status.key === 'late';
+                const due = a.dueDate ? formatDate(new Date(a.dueDate), 'YYYY-MM-DD') : '不限时';
+                const updated = p?.updatedAt?.toDate ? formatDate(p.updatedAt.toDate(), 'YYYY-MM-DD HH:mm') : null;
+                return `
+                    <div class="sw-hw-item">
+                        <div class="flex-grow-1">
+                            <div class="sw-hw-title">${swEsc(a.title || '未命名作业')}</div>
+                            ${a.description ? `<div class="sw-hw-desc">${swEsc(a.description)}</div>` : ''}
+                            <div class="sw-hw-meta-row">
+                                <span class="sw-hw-due ${overdue?'sw-hw-overdue':''}"><i class="fas fa-calendar-days"></i> 截止：${due}${overdue?'（已逾期）':''}</span>
+                                ${updated ? `<span><i class="fas fa-clock"></i> 更新于 ${updated}</span>` : ''}
+                            </div>
+                            ${p?.note ? `<div class="sw-hw-note"><i class="fas fa-comment-dots me-1"></i>${swEsc(p.note)}</div>` : ''}
+                        </div>
+                        <span class="sw-hw-badge ${status.key}">${status.label}</span>
+                    </div>`;
+            }).join('');
         }
 
         // ---------------- ③ 个人资料 ----------------
@@ -21244,8 +21389,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="progress" style="height:6px;">
                             <div class="progress-bar" style="width:${pct}%"></div>
                         </div>
-                        <div class="d-flex gap-2 small text-muted mt-1">
+                        <div class="d-flex gap-2 small text-muted mt-1 flex-wrap">
                             <span>未交 ${stats.pending}</span>
+                            ${isOverdue ? `<span class="text-danger fw-semibold">其中迟交 ${stats.pending}</span>` : ''}
                             <span>已交 ${stats.submitted}</span>
                             <span>已批改 ${stats.graded}</span>
                             <span>已发回 ${stats.returned}</span>
