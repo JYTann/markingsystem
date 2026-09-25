@@ -8542,10 +8542,16 @@ async function loadAllDataForQuery() {
 
         // ---------------- ① 我的成绩 ----------------
         function swBuildLevelHistoryOptions(){
-            // scores 文档没有 levelId 字段，要通过 projectId 反查它属于哪个/哪些级别
-            // （levelProjects 里 projectId -> levelId 的映射），不能直接读 s.levelId。
+            // scores 文档没有 levelId 字段，要通过 projectId 反查它属于哪个/哪些级别。
+            // 关键：levelProjects 文档本身没有 projectId 字段——它自己就是"项目"
+            // （saveLevelProject() 直接把 name/fullMark/weight 存在这个文档上），
+            // scores.projectId 存的其实是 levelProjects 文档自己的 .id（见批量导入
+            // 逻辑 project = levelProjects.find(...); scores.projectId = project.id）。
+            // 之前这里错误地拿一个不存在的 lp.projectId 字段去比对，恒为 undefined，
+            // 导致比对永远不成立——这也是"项目明细"显示"未命名项目/未录入"的根源。
+            // 正确做法：用 lp.id 去匹配 s.projectId。
             const idsInScores = [...new Set(
-                swMyScores.flatMap(s => swAllLevelProjects.filter(lp => lp.projectId === s.projectId).map(lp => lp.levelId))
+                swMyScores.flatMap(s => swAllLevelProjects.filter(lp => lp.id === s.projectId).map(lp => lp.levelId))
             )].filter(Boolean);
             const ids = [...new Set([...idsInScores, swCurrentStudent.levelId].filter(Boolean))];
             swMyLevelsHistory = swAllLevels.filter(l=> ids.includes(l.id));
@@ -8568,19 +8574,23 @@ async function loadAllDataForQuery() {
             // "未录入"——这正是每个学生打开菜单都像是"暂无记录"的根源之一。
             // 正确做法：先算出这个级别有哪些评分项目（lpForLevel），
             // 再用 projectId 去 swMyScores 里找有没有对应分数。
+            // 同时：levelProjects 文档自己就是"项目"（name/fullMark 直接存在它身上，
+            // 不是靠 projectId 去关联"评分项目管理"里的 projects 集合），scores.projectId
+            // 存的是 levelProjects 文档的 .id。之前用 lp.projectId（不存在的字段）去比对，
+            // 恒为 undefined，导致成绩、项目名、满分全部匹配不到——这就是管理员在"级别管理"
+            // 里新增了"学习讲义"评分项目后，学生端却显示"未命名项目 未录入"的根本原因。
             const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
-            const levelScores = swMyScores.filter(s=> lpForLevel.some(lp=> lp.projectId === s.projectId));
+            const levelScores = swMyScores.filter(s=> lpForLevel.some(lp=> lp.id === s.projectId));
 
             let totalScore = 0, totalMax = 0;
             const rows = lpForLevel.map(lp=>{
-                const project = swAllProjects.find(p=>p.id===lp.projectId) || {};
-                const scoreDoc = levelScores.find(s=> s.projectId === lp.projectId);
+                const scoreDoc = levelScores.find(s=> s.projectId === lp.id);
                 const got = scoreDoc ? Number(scoreDoc.score) || 0 : 0;
-                const max = Number(lp.maxScore || project.maxScore || 100);
+                const max = Number(lp.fullMark || 100);
                 const weight = lp.weight != null ? lp.weight : 1;
                 totalScore += got * weight; totalMax += max * weight;
                 const pct = max ? Math.round((got/max)*100) : 0;
-                return {name: project.name || '未命名项目', got, max, weight, pct, hasScore: !!scoreDoc};
+                return {name: lp.name || '未命名项目', got, max, weight, pct, hasScore: !!scoreDoc};
             });
 
             document.getElementById('sw-score-stat-cards').innerHTML = `
@@ -8629,7 +8639,7 @@ async function loadAllDataForQuery() {
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
-                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.projectId));
+                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.id));
                 const levelScores = scoresSnap.docs.map(d=>d.data())
                     .filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)) // 待审核成绩不计入排名/排行榜
                     .filter(s=> lpProjectIds.has(s.projectId));
@@ -8637,10 +8647,10 @@ async function loadAllDataForQuery() {
                 const totals = levelStudents.map(stu=>{
                     let got=0, max=0;
                     lpForLevel.forEach(lp=>{
-                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.projectId);
+                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.id);
                         const w = lp.weight != null ? lp.weight : 1;
                         got += (sd? Number(sd.score)||0 : 0) * w;
-                        max += Number(lp.maxScore||100) * w;
+                        max += Number(lp.fullMark||100) * w;
                     });
                     return { id: stu.id, pct: max? (got/max)*100 : 0 };
                 }).sort((a,b)=> b.pct - a.pct);
@@ -8659,12 +8669,14 @@ async function loadAllDataForQuery() {
         }
 
         function swRenderCharts(){
-            const levelScores = swMyScores.filter(s=> s.levelId === swSelectedLevelId);
+            // scores 没有 levelId 字段（同上多处说明），s.levelId===swSelectedLevelId 恒为
+            // false；改成跟 swRenderScoresModule 一样，靠 lpForLevel（lp.id）反查归属。
             const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swSelectedLevelId);
-            const labels = lpForLevel.map(lp=> (swAllProjects.find(p=>p.id===lp.projectId)||{}).name || '项目');
+            const levelScores = swMyScores.filter(s=> lpForLevel.some(lp=> lp.id === s.projectId));
+            const labels = lpForLevel.map(lp=> lp.name || '项目');
             const pcts = lpForLevel.map(lp=>{
-                const sd = levelScores.find(s=> s.projectId===lp.projectId);
-                const max = Number(lp.maxScore||100);
+                const sd = levelScores.find(s=> s.projectId===lp.id);
+                const max = Number(lp.fullMark||100);
                 return sd && max ? Math.round((Number(sd.score)/max)*100) : 0;
             });
 
@@ -8958,7 +8970,7 @@ async function loadAllDataForQuery() {
                 ]);
                 const levelStudents = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
                 const lpForLevel = swAllLevelProjects.filter(lp=> lp.levelId === swCurrentStudent.levelId);
-                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.projectId));
+                const lpProjectIds = new Set(lpForLevel.map(lp=> lp.id));
                 const levelScores = scoresSnap.docs.map(d=>d.data())
                     .filter(s=> typeof isScoreApproved !== 'function' || isScoreApproved(s)) // 待审核成绩不计入排名/排行榜
                     .filter(s=> lpProjectIds.has(s.projectId));
@@ -8966,8 +8978,8 @@ async function loadAllDataForQuery() {
                 const ranked = levelStudents.map(stu=>{
                     let got=0, max=0;
                     lpForLevel.forEach(lp=>{
-                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.projectId);
-                        got += sd? Number(sd.score)||0 : 0; max += Number(lp.maxScore||100);
+                        const sd = levelScores.find(s=> s.studentId===stu.id && s.projectId===lp.id);
+                        got += sd? Number(sd.score)||0 : 0; max += Number(lp.fullMark||100);
                     });
                     return { name: stu.name, studentId: stu.studentId, id: stu.id, avg: max? Math.round((got/max)*100):0 };
                 }).sort((a,b)=> b.avg - a.avg);
